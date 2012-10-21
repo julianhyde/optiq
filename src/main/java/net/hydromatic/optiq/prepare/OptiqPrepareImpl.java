@@ -17,20 +17,25 @@
 */
 package net.hydromatic.optiq.prepare;
 
-import net.hydromatic.linq4j.*;
+import net.hydromatic.linq4j.Enumerable;
+import net.hydromatic.linq4j.Queryable;
 import net.hydromatic.linq4j.expressions.*;
-
 import net.hydromatic.optiq.*;
 import net.hydromatic.optiq.impl.java.JavaTypeFactory;
 import net.hydromatic.optiq.jdbc.Helper;
 import net.hydromatic.optiq.jdbc.OptiqPrepare;
-import net.hydromatic.optiq.rules.java.*;
+import net.hydromatic.optiq.rules.java.EnumerableRel;
+import net.hydromatic.optiq.rules.java.EnumerableRelImplementor;
+import net.hydromatic.optiq.rules.java.JavaRules;
+import net.hydromatic.optiq.rules.java.RexToLixTranslator;
 import net.hydromatic.optiq.runtime.Executable;
-
 import openjava.ptree.ClassDeclaration;
-
-import org.eigenbase.oj.stmt.*;
-import org.eigenbase.rel.*;
+import org.codehaus.janino.ExpressionEvaluator;
+import org.eigenbase.oj.stmt.OJPreparingStmt;
+import org.eigenbase.oj.stmt.PreparedExecution;
+import org.eigenbase.oj.stmt.PreparedResult;
+import org.eigenbase.rel.RelCollation;
+import org.eigenbase.rel.RelNode;
 import org.eigenbase.rel.rules.TableAccessRule;
 import org.eigenbase.relopt.*;
 import org.eigenbase.relopt.volcano.VolcanoPlanner;
@@ -49,8 +54,6 @@ import org.eigenbase.sql.validate.*;
 import org.eigenbase.sql2rel.SqlToRelConverter;
 import org.eigenbase.util.Pair;
 
-import org.codehaus.janino.*;
-
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -64,18 +67,17 @@ import java.util.*;
 class OptiqPrepareImpl implements OptiqPrepare {
 
     public ParseResult parse(
-        Context context, String sql)
-    {
+            Context context, String sql) {
         final JavaTypeFactory typeFactory = context.getTypeFactory();
         OptiqCatalogReader catalogReader =
-            new OptiqCatalogReader(
-                context.getRootSchema(),
-                typeFactory);
+                new OptiqCatalogReader(
+                        context.getRootSchema(),
+                        typeFactory);
         final OptiqPreparingStmt preparingStmt =
-            new OptiqPreparingStmt(
-                catalogReader,
-                typeFactory,
-                context.getRootSchema());
+                new OptiqPreparingStmt(
+                        catalogReader,
+                        typeFactory,
+                        context.getRootSchema());
         preparingStmt.setResultCallingConvention(CallingConvention.ENUMERABLE);
 
         SqlParser parser = new SqlParser(sql);
@@ -86,46 +88,44 @@ class OptiqPrepareImpl implements OptiqPrepare {
             throw new RuntimeException("parse failed", e);
         }
         SqlValidator validator =
-            new SqlValidatorImpl(
-                SqlStdOperatorTable.instance(), catalogReader, typeFactory,
-                SqlConformance.Default) { };
+                new SqlValidatorImpl(
+                        SqlStdOperatorTable.instance(), catalogReader, typeFactory,
+                        SqlConformance.Default) {
+                };
         SqlNode sqlNode1 = validator.validate(sqlNode);
         return new ParseResult(
-            sql, sqlNode1, validator.getValidatedNodeType(sqlNode1));
+                sql, sqlNode1, validator.getValidatedNodeType(sqlNode1));
     }
 
     public <T> PrepareResult<T> prepareQueryable(
-        Context context,
-        Queryable<T> queryable)
-    {
+            Context context,
+            Queryable<T> queryable) {
         return prepare_(context, null, queryable, queryable.getElementType());
     }
 
     public <T> PrepareResult<T> prepareSql(
-        Context context,
-        String sql,
-        Queryable<T> expression,
-        Type elementType)
-    {
+            Context context,
+            String sql,
+            Queryable<T> expression,
+            Type elementType) {
         return prepare_(context, sql, expression, elementType);
     }
 
     <T> PrepareResult<T> prepare_(
-        Context context,
-        String sql,
-        Queryable<T> queryable,
-        Type elementType)
-    {
+            Context context,
+            String sql,
+            Queryable<T> queryable,
+            Type elementType) {
         final JavaTypeFactory typeFactory = context.getTypeFactory();
         OptiqCatalogReader catalogReader =
-            new OptiqCatalogReader(
-                context.getRootSchema(),
-                typeFactory);
+                new OptiqCatalogReader(
+                        context.getRootSchema(),
+                        typeFactory);
         final OptiqPreparingStmt preparingStmt =
-            new OptiqPreparingStmt(
-                catalogReader,
-                typeFactory,
-                context.getRootSchema());
+                new OptiqPreparingStmt(
+                        catalogReader,
+                        typeFactory,
+                        context.getRootSchema());
         preparingStmt.setResultCallingConvention(CallingConvention.ENUMERABLE);
 
         final RelDataType x;
@@ -141,75 +141,75 @@ class OptiqPrepareImpl implements OptiqPrepare {
             }
             final Schema rootSchema = context.getRootSchema();
             SqlValidator validator =
-                new SqlValidatorImpl(
-                    new ChainedSqlOperatorTable(
-                        Arrays.<SqlOperatorTable>asList(
-                            SqlStdOperatorTable.instance(),
-                            new MySqlOperatorTable(rootSchema, typeFactory))),
-                    catalogReader,
-                    typeFactory,
-                    SqlConformance.Default) { };
+                    new SqlValidatorImpl(
+                            new ChainedSqlOperatorTable(
+                                    Arrays.<SqlOperatorTable>asList(
+                                            SqlStdOperatorTable.instance(),
+                                            new MySqlOperatorTable(rootSchema, typeFactory))),
+                            catalogReader,
+                            typeFactory,
+                            SqlConformance.Default) {
+                    };
             preparedResult = preparingStmt.prepareSql(
-                sqlNode, Object.class, validator, true);
+                    sqlNode, Object.class, validator, true);
             x = validator.getValidatedNodeType(sqlNode);
         } else {
             assert queryable != null;
             x = context.getTypeFactory().createType(elementType);
             preparedResult =
-                preparingStmt.prepareQueryable(queryable, x);
+                    preparingStmt.prepareQueryable(queryable, x);
         }
 
         // TODO: parameters
         final List<Parameter> parameters = Collections.emptyList();
         // TODO: column meta data
         final List<ColumnMetaData> columns =
-            new ArrayList<ColumnMetaData>();
+                new ArrayList<ColumnMetaData>();
         RelDataType jdbcType = makeStruct(typeFactory, x);
         for (RelDataTypeField field : jdbcType.getFields()) {
             RelDataType type = field.getType();
             SqlTypeName sqlTypeName = type.getSqlTypeName();
             columns.add(
-                new ColumnMetaData(
-                    columns.size(),
-                    false,
-                    true,
-                    false,
-                    false,
-                    type.isNullable() ? 1 : 0,
-                    true,
-                    0,
-                    field.getName(),
-                    null,
-                    null,
-                    sqlTypeName.allowsPrec() && false
-                        ? type.getPrecision()
-                        : -1,
-                    sqlTypeName.allowsScale() ? type.getScale() : -1,
-                    null,
-                    null,
-                    sqlTypeName.getJdbcOrdinal(),
-                    sqlTypeName.getName(),
-                    true,
-                    false,
-                    false,
-                    null));
+                    new ColumnMetaData(
+                            columns.size(),
+                            false,
+                            true,
+                            false,
+                            false,
+                            type.isNullable() ? 1 : 0,
+                            true,
+                            0,
+                            field.getName(),
+                            null,
+                            null,
+                            sqlTypeName.allowsPrec() && false
+                                    ? type.getPrecision()
+                                    : -1,
+                            sqlTypeName.allowsScale() ? type.getScale() : -1,
+                            null,
+                            null,
+                            sqlTypeName.getJdbcOrdinal(),
+                            sqlTypeName.getName(),
+                            true,
+                            false,
+                            false,
+                            null));
         }
         return new PrepareResult<T>(
-            sql,
-            parameters,
-            columns,
-            (Enumerable<T>) preparedResult.execute());
+                sql,
+                parameters,
+                columns,
+                (Enumerable<T>) preparedResult.execute());
     }
 
     private static RelDataType makeStruct(
-        RelDataTypeFactory typeFactory,
-        RelDataType type)
-    {
+            RelDataTypeFactory typeFactory,
+            RelDataType type) {
         if (type.isStruct()) {
             return type;
         }
         return typeFactory.createStructType(
-            RelDataTypeFactory.FieldInfoBuilder.of("$0", type));
+                RelDataTypeFactory.FieldInfoBuilder.of("$0", type));
     }
 
     private static class OptiqPreparingStmt extends OJPreparingStmt {
@@ -220,10 +220,9 @@ class OptiqPrepareImpl implements OptiqPrepare {
         private SqlValidator sqlValidator;
 
         public OptiqPreparingStmt(
-            CatalogReader catalogReader,
-            RelDataTypeFactory typeFactory,
-            Schema schema)
-        {
+                CatalogReader catalogReader,
+                RelDataTypeFactory typeFactory,
+                Schema schema) {
             super(catalogReader);
             this.schema = schema;
             planner = new VolcanoPlanner();
@@ -242,34 +241,33 @@ class OptiqPrepareImpl implements OptiqPrepare {
         }
 
         public PreparedResult prepareQueryable(
-            Queryable queryable,
-            RelDataType resultType)
-        {
+                Queryable queryable,
+                RelDataType resultType) {
             queryString = null;
             Class runtimeContextClass = Object.class;
-            final Argument [] arguments = {
-                new Argument(
-                    connectionVariable,
-                    runtimeContextClass,
-                    null)
+            final Argument[] arguments = {
+                    new Argument(
+                            connectionVariable,
+                            runtimeContextClass,
+                            null)
             };
             ClassDeclaration decl = init(arguments);
 
             final RelOptQuery query = new RelOptQuery(planner);
             final RelOptCluster cluster =
-                query.createCluster(
-                    env, rexBuilder.getTypeFactory(), rexBuilder);
+                    query.createCluster(
+                            env, rexBuilder.getTypeFactory(), rexBuilder);
 
             RelNode rootRel =
-                new LixToRelTranslator(cluster)
-                    .translate(queryable);
+                    new LixToRelTranslator(cluster)
+                            .translate(queryable);
 
             if (timingTracer != null) {
                 timingTracer.traceTime("end sql2rel");
             }
 
             final RelDataType jdbcType =
-                makeStruct(rexBuilder.getTypeFactory(), resultType);
+                    makeStruct(rexBuilder.getTypeFactory(), resultType);
             fieldOrigins = Collections.nCopies(jdbcType.getFieldCount(), null);
 
             // Structured type flattening, view expansion, and plugging in
@@ -287,29 +285,27 @@ class OptiqPrepareImpl implements OptiqPrepare {
             }
 
             return implement(
-                resultType,
-                rootRel,
-                SqlKind.SELECT,
-                decl,
-                arguments);
+                    resultType,
+                    rootRel,
+                    SqlKind.SELECT,
+                    decl,
+                    arguments);
         }
 
         @Override
         protected SqlToRelConverter getSqlToRelConverter(
-            SqlValidator validator,
-            CatalogReader catalogReader)
-        {
+                SqlValidator validator,
+                CatalogReader catalogReader) {
             SqlToRelConverter sqlToRelConverter =
-                new SqlToRelConverter(
-                    this, validator, catalogReader, env, planner, rexBuilder);
+                    new SqlToRelConverter(
+                            this, validator, catalogReader, env, planner, rexBuilder);
             sqlToRelConverter.setTrimUnusedFields(false);
             return sqlToRelConverter;
         }
 
         @Override
         protected EnumerableRelImplementor getRelImplementor(
-            RexBuilder rexBuilder)
-        {
+                RexBuilder rexBuilder) {
             return new EnumerableRelImplementor(rexBuilder);
         }
 
@@ -359,9 +355,8 @@ class OptiqPrepareImpl implements OptiqPrepare {
 
         @Override
         public RelNode flattenTypes(
-            RelNode rootRel,
-            boolean restructure)
-        {
+                RelNode rootRel,
+                boolean restructure) {
             return rootRel;
         }
 
@@ -390,9 +385,9 @@ class OptiqPrepareImpl implements OptiqPrepare {
             SqlNode sqlNode1 = validator.validate(sqlNode);
 
             SqlToRelConverter sqlToRelConverter =
-                getSqlToRelConverter(validator, catalogReader);
+                    getSqlToRelConverter(validator, catalogReader);
             RelNode relNode =
-                sqlToRelConverter.convertQuery(sqlNode1, true, false);
+                    sqlToRelConverter.convertQuery(sqlNode1, true, false);
 
             --expansionDepth;
             return relNode;
@@ -401,48 +396,48 @@ class OptiqPrepareImpl implements OptiqPrepare {
         private SqlValidator getSqlValidator() {
             if (sqlValidator == null) {
                 sqlValidator = new SqlValidatorImpl(
-                    SqlStdOperatorTable.instance(), catalogReader,
-                    rexBuilder.getTypeFactory(),
-                    SqlConformance.Default) { };
+                        SqlStdOperatorTable.instance(), catalogReader,
+                        rexBuilder.getTypeFactory(),
+                        SqlConformance.Default) {
+                };
             }
             return sqlValidator;
         }
 
         @Override
         protected PreparedExecution implement(
-            RelDataType rowType,
-            RelNode rootRel,
-            SqlKind sqlKind,
-            ClassDeclaration decl,
-            Argument[] args)
-        {
+                RelDataType rowType,
+                RelNode rootRel,
+                SqlKind sqlKind,
+                ClassDeclaration decl,
+                Argument[] args) {
             RelDataType resultType = rootRel.getRowType();
             boolean isDml = sqlKind.belongsTo(SqlKind.DML);
             javaCompiler = createCompiler();
             EnumerableRelImplementor relImplementor =
-                getRelImplementor(rootRel.getCluster().getRexBuilder());
+                    getRelImplementor(rootRel.getCluster().getRexBuilder());
             BlockExpression expr =
-                relImplementor.implementRoot((EnumerableRel) rootRel);
+                    relImplementor.implementRoot((EnumerableRel) rootRel);
             ParameterExpression root0 =
-                Expressions.parameter(DataContext.class, "root0");
+                    Expressions.parameter(DataContext.class, "root0");
             String s = Expressions.toString(
-                Blocks.create(
-                    Expressions.declare(
-                        Modifier.FINAL,
-                        (ParameterExpression) schema.getExpression(),
-                        root0),
-                    expr),
-                false);
-            System.out.println(s);
+                    Blocks.create(
+                            Expressions.declare(
+                                    Modifier.FINAL,
+                                    (ParameterExpression) schema.getExpression(),
+                                    root0),
+                            expr),
+                    false);
+//            System.out.println(s);
 
             final Executable executable;
             try {
                 executable = (Executable)
-                    ExpressionEvaluator.createFastScriptEvaluator(
-                        s, Executable.class, new String[]{root0.name});
+                        ExpressionEvaluator.createFastScriptEvaluator(
+                                s, Executable.class, new String[]{root0.name});
             } catch (Exception e) {
                 throw Helper.INSTANCE.wrap(
-                    "Error while compiling generated Java code:\n" + s, e);
+                        "Error while compiling generated Java code:\n" + s, e);
             }
 
             if (timingTracer != null) {
@@ -454,13 +449,12 @@ class OptiqPrepareImpl implements OptiqPrepare {
             }
 
             return new PreparedExecution(
-                null,
-                rootRel,
-                resultType,
-                isDml,
-                mapTableModOp(isDml, sqlKind),
-                null)
-            {
+                    null,
+                    rootRel,
+                    resultType,
+                    isDml,
+                    mapTableModOp(isDml, sqlKind),
+                    null) {
                 public Object execute() {
                     return executable.execute(schema);
                 }
@@ -469,8 +463,7 @@ class OptiqPrepareImpl implements OptiqPrepare {
     }
 
     static class RelOptTableImpl
-        implements OJPreparingStmt.PreparingTable
-    {
+            implements OJPreparingStmt.PreparingTable {
         private final RelOptSchema schema;
         private final RelDataType rowType;
         private final String[] names;
@@ -478,30 +471,27 @@ class OptiqPrepareImpl implements OptiqPrepare {
         private final Expression expression;
 
         RelOptTableImpl(
-            RelOptSchema schema,
-            RelDataType rowType,
-            String[] names,
-            Table table)
-        {
+                RelOptSchema schema,
+                RelDataType rowType,
+                String[] names,
+                Table table) {
             this(schema, rowType, names, table, table.getExpression());
         }
 
         RelOptTableImpl(
-            RelOptSchema schema,
-            RelDataType rowType,
-            String[] names,
-            Expression expression)
-        {
+                RelOptSchema schema,
+                RelDataType rowType,
+                String[] names,
+                Expression expression) {
             this(schema, rowType, names, null, expression);
         }
 
         private RelOptTableImpl(
-            RelOptSchema schema,
-            RelDataType rowType,
-            String[] names,
-            Table table,
-            Expression expression)
-        {
+                RelOptSchema schema,
+                RelDataType rowType,
+                String[] names,
+                Table table,
+                Expression expression) {
             this.schema = schema;
             this.rowType = rowType;
             this.names = names;
@@ -518,13 +508,12 @@ class OptiqPrepareImpl implements OptiqPrepare {
             return schema;
         }
 
-        public RelNode toRel(ToRelContext context)
-        {
+        public RelNode toRel(ToRelContext context) {
             if (table instanceof TranslatableTable) {
                 return ((TranslatableTable) table).toRel(context, this);
             }
             return new JavaRules.EnumerableTableAccessRel(
-                context.getCluster(), this, expression);
+                    context.getCluster(), this, expression);
         }
 
         public List<RelCollation> getCollationList() {
@@ -549,15 +538,13 @@ class OptiqPrepareImpl implements OptiqPrepare {
     }
 
     private static class OptiqCatalogReader
-        implements OJPreparingStmt.CatalogReader
-    {
+            implements OJPreparingStmt.CatalogReader {
         private final Schema schema;
         private final JavaTypeFactory typeFactory;
 
         public OptiqCatalogReader(
-            Schema schema,
-            JavaTypeFactory typeFactory)
-        {
+                Schema schema,
+                JavaTypeFactory typeFactory) {
             super();
             this.schema = schema;
             this.typeFactory = typeFactory;
@@ -565,7 +552,7 @@ class OptiqPrepareImpl implements OptiqPrepare {
 
         public RelOptTableImpl getTable(final String[] names) {
             List<Pair<String, Object>> pairs =
-                new ArrayList<Pair<String, Object>>();
+                    new ArrayList<Pair<String, Object>>();
             Schema schema2 = schema;
             for (int i = 0; i < names.length; i++) {
                 final String name = names[i];
@@ -583,10 +570,10 @@ class OptiqPrepareImpl implements OptiqPrepare {
                         return null;
                     }
                     return new RelOptTableImpl(
-                        this,
-                        typeFactory.createType(table.getElementType()),
-                        names,
-                        table);
+                            this,
+                            typeFactory.createType(table.getElementType()),
+                            names,
+                            table);
                 }
                 return null;
             }
@@ -619,10 +606,13 @@ class OptiqPrepareImpl implements OptiqPrepare {
 
     interface ScalarTranslator {
         RexNode toRex(BlockExpression expression);
+
         List<RexNode> toRexList(BlockExpression expression);
+
         RexNode toRex(Expression expression);
+
         ScalarTranslator bind(
-            List<ParameterExpression> parameterList, List<RexNode> values);
+                List<ParameterExpression> parameterList, List<RexNode> values);
     }
 
     static class EmptyScalarTranslator implements ScalarTranslator {
@@ -661,63 +651,63 @@ class OptiqPrepareImpl implements OptiqPrepare {
 
         public RexNode toRex(Expression expression) {
             switch (expression.getNodeType()) {
-            case MemberAccess:
-                return rexBuilder.makeFieldAccess(
-                    toRex(
-                        ((MemberExpression) expression).expression),
-                    ((MemberExpression) expression).field.getName());
-            case GreaterThan:
-                return binary(
-                    expression, SqlStdOperatorTable.greaterThanOperator);
-            case LessThan:
-                return binary(expression, SqlStdOperatorTable.lessThanOperator);
-            case Parameter:
-                return parameter((ParameterExpression) expression);
-            case Call:
-                MethodCallExpression call = (MethodCallExpression) expression;
-                SqlOperator operator =
-                    RexToLixTranslator.JAVA_TO_SQL_METHOD_MAP.get(call.method);
-                if (operator != null) {
-                    return rexBuilder.makeCall(
-                        operator,
-                        toRex(
-                            Expressions.<Expression>list()
-                                .appendIfNotNull(call.targetExpression)
-                                .appendAll(call.expressions)));
-                }
-                throw new RuntimeException(
-                    "Could translate call to method " + call.method);
-            case Constant:
-                final ConstantExpression constant =
-                    (ConstantExpression) expression;
-                Object value = constant.value;
-                if (value instanceof Number) {
-                    Number number = (Number) value;
-                    if (value instanceof Double || value instanceof Float) {
-                        return rexBuilder.makeApproxLiteral(
-                            BigDecimal.valueOf(number.doubleValue()));
-                    } else if (value instanceof BigDecimal) {
-                        return rexBuilder.makeExactLiteral((BigDecimal) value);
-                    } else {
-                        return rexBuilder.makeExactLiteral(
-                            BigDecimal.valueOf(number.longValue()));
+                case MemberAccess:
+                    return rexBuilder.makeFieldAccess(
+                            toRex(
+                                    ((MemberExpression) expression).expression),
+                            ((MemberExpression) expression).field.getName());
+                case GreaterThan:
+                    return binary(
+                            expression, SqlStdOperatorTable.greaterThanOperator);
+                case LessThan:
+                    return binary(expression, SqlStdOperatorTable.lessThanOperator);
+                case Parameter:
+                    return parameter((ParameterExpression) expression);
+                case Call:
+                    MethodCallExpression call = (MethodCallExpression) expression;
+                    SqlOperator operator =
+                            RexToLixTranslator.JAVA_TO_SQL_METHOD_MAP.get(call.method);
+                    if (operator != null) {
+                        return rexBuilder.makeCall(
+                                operator,
+                                toRex(
+                                        Expressions.<Expression>list()
+                                                .appendIfNotNull(call.targetExpression)
+                                                .appendAll(call.expressions)));
                     }
-                } else if (value instanceof Boolean) {
-                    return rexBuilder.makeLiteral((Boolean) value);
-                } else {
-                    return rexBuilder.makeLiteral(constant.toString());
-                }
-            default:
-                throw new UnsupportedOperationException(
-                    "unknown expression type " + expression.getNodeType() + " "
-                    + expression);
+                    throw new RuntimeException(
+                            "Could translate call to method " + call.method);
+                case Constant:
+                    final ConstantExpression constant =
+                            (ConstantExpression) expression;
+                    Object value = constant.value;
+                    if (value instanceof Number) {
+                        Number number = (Number) value;
+                        if (value instanceof Double || value instanceof Float) {
+                            return rexBuilder.makeApproxLiteral(
+                                    BigDecimal.valueOf(number.doubleValue()));
+                        } else if (value instanceof BigDecimal) {
+                            return rexBuilder.makeExactLiteral((BigDecimal) value);
+                        } else {
+                            return rexBuilder.makeExactLiteral(
+                                    BigDecimal.valueOf(number.longValue()));
+                        }
+                    } else if (value instanceof Boolean) {
+                        return rexBuilder.makeLiteral((Boolean) value);
+                    } else {
+                        return rexBuilder.makeLiteral(constant.toString());
+                    }
+                default:
+                    throw new UnsupportedOperationException(
+                            "unknown expression type " + expression.getNodeType() + " "
+                                    + expression);
             }
         }
 
         private RexNode binary(Expression expression, SqlBinaryOperator op) {
             BinaryExpression call = (BinaryExpression) expression;
             return rexBuilder.makeCall(
-                op, toRex(Arrays.asList(call.expression0, call.expression1)));
+                    op, toRex(Arrays.asList(call.expression0, call.expression1)));
         }
 
         private List<RexNode> toRex(List<Expression> expressions) {
@@ -729,10 +719,9 @@ class OptiqPrepareImpl implements OptiqPrepare {
         }
 
         public ScalarTranslator bind(
-            List<ParameterExpression> parameterList, List<RexNode> values)
-        {
+                List<ParameterExpression> parameterList, List<RexNode> values) {
             return new LambdaScalarTranslator(
-                rexBuilder, parameterList, values);
+                    rexBuilder, parameterList, values);
         }
 
         public RexNode parameter(ParameterExpression param) {
@@ -745,10 +734,9 @@ class OptiqPrepareImpl implements OptiqPrepare {
         private final List<RexNode> values;
 
         public LambdaScalarTranslator(
-            RexBuilder rexBuilder,
-            List<ParameterExpression> parameterList,
-            List<RexNode> values)
-        {
+                RexBuilder rexBuilder,
+                List<ParameterExpression> parameterList,
+                List<RexNode> values) {
             super(rexBuilder);
             this.parameterList = parameterList;
             this.values = values;
@@ -768,25 +756,23 @@ class OptiqPrepareImpl implements OptiqPrepare {
         private final JavaTypeFactory typeFactory;
 
         public MySqlOperatorTable(
-            Schema rootSchema,
-            JavaTypeFactory typeFactory)
-        {
+                Schema rootSchema,
+                JavaTypeFactory typeFactory) {
             this.rootSchema = rootSchema;
             this.typeFactory = typeFactory;
         }
 
         public List<SqlOperator> lookupOperatorOverloads(
-            SqlIdentifier opName,
-            SqlFunctionCategory category,
-            SqlSyntax syntax)
-        {
+                SqlIdentifier opName,
+                SqlFunctionCategory category,
+                SqlSyntax syntax) {
             if (syntax != SqlSyntax.Function) {
                 return Collections.emptyList();
             }
             // FIXME: ignoring prefix of opName
             String name = opName.names[opName.names.length - 1];
             List<TableFunction> tableFunctions =
-                rootSchema.getTableFunctions(name);
+                    rootSchema.getTableFunctions(name);
             if (tableFunctions.isEmpty()) {
                 return Collections.emptyList();
             }
@@ -794,9 +780,8 @@ class OptiqPrepareImpl implements OptiqPrepare {
         }
 
         private List<SqlOperator> toOps(
-            final String name,
-            final List<TableFunction> tableFunctions)
-        {
+                final String name,
+                final List<TableFunction> tableFunctions) {
             return new AbstractList<SqlOperator>() {
                 public SqlOperator get(int index) {
                     return toOp(name, tableFunctions.get(index));
@@ -813,22 +798,21 @@ class OptiqPrepareImpl implements OptiqPrepare {
             List<SqlTypeFamily> typeFamilies = new ArrayList<SqlTypeFamily>();
             Parameter p;
             for (net.hydromatic.optiq.Parameter o
-                : (List< net.hydromatic.optiq.Parameter>) fun.getParameters())
-            {
+                    : (List<net.hydromatic.optiq.Parameter>) fun.getParameters()) {
                 argTypes.add(o.getType());
                 typeFamilies.add(SqlTypeFamily.ANY);
             }
             return new SqlFunction(
-                name,
-                SqlKind.OTHER_FUNCTION,
-                new ExplicitReturnTypeInference(
-                    typeFactory.createType(fun.getElementType())),
-                new ExplicitOperandTypeInference(
-                    argTypes.toArray(new RelDataType[argTypes.size()])),
-                new FamilyOperandTypeChecker(
-                    typeFamilies.toArray(
-                        new SqlTypeFamily[typeFamilies.size()])),
-                null);
+                    name,
+                    SqlKind.OTHER_FUNCTION,
+                    new ExplicitReturnTypeInference(
+                            typeFactory.createType(fun.getElementType())),
+                    new ExplicitOperandTypeInference(
+                            argTypes.toArray(new RelDataType[argTypes.size()])),
+                    new FamilyOperandTypeChecker(
+                            typeFamilies.toArray(
+                                    new SqlTypeFamily[typeFamilies.size()])),
+                    null);
         }
 
         public List<SqlOperator> getOperatorList() {
