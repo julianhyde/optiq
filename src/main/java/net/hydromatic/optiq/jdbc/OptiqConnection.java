@@ -17,14 +17,12 @@
 */
 package net.hydromatic.optiq.jdbc;
 
+import net.hydromatic.linq4j.QueryProvider;
 import net.hydromatic.optiq.MutableSchema;
 import net.hydromatic.optiq.impl.java.JavaTypeFactory;
 
-import net.hydromatic.linq4j.QueryProvider;
-
-import org.eigenbase.reltype.RelDataTypeFactory;
-
 import java.sql.Connection;
+import java.util.Properties;
 
 /**
  * Extension to Optiq's implementation of
@@ -55,6 +53,13 @@ public interface OptiqConnection extends Connection, QueryProvider {
      * @return Type factory
      */
     JavaTypeFactory getTypeFactory();
+
+    /**
+     * Returns an instance of the connection properties
+     *
+     * @return properties
+     */
+    Properties getProperties();
 }
 
 // End OptiqConnection.java

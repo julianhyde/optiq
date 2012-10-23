@@ -17,9 +17,11 @@
 */
 package net.hydromatic.optiq.jdbc;
 
-import net.hydromatic.linq4j.*;
+import net.hydromatic.linq4j.BaseQueryable;
+import net.hydromatic.linq4j.Enumerator;
+import net.hydromatic.linq4j.QueryProvider;
+import net.hydromatic.linq4j.Queryable;
 import net.hydromatic.linq4j.expressions.Expression;
-
 import net.hydromatic.linq4j.expressions.Expressions;
 import net.hydromatic.linq4j.expressions.ParameterExpression;
 import net.hydromatic.optiq.DataContext;
@@ -31,7 +33,10 @@ import net.hydromatic.optiq.server.OptiqServerStatement;
 
 import java.lang.reflect.Type;
 import java.sql.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Executor;
 
 /**
@@ -110,7 +115,11 @@ abstract class OptiqConnectionImpl implements OptiqConnection, QueryProvider {
         return typeFactory;
     }
 
-    // QueryProvider methods
+    public Properties getProperties() {
+        return info;
+    }
+
+// QueryProvider methods
 
     public <T> Queryable<T> createQuery(
         Expression expression, Class<T> rowType)
