@@ -17,20 +17,25 @@
 */
 package net.hydromatic.optiq.prepare;
 
-import net.hydromatic.linq4j.*;
+import net.hydromatic.linq4j.Enumerable;
+import net.hydromatic.linq4j.Queryable;
 import net.hydromatic.linq4j.expressions.*;
-
 import net.hydromatic.optiq.*;
 import net.hydromatic.optiq.impl.java.JavaTypeFactory;
 import net.hydromatic.optiq.jdbc.Helper;
 import net.hydromatic.optiq.jdbc.OptiqPrepare;
-import net.hydromatic.optiq.rules.java.*;
+import net.hydromatic.optiq.rules.java.EnumerableRel;
+import net.hydromatic.optiq.rules.java.EnumerableRelImplementor;
+import net.hydromatic.optiq.rules.java.JavaRules;
+import net.hydromatic.optiq.rules.java.RexToLixTranslator;
 import net.hydromatic.optiq.runtime.Executable;
-
 import openjava.ptree.ClassDeclaration;
-
-import org.eigenbase.oj.stmt.*;
-import org.eigenbase.rel.*;
+import org.codehaus.janino.ExpressionEvaluator;
+import org.eigenbase.oj.stmt.OJPreparingStmt;
+import org.eigenbase.oj.stmt.PreparedExecution;
+import org.eigenbase.oj.stmt.PreparedResult;
+import org.eigenbase.rel.RelCollation;
+import org.eigenbase.rel.RelNode;
 import org.eigenbase.rel.rules.TableAccessRule;
 import org.eigenbase.relopt.*;
 import org.eigenbase.relopt.volcano.VolcanoPlanner;
@@ -48,8 +53,6 @@ import org.eigenbase.sql.util.ChainedSqlOperatorTable;
 import org.eigenbase.sql.validate.*;
 import org.eigenbase.sql2rel.SqlToRelConverter;
 import org.eigenbase.util.Pair;
-
-import org.codehaus.janino.*;
 
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -179,7 +182,7 @@ class OptiqPrepareImpl implements OptiqPrepare {
                     true,
                     0,
                     field.getName(),
-                    null,
+                    field.getName(),
                     null,
                     sqlTypeName.allowsPrec() && false
                         ? type.getPrecision()

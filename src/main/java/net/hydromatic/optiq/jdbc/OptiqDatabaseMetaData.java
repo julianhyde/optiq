@@ -17,7 +17,11 @@
 */
 package net.hydromatic.optiq.jdbc;
 
+import org.eigenbase.runtime.AbstractIterResultSet;
+import org.eigenbase.runtime.IteratorResultSet;
+
 import java.sql.*;
+import java.util.Collections;
 
 /**
  * Implementation of {@link java.sql.DatabaseMetaData}
@@ -559,9 +563,9 @@ class OptiqDatabaseMetaData implements DatabaseMetaData {
         String catalog,
         String schemaPattern,
         String tableNamePattern,
-        String columnNamePattern) throws SQLException
-    {
-        throw connection.helper.todo();
+        String columnNamePattern) throws SQLException {
+
+        return IteratorResultSet.create(Collections.EMPTY_LIST.iterator(), new AbstractIterResultSet.FieldGetter(Object.class));
     }
 
     public ResultSet getColumnPrivileges(
