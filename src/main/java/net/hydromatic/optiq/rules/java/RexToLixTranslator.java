@@ -18,10 +18,8 @@
 package net.hydromatic.optiq.rules.java;
 
 import net.hydromatic.linq4j.expressions.*;
-
 import net.hydromatic.optiq.impl.java.JavaTypeFactory;
 import net.hydromatic.optiq.runtime.SqlFunctions;
-
 import org.eigenbase.rel.Aggregation;
 import org.eigenbase.reltype.RelDataTypeField;
 import org.eigenbase.rex.*;
@@ -157,6 +155,8 @@ public class RexToLixTranslator {
                     Types.box(
                         JavaRules.EnumUtil.javaClass(
                             typeFactory, field.getType())));
+            } else if (Types.isPrimitive(Types.unbox(input.getType())) || input.getType() == String.class) {
+                return input;
             } else {
                 return Expressions.field(input, field.getName());
             }
