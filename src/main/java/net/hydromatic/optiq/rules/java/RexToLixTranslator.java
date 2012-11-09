@@ -141,8 +141,8 @@ public class RexToLixTranslator {
     private Expression translate0(RexNode expr) {
         if (expr instanceof RexInputRef) {
             // TODO: multiple inputs, e.g. joins
-            final Expression input = getInput(0);
             final int index = ((RexInputRef) expr).getIndex();
+            final Expression input = getInput(index);
             final List<RelDataTypeField> fields =
                 program.getInputRowType().getFieldList();
             final RelDataTypeField field = fields.get(index);
