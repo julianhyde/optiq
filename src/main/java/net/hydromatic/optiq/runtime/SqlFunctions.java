@@ -182,6 +182,11 @@ public class SqlFunctions {
         return (b0 == null || b1 == null) ? null : (b0.compareTo(b1) < 0);
     }
 
+    /** SQL &lt; operator applied to Comparable values. */
+    public static <T extends Comparable<T>> Boolean lt(T b0, T b1) {
+        return (b0 == null || b1 == null) ? null : (b0.compareTo(b1) < 0);
+    }
+
     // <=
 
     /** SQL &le; operator applied to boolean values. */
@@ -196,6 +201,11 @@ public class SqlFunctions {
 
     /** SQL &le; operator applied to BigDecimal values. */
     public static Boolean le(BigDecimal b0, BigDecimal b1) {
+        return (b0 == null || b1 == null) ? null : (b0.compareTo(b1) <= 0);
+    }
+
+    /** SQL &le; operator applied to Comparable values. */
+    public static <T extends Comparable<T>> Boolean le(T b0, T b1) {
         return (b0 == null || b1 == null) ? null : (b0.compareTo(b1) <= 0);
     }
 
@@ -216,6 +226,11 @@ public class SqlFunctions {
         return (b0 == null || b1 == null) ? null : (b0.compareTo(b1) > 0);
     }
 
+    /** SQL &gt; operator applied to Comparable values. */
+    public static <T extends Comparable<T>> Boolean gt(T b0, T b1) {
+        return (b0 == null || b1 == null) ? null : (b0.compareTo(b1) > 0);
+    }
+
     // >=
 
     /** SQL &ge; operator applied to boolean values. */
@@ -230,6 +245,11 @@ public class SqlFunctions {
 
     /** SQL &ge; operator applied to BigDecimal values. */
     public static Boolean ge(BigDecimal b0, BigDecimal b1) {
+        return (b0 == null || b1 == null) ? null : (b0.compareTo(b1) >= 0);
+    }
+
+    /** SQL &ge; operator applied to Comparable values. */
+    public static <T extends Comparable<T>> Boolean ge(T b0, T b1) {
         return (b0 == null || b1 == null) ? null : (b0.compareTo(b1) >= 0);
     }
 
