@@ -83,6 +83,14 @@ public class Helper {
       throw new RuntimeException(e);
     }
   }
+
+/** Workaround hack for odd case where instantiating the class dynamically produces
+ * a method not found error (e.g. when Lingual get primary keys
+ */
+  public ResultSet createEmptyResultSet(OptiqConnectionImpl connection) {
+    return createEmptyResultSet((OptiqConnection) connection);
+  }
+
 }
 
 // End Helper.java
