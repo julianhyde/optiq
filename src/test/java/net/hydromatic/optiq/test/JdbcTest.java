@@ -948,6 +948,18 @@ public class JdbcTest {
             + "    EnumerableTableAccessRel(table=[[foodmart2, time_by_day]])\n\n");
   }
 
+  /** Tests windowed aggregation. */
+  @Test public void testWinAgg() {
+    OptiqAssert.assertThat()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            "select sum(\"salary\") over w, min(\"salary\") over w\n"
+            + "from \"hr\".\"emps\"\n"
+            + "window w as (partition by \"deptno\" order by \"empid\" rows 3 preceding)")
+        .returns(
+            "empid=100; deptno=10; name=Bill; commission=1000\n");
+  }
+
   /** Tests WHERE comparing a nullable integer with an integer literal. */
   @Test public void testWhereNullable() {
     OptiqAssert.assertThat()
@@ -1347,9 +1359,10 @@ public class JdbcTest {
     }
 
     public final Employee[] emps = {
-        new Employee(100, 10, "Bill", 1000),
-        new Employee(200, 20, "Eric", 500),
-        new Employee(150, 10, "Sebastian", null),
+        new Employee(100, 10, "Bill", 10000, 1000),
+        new Employee(200, 20, "Eric", 8000, 500),
+        new Employee(150, 10, "Sebastian", 7000, null),
+        new Employee(110, 10, "Theodore", 11500, 250),
     };
     public final Department[] depts = {
         new Department(10, "Sales", Arrays.asList(emps[0], emps[2])),
@@ -1362,12 +1375,15 @@ public class JdbcTest {
     public final int empid;
     public final int deptno;
     public final String name;
+    public final float salary;
     public final Integer commission;
 
-    public Employee(int empid, int deptno, String name, Integer commission) {
+    public Employee(int empid, int deptno, String name, float salary,
+        Integer commission) {
       this.empid = empid;
       this.deptno = deptno;
       this.name = name;
+      this.salary = salary;
       this.commission = commission;
     }
 

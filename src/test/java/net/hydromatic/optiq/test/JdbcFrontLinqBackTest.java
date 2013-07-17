@@ -34,7 +34,6 @@ import java.util.List;
 
 import static net.hydromatic.optiq.test.OptiqAssert.assertThat;
 
-
 /**
  * Tests for a JDBC front-end (with some quite complex SQL) and Linq4j back-end
  * (based on in-memory collections).
@@ -227,7 +226,7 @@ public class JdbcFrontLinqBackTest {
 
   private OptiqAssert.AssertThat mutable(
       final List<JdbcTest.Employee> employees) {
-    employees.add(new JdbcTest.Employee(0, 0, "first", null));
+    employees.add(new JdbcTest.Employee(0, 0, "first", 0f, null));
     return assertThat()
         .with(
             new OptiqAssert.ConnectionFactory() {

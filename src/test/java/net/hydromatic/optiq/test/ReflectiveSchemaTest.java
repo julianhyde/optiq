@@ -369,9 +369,9 @@ public class ReflectiveSchemaTest {
     public final java.sql.Date hireDate;
 
     public EmployeeWithHireDate(
-        int empid, int deptno, String name, Integer commission,
+        int empid, int deptno, String name, float salary, Integer commission,
         java.sql.Date hireDate) {
-      super(empid, deptno, name, commission);
+      super(empid, deptno, name, salary, commission);
       this.hireDate = hireDate;
     }
   }
@@ -501,19 +501,19 @@ public class ReflectiveSchemaTest {
     public final BadType[] badTypes = { new BadType() };
 
     public final Employee[] prefixEmps = {
-        new Employee(1, 10, "A", null),
-        new Employee(2, 10, "Ab", null),
-        new Employee(3, 10, "Abc", null),
-        new Employee(4, 10, "Abd", null),
+        new Employee(1, 10, "A", 0f, null),
+        new Employee(2, 10, "Ab", 0f, null),
+        new Employee(3, 10, "Abc", 0f, null),
+        new Employee(4, 10, "Abd", 0f, null),
     };
   }
 
   public static class DateColumnSchema {
     public final EmployeeWithHireDate[] emps = {
         new EmployeeWithHireDate(
-            10, 20, "fred", null, new java.sql.Date(0)),
+            10, 20, "fred", 0f, null, new java.sql.Date(0)),
         new EmployeeWithHireDate(
-            10, 20, "bill", null, new java.sql.Date(100))
+            10, 20, "bill", 0f, null, new java.sql.Date(100))
     };
   }
 }
