@@ -63,8 +63,8 @@ public class JdbcFrontLinqBackTest {
             + "join \"hr\".\"emps\" as e\n"
             + "on e.\"empid\" = s.\"cust_id\"")
         .returns(
-            "cust_id=100; prod_id=10; empid=100; deptno=10; name=Bill; commission=1000\n"
-            + "cust_id=150; prod_id=20; empid=150; deptno=10; name=Sebastian; commission=null\n");
+            "cust_id=100; prod_id=10; empid=100; deptno=10; name=Bill; salary=10000.0; commission=1000\n"
+            + "cust_id=150; prod_id=20; empid=150; deptno=10; name=Sebastian; salary=7000.0; commission=null\n");
   }
 
   /**
@@ -78,7 +78,7 @@ public class JdbcFrontLinqBackTest {
             + "group by \"deptno\"")
         .returns(
             "deptno=20; S=200; C=1\n"
-            + "deptno=10; S=250; C=2\n");
+            + "deptno=10; S=360; C=3\n");
   }
 
   /**
@@ -91,7 +91,8 @@ public class JdbcFrontLinqBackTest {
             + "from \"hr\".\"emps\" as e\n"
             + "order by \"deptno\", \"name\" desc")
         .returns(
-            "UN=SEBASTIAN; deptno=10\n"
+            "UN=THEODORE; deptno=10\n"
+            + "UN=SEBASTIAN; deptno=10\n"
             + "UN=BILL; deptno=10\n"
             + "UN=ERIC; deptno=20\n");
   }
@@ -112,7 +113,8 @@ public class JdbcFrontLinqBackTest {
             + "from \"hr\".\"depts\"\n"
             + "order by 1 desc")
         .returns(
-            "name=Sebastian\n"
+            "name=Theodore\n"
+            + "name=Sebastian\n"
             + "name=Sales\n"
             + "name=Marketing\n"
             + "name=HR\n"
@@ -132,7 +134,8 @@ public class JdbcFrontLinqBackTest {
             + "select substring(\"name\" from 1 for 1) as y\n"
             + "from \"hr\".\"depts\"")
         .returns(
-            "X=E\n"
+            "X=T\n"
+            + "X=E\n"
             + "X=S\n"
             + "X=B\n"
             + "X=M\n"
@@ -166,7 +169,8 @@ public class JdbcFrontLinqBackTest {
             + "select substring(\"name\" from 1 for 1) as y\n"
             + "from \"hr\".\"depts\"")
         .returns(
-            "X=E\n"
+            "X=T\n"
+            + "X=E\n"
             + "X=B\n");
   }
 
@@ -186,7 +190,8 @@ public class JdbcFrontLinqBackTest {
             "select * from \"hr\".\"emps\"\n"
             + "where (\"empid\" = 100 or \"empid\" = 200)\n"
             + "and \"deptno\" = 10")
-        .returns("empid=100; deptno=10; name=Bill; commission=1000\n");
+        .returns(
+            "empid=100; deptno=10; name=Bill; salary=10000.0; commission=1000\n");
   }
 
   @Test public void testWhereLike() {
@@ -196,8 +201,9 @@ public class JdbcFrontLinqBackTest {
             + "from \"hr\".\"emps\" as e\n"
             + "where e.\"empid\" < 120 or e.\"name\" like 'S%'")
         .returns(
-            "empid=100; deptno=10; name=Bill; commission=1000\n"
-            + "empid=150; deptno=10; name=Sebastian; commission=null\n");
+            "empid=100; deptno=10; name=Bill; salary=10000.0; commission=1000\n"
+            + "empid=150; deptno=10; name=Sebastian; salary=7000.0; commission=null\n"
+            + "empid=110; deptno=10; name=Theodore; salary=11500.0; commission=250\n");
   }
 
   @Test public void testInsert() {
@@ -205,21 +211,23 @@ public class JdbcFrontLinqBackTest {
         new ArrayList<JdbcTest.Employee>();
     OptiqAssert.AssertThat with = mutable(employees);
     with.query("select * from \"foo\".\"bar\"")
-        .returns("empid=0; deptno=0; name=first; commission=null\n");
+        .returns(
+            "empid=0; deptno=0; name=first; salary=0.0; commission=null\n");
     with.query("insert into \"foo\".\"bar\" select * from \"hr\".\"emps\"")
-        .returns("ROWCOUNT=3\n");
+        .returns("ROWCOUNT=4\n");
     with.query("select count(*) as c from \"foo\".\"bar\"")
-        .returns("C=4\n");
+        .returns("C=5\n");
     with.query(
         "insert into \"foo\".\"bar\" "
         + "select * from \"hr\".\"emps\" where \"deptno\" = 10")
-        .returns("ROWCOUNT=2\n");
+        .returns("ROWCOUNT=3\n");
     with.query(
         "select \"name\", count(*) as c from \"foo\".\"bar\" "
         + "group by \"name\"")
         .returns(
             "name=Bill; C=2\n"
             + "name=Eric; C=1\n"
+            + "name=Theodore; C=2\n"
             + "name=first; C=1\n"
             + "name=Sebastian; C=2\n");
   }
@@ -268,15 +276,15 @@ public class JdbcFrontLinqBackTest {
     final List<JdbcTest.Employee> employees =
         new ArrayList<JdbcTest.Employee>();
     OptiqAssert.AssertThat with = mutable(employees);
-    with.query("insert into \"foo\".\"bar\" values (1, 1, 'second', 2)")
+    with.query("insert into \"foo\".\"bar\" values (1, 1, 'second', 2, 2)")
         .returns("ROWCOUNT=1\n");
     with.query(
         "insert into \"foo\".\"bar\"\n"
-        + "values (1, 3, 'third', 3), (1, 4, 'fourth', 4), (1, 5, 'fifth ', 3)")
+        + "values (1, 3, 'third', 0, 3), (1, 4, 'fourth', 0, 4), (1, 5, 'fifth ', 0, 3)")
         .returns("ROWCOUNT=3\n");
     with.query("select count(*) as c from \"foo\".\"bar\"")
         .returns("C=5\n");
-    with.query("insert into \"foo\".\"bar\" values (1, 6, null, null)")
+    with.query("insert into \"foo\".\"bar\" values (1, 6, null, 0, null)")
         .returns("ROWCOUNT=1\n");
     with.query("select count(*) as c from \"foo\".\"bar\"")
         .returns("C=6\n");
