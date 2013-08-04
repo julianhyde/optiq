@@ -19,7 +19,6 @@ package net.hydromatic.optiq.jdbc;
 
 import net.hydromatic.optiq.MutableSchema;
 import net.hydromatic.optiq.impl.java.JavaTypeFactory;
-
 import net.hydromatic.linq4j.QueryProvider;
 
 import java.sql.Connection;
@@ -75,6 +74,15 @@ public interface OptiqConnection extends Connection, QueryProvider {
 
   // in java.sql.Connection from JDK 1.7, but declare here to allow other JDKs
   String getSchema() throws SQLException;
+  
+  public ConnectionCloseHandler getCloseHandler();
+  
+  /**
+   * Set the connection ${@link ConnectionCloseHandler} for this OptiqConnection.
+   * @param closeHandler Will be informed when this connection is closed.
+   */
+  public void setCloseHandler(ConnectionCloseHandler closeHandler);
+
 }
 
 // End OptiqConnection.java
