@@ -22,7 +22,6 @@ import net.hydromatic.linq4j.expressions.Expression;
 import net.hydromatic.linq4j.expressions.Expressions;
 import net.hydromatic.linq4j.expressions.ParameterExpression;
 import net.hydromatic.linq4j.function.Function0;
-
 import net.hydromatic.optiq.*;
 import net.hydromatic.optiq.impl.java.JavaTypeFactory;
 import net.hydromatic.optiq.impl.java.MapSchema;
@@ -33,6 +32,8 @@ import java.lang.reflect.Type;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.Executor;
+
+import com.google.common.collect.Lists;
 
 /**
  * Implementation of JDBC connection
@@ -65,6 +66,7 @@ abstract class OptiqConnectionImpl implements OptiqConnection, QueryProvider {
   final Helper helper = Helper.INSTANCE;
   final OptiqServer server = new OptiqServerImpl();
   private final Schema informationSchema;
+  private ConnectionCloseHandler closeHandler;
 
   /**
    * Creates an OptiqConnectionImpl.
@@ -125,7 +127,15 @@ abstract class OptiqConnectionImpl implements OptiqConnection, QueryProvider {
       Expression expression, Class<T> rowType) {
     return new OptiqQueryable<T>(this, rowType, expression);
   }
-
+  
+  public ConnectionCloseHandler getCloseHandler(){
+    return closeHandler;
+  }
+  
+  public void setCloseHandler(ConnectionCloseHandler closeHandler) {
+    this.closeHandler = closeHandler;
+  }
+  
   public <T> Queryable<T> createQuery(Expression expression, Type rowType) {
     return new OptiqQueryable<T>(this, rowType, expression);
   }
@@ -192,6 +202,7 @@ abstract class OptiqConnectionImpl implements OptiqConnection, QueryProvider {
 
   public void close() throws SQLException {
     closed = true;
+    if(closeHandler != null) closeHandler.close();
   }
 
   public boolean isClosed() throws SQLException {
