@@ -34,6 +34,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.*;
 
 /**
@@ -128,11 +130,14 @@ public class JavaTypeFactoryImpl
       case CHAR:
         return String.class;
       case DATE:
+        return Date.class;
       case TIME:
+        return Time.class;
       case INTEGER:
       case INTERVAL_YEAR_MONTH:
         return type.isNullable() ? Integer.class : int.class;
       case TIMESTAMP:
+        return Timestamp.class;
       case BIGINT:
       case INTERVAL_DAY_TIME:
         return type.isNullable() ? Long.class : long.class;
