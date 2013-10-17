@@ -101,8 +101,10 @@ public abstract class AbstractCursor implements Cursor {
         return new DateFromIntAccessor(getter, localCalendar);
       case JAVA_SQL_DATE:
         return new DateAccessor(getter, localCalendar);
+      case JAVA_UTIL_DATE:
+        return new DateAccessor(getter, localCalendar);
       default:
-        throw new AssertionError("bad " + type.representation);
+        throw new AssertionError("invalid type representation " + type.representation);
       }
     case Types.TIME:
       switch (type.representation) {
@@ -112,7 +114,7 @@ public abstract class AbstractCursor implements Cursor {
       case JAVA_SQL_TIME:
         return new TimeAccessor(getter, localCalendar);
       default:
-        throw new AssertionError("bad " + type.representation);
+        throw new AssertionError("invalid type representation " + type.representation);
       }
     case Types.TIMESTAMP:
       switch (type.representation) {
@@ -124,7 +126,7 @@ public abstract class AbstractCursor implements Cursor {
       case JAVA_UTIL_DATE:
         return new TimestampFromUtilDateAccessor(getter, localCalendar);
       default:
-        throw new AssertionError("bad " + type.representation);
+        throw new AssertionError("invalid type representation " + type.representation);
       }
     case Types.JAVA_OBJECT:
     case Types.ARRAY:
