@@ -17,6 +17,9 @@
 */
 package net.hydromatic.optiq.runtime;
 
+import net.hydromatic.avatica.ColumnMetaData;
+import net.hydromatic.avatica.Cursor;
+
 import org.eigenbase.util.Util;
 import org.eigenbase.util14.DateTimeUtil;
 

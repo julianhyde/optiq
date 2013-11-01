@@ -17,6 +17,8 @@
 */
 package net.hydromatic.optiq.test;
 
+import net.hydromatic.avatica.*;
+
 import net.hydromatic.linq4j.*;
 import net.hydromatic.linq4j.expressions.*;
 import net.hydromatic.linq4j.expressions.Types;
@@ -179,20 +181,20 @@ public class JdbcTest {
     };
   }
 
-  /** Tests {@link Handler#onConnectionClose}
-   * and  {@link Handler#onStatementClose}. */
+  /** Tests {@link net.hydromatic.avatica.Handler#onConnectionClose}
+   * and  {@link net.hydromatic.avatica.Handler#onStatementClose}. */
   @Test public void testOnConnectionClose() throws Exception {
     final int[] closeCount = {0};
     final int[] statementCloseCount = {0};
     HandlerDriver.HANDLERS.set(
         new HandlerImpl() {
           @Override
-          public void onConnectionClose(OptiqConnection connection) {
+          public void onConnectionClose(AvaticaConnection connection) {
             ++closeCount[0];
             throw new RuntimeException();
           }
           @Override
-          public void onStatementClose(OptiqStatement statement) {
+          public void onStatementClose(AvaticaStatement statement) {
             ++statementCloseCount[0];
             throw new RuntimeException();
           }
@@ -244,6 +246,11 @@ public class JdbcTest {
 
   /** Tests {@link java.sql.Statement#closeOnCompletion()}. */
   @Test public void testStatementCloseOnCompletion() throws Exception {
+    String javaVersion = System.getProperty("java.version");
+    if (javaVersion.compareTo("1.7") < 0) {
+      // Statement.closeOnCompletion was introduced in JDK 1.7.
+      return;
+    }
     final Driver driver = new Driver();
     OptiqConnection connection = (OptiqConnection)
         driver.connect("jdbc:optiq:", new Properties());
@@ -382,7 +389,8 @@ public class JdbcTest {
     connection.close();
   }
 
-  /** Unit test for {@link Meta#likeToRegex(String)}. */
+  /** Unit test for
+   * {@link net.hydromatic.optiq.jdbc.MetaImpl#likeToRegex(net.hydromatic.avatica.Meta.Pat)}. */
   @Test public void testLikeToRegex() {
     checkLikeToRegex(true, "%", "abc");
     checkLikeToRegex(true, "abc", "abc");
@@ -407,7 +415,8 @@ public class JdbcTest {
   }
 
   private void checkLikeToRegex(boolean b, String pattern, String abc) {
-    assertTrue(b == Meta.likeToRegex(pattern).matcher(abc).matches());
+    assertTrue(
+        b == MetaImpl.likeToRegex(Meta.Pat.of(pattern)).matcher(abc).matches());
   }
 
   /** Tests driver's implementation of {@link DatabaseMetaData#getColumns}. */
@@ -1071,7 +1080,7 @@ public class JdbcTest {
 
   /** Tests ORDER BY with no options. Nulls come last.
    *
-   * @see net.hydromatic.optiq.jdbc.OptiqDatabaseMetaData#nullsAreSortedAtEnd()
+   * @see net.hydromatic.avatica.AvaticaDatabaseMetaData#nullsAreSortedAtEnd()
    */
   @Test public void testOrderBy() {
     OptiqAssert.assertThat()
@@ -1724,7 +1733,7 @@ public class JdbcTest {
   }
 
   /** Tests saving query results into temporary tables, per
-   * {@link net.hydromatic.optiq.jdbc.Handler.ResultSink}. */
+   * {@link net.hydromatic.avatica.Handler.ResultSink}. */
   @Test public void testAutomaticTemporaryTable() throws Exception {
     final List<Object> objects = new ArrayList<Object>();
     OptiqAssert.assertThat()
@@ -2243,7 +2252,7 @@ public class JdbcTest {
       return new HandlerImpl() {
         @Override
         public void onStatementExecute(
-            OptiqStatement statement,
+            AvaticaStatement statement,
             ResultSink resultSink) {
           super.onStatementExecute(statement, resultSink);
           results.add(resultSink);

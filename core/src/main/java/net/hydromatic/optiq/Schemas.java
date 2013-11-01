@@ -203,8 +203,8 @@ public final class Schemas {
         return schemaPath;
       }
 
-      public ConnectionProperty.ConnectionConfig config() {
-        return ConnectionProperty.connectionConfig(connection.getProperties());
+      public ConnectionConfig config() {
+        return connection.config();
       }
 
       public OptiqPrepare.SparkHandler spark() {

@@ -17,6 +17,8 @@
 */
 package net.hydromatic.optiq.jdbc;
 
+import net.hydromatic.avatica.*;
+
 import net.hydromatic.linq4j.*;
 import net.hydromatic.linq4j.expressions.ClassDeclaration;
 import net.hydromatic.linq4j.function.Function0;
@@ -24,8 +26,10 @@ import net.hydromatic.linq4j.function.Function0;
 import net.hydromatic.optiq.*;
 import net.hydromatic.optiq.impl.java.JavaTypeFactory;
 import net.hydromatic.optiq.prepare.OptiqPrepareImpl;
+import net.hydromatic.optiq.runtime.ArrayEnumeratorCursor;
 import net.hydromatic.optiq.runtime.Bindable;
-import net.hydromatic.optiq.runtime.ColumnMetaData;
+import net.hydromatic.optiq.runtime.ObjectEnumeratorCursor;
+import net.hydromatic.optiq.runtime.RecordEnumeratorCursor;
 
 import org.eigenbase.rel.RelNode;
 import org.eigenbase.relopt.RelOptPlanner;
@@ -33,15 +37,9 @@ import org.eigenbase.relopt.volcano.VolcanoPlanner;
 import org.eigenbase.reltype.RelDataType;
 import org.eigenbase.sql.SqlNode;
 
-import java.io.InputStream;
-import java.io.Reader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.math.BigDecimal;
-import java.net.URL;
-import java.sql.*;
-import java.sql.Date;
 import java.util.*;
 
 /**
@@ -77,7 +75,7 @@ public interface OptiqPrepare {
 
     List<String> getDefaultSchemaPath();
 
-    ConnectionProperty.ConnectionConfig config();
+    ConnectionConfig config();
 
     /** Returns the spark handler. Never null. */
     SparkHandler spark();
@@ -163,9 +161,9 @@ public interface OptiqPrepare {
     }
   }
 
-  public static class PrepareResult<T> {
+  public static class PrepareResult<T> implements AvaticaPrepareResult {
     public final String sql; // for debug
-    public final List<Parameter> parameterList;
+    public final List<AvaticaParameter> parameterList;
     public final RelDataType rowType;
     public final List<ColumnMetaData> columnList;
     private final int maxRowCount;
@@ -173,7 +171,7 @@ public interface OptiqPrepare {
     public final Class resultClazz;
 
     public PrepareResult(String sql,
-        List<Parameter> parameterList,
+        List<AvaticaParameter> parameterList,
         RelDataType rowType,
         List<ColumnMetaData> columnList,
         int maxRowCount,
@@ -187,6 +185,28 @@ public interface OptiqPrepare {
       this.maxRowCount = maxRowCount;
       this.bindable = bindable;
       this.resultClazz = resultClazz;
+    }
+
+    public Cursor createCursor(DataContext dataContext) {
+      Enumerator<?> enumerator = enumerator(dataContext);
+      //noinspection unchecked
+      return columnList.size() == 1
+          ? new ObjectEnumeratorCursor((Enumerator) enumerator)
+          : resultClazz != null && !resultClazz.isArray()
+          ? new RecordEnumeratorCursor((Enumerator) enumerator, resultClazz)
+          : new ArrayEnumeratorCursor((Enumerator) enumerator);
+    }
+
+    public List<ColumnMetaData> getColumnList() {
+      return columnList;
+    }
+
+    public List<AvaticaParameter> getParameterList() {
+      return parameterList;
+    }
+
+    public String getSql() {
+      return sql;
     }
 
     private Enumerable<T> getEnumerable(DataContext dataContext) {
@@ -208,191 +228,6 @@ public interface OptiqPrepare {
     }
   }
 
-  /**
-   * Metadata for a parameter. Plus a slot to hold its value.
-   */
-  public static class Parameter {
-    public final boolean signed;
-    public final int precision;
-    public final int scale;
-    public final int parameterType;
-    public final String typeName;
-    public final String className;
-    public final String name;
-
-    Object value;
-
-    public static final Object DUMMY_VALUE = new Object();
-
-    public Parameter(
-        boolean signed,
-        int precision,
-        int scale,
-        int parameterType,
-        String typeName,
-        String className,
-        String name) {
-      this.signed = signed;
-      this.precision = precision;
-      this.scale = scale;
-      this.parameterType = parameterType;
-      this.typeName = typeName;
-      this.className = className;
-      this.name = name;
-    }
-
-    public void setByte(byte o) {
-    }
-
-    public void setValue(char o) {
-    }
-
-    public void setShort(short o) {
-    }
-
-    public void setInt(int o) {
-    }
-
-    public void setValue(long o) {
-    }
-
-    public void setValue(byte[] o) {
-    }
-
-    public void setBoolean(boolean o) {
-    }
-
-    public void setValue(Object o) {
-      if (o == null) {
-        o = DUMMY_VALUE;
-      }
-      this.value = o;
-    }
-
-    public boolean isSet() {
-      return value != null;
-    }
-
-    public void setRowId(RowId x) {
-    }
-
-    public void setNString(String value) {
-    }
-
-    public void setNCharacterStream(Reader value, long length) {
-    }
-
-    public void setNClob(NClob value) {
-    }
-
-    public void setClob(Reader reader, long length) {
-    }
-
-    public void setBlob(InputStream inputStream, long length) {
-    }
-
-    public void setNClob(Reader reader, long length) {
-    }
-
-    public void setSQLXML(SQLXML xmlObject) {
-    }
-
-    public void setAsciiStream(InputStream x, long length) {
-    }
-
-    public void setBinaryStream(InputStream x, long length) {
-    }
-
-    public void setCharacterStream(Reader reader, long length) {
-    }
-
-    public void setAsciiStream(InputStream x) {
-    }
-
-    public void setBinaryStream(InputStream x) {
-    }
-
-    public void setCharacterStream(Reader reader) {
-    }
-
-    public void setNCharacterStream(Reader value) {
-    }
-
-    public void setClob(Reader reader) {
-    }
-
-    public void setBlob(InputStream inputStream) {
-    }
-
-    public void setNClob(Reader reader) {
-    }
-
-    public void setUnicodeStream(InputStream x, int length) {
-    }
-
-    public void setTimestamp(Timestamp x) {
-    }
-
-    public void setTime(Time x) {
-    }
-
-    public void setFloat(float x) {
-    }
-
-    public void setDouble(double x) {
-    }
-
-    public void setBigDecimal(BigDecimal x) {
-    }
-
-    public void setString(String x) {
-    }
-
-    public void setBytes(byte[] x) {
-    }
-
-    public void setDate(Date x, Calendar cal) {
-    }
-
-    public void setDate(Date x) {
-    }
-
-    public void setObject(Object x, int targetSqlType) {
-    }
-
-    public void setObject(Object x) {
-    }
-
-    public void setNull(int sqlType) {
-    }
-
-    public void setTime(Time x, Calendar cal) {
-    }
-
-    public void setRef(Ref x) {
-    }
-
-    public void setBlob(Blob x) {
-    }
-
-    public void setClob(Clob x) {
-    }
-
-    public void setArray(Array x) {
-    }
-
-    public void setTimestamp(Timestamp x, Calendar cal) {
-    }
-
-    public void setNull(int sqlType, String typeName) {
-    }
-
-    public void setURL(URL x) {
-    }
-
-    public void setObject(Object x, int targetSqlType, int scaleOrLength) {
-    }
-  }
 }
 
 // End OptiqPrepare.java
