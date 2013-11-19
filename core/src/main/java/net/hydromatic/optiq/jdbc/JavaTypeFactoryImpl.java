@@ -17,6 +17,9 @@
 */
 package net.hydromatic.optiq.jdbc;
 
+import java.sql.Time;
+import java.sql.Timestamp;
+
 import net.hydromatic.linq4j.Ord;
 import net.hydromatic.linq4j.expressions.Primitive;
 import net.hydromatic.linq4j.expressions.Types;
@@ -129,11 +132,14 @@ public class JavaTypeFactoryImpl
       case CHAR:
         return String.class;
       case DATE:
+        return Date.class;
       case TIME:
+        return Time.class;
       case INTEGER:
       case INTERVAL_YEAR_MONTH:
         return type.isNullable() ? Integer.class : int.class;
       case TIMESTAMP:
+        return Timestamp.class;
       case BIGINT:
       case INTERVAL_DAY_TIME:
         return type.isNullable() ? Long.class : long.class;
@@ -242,12 +248,12 @@ public class JavaTypeFactoryImpl
   }
 
   public static class SyntheticRecordType implements Types.RecordType {
-    final List<Types.RecordField> fields =
+    public final List<Types.RecordField> fields =
         new ArrayList<Types.RecordField>();
     final RelDataType relType;
     private final String name;
 
-    private SyntheticRecordType(RelDataType relType, String name) {
+    public SyntheticRecordType(RelDataType relType, String name) {
       this.relType = relType;
       this.name = name;
       assert relType == null
@@ -268,7 +274,7 @@ public class JavaTypeFactoryImpl
     }
   }
 
-  private static class RecordFieldImpl implements Types.RecordField {
+  public static class RecordFieldImpl implements Types.RecordField {
     private final SyntheticRecordType syntheticType;
     private final String name;
     private final Type type;
