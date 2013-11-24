@@ -30,6 +30,7 @@ import net.hydromatic.optiq.Table;
 import net.hydromatic.optiq.impl.java.JavaTypeFactory;
 import net.hydromatic.optiq.jdbc.OptiqPrepare;
 import net.hydromatic.optiq.materialize.MaterializationService;
+import net.hydromatic.optiq.prepare.Prepare.CatalogReader;
 import net.hydromatic.optiq.rules.java.*;
 import net.hydromatic.optiq.runtime.*;
 import net.hydromatic.optiq.server.OptiqServerStatement;
@@ -272,8 +273,7 @@ public class OptiqPrepareImpl implements OptiqPrepare {
     } else {
       prefer = EnumerableRel.Prefer.CUSTOM;
     }
-    final OptiqPreparingStmt preparingStmt =
-        new OptiqPreparingStmt(
+    final OptiqPreparingStmt preparingStmt = getPrepare(
             context,
             catalogReader,
             typeFactory,
@@ -420,8 +420,7 @@ public class OptiqPrepareImpl implements OptiqPrepare {
               Schemas.root(schema),
               butLast(materialization.materializedTable.path()),
               context.getTypeFactory());
-      final OptiqPreparingStmt preparingStmt =
-          new OptiqPreparingStmt(context, catalogReader,
+      final OptiqPreparingStmt preparingStmt = getPrepare(context, catalogReader,
               catalogReader.getTypeFactory(),
               schema, EnumerableRel.Prefer.ANY, planner,
               EnumerableConvention.INSTANCE);
@@ -461,7 +460,17 @@ public class OptiqPrepareImpl implements OptiqPrepare {
     return action.apply(cluster, catalogReader, context.getRootSchema());
   }
 
-  private static class OptiqPreparingStmt extends Prepare {
+  protected OptiqPreparingStmt getPrepare(Context context,
+      CatalogReader catalogReader,
+      RelDataTypeFactory typeFactory,
+      Schema schema,
+      EnumerableRel.Prefer prefer,
+      RelOptPlanner planner,
+      Convention resultConvention){
+    return new OptiqPreparingStmt(context, catalogReader, typeFactory, schema, prefer, planner, resultConvention);
+  }
+  
+  protected static class OptiqPreparingStmt extends Prepare {
     private final RelOptPlanner planner;
     private final RexBuilder rexBuilder;
     private final Context context;
