@@ -201,6 +201,10 @@ public interface OptiqPrepare {
       return columnList;
     }
 
+    public Bindable<T> getBindable(){
+      return bindable;
+    }
+    
     public List<AvaticaParameter> getParameterList() {
       return parameterList;
     }
