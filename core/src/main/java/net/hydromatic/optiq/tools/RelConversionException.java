@@ -18,27 +18,22 @@
 package net.hydromatic.optiq.tools;
 
 /**
- * An Exception thrown when attempting conversion to a set of RelNodes.
+ * An Exception thrown when attempting conversion to a set of
+ * {@link org.eigenbase.rel.RelNode}s.
  */
 public class RelConversionException extends Exception {
-
-  public RelConversionException() {
-    super();
-  }
-
-  public RelConversionException(String message, Throwable cause,
-      boolean enableSuppression, boolean writableStackTrace) {
-    super(message, cause, enableSuppression, writableStackTrace);
-  }
-
+  /** Creates a RelConversionException with the specified detail message and
+   * cause. */
   public RelConversionException(String message, Throwable cause) {
     super(message, cause);
   }
 
+  /** Creates a RelConversionException with the specified detail message. */
   public RelConversionException(String message) {
     super(message);
   }
 
+  /** Creates a RelConversionException with the specified cause. */
   public RelConversionException(Throwable cause) {
     super(cause);
   }
