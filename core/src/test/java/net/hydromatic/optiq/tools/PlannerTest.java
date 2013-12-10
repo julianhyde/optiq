@@ -17,31 +17,31 @@
 */
 package net.hydromatic.optiq.tools;
 
+import net.hydromatic.optiq.Schema;
+import net.hydromatic.optiq.impl.java.ReflectiveSchema;
+
+import org.eigenbase.sql.SqlNode;
+import org.eigenbase.sql.fun.SqlStdOperatorTable;
+import org.eigenbase.sql.parser.SqlParseException;
+
+import org.junit.Ignore;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+
 /**
- * An Exception thrown when attempting conversion to a set of RelNodes.
+ * Unit tests for {@link net.hydromatic.optiq.tools.Planner}.
  */
-public class RelConversionException extends Exception {
-
-  public RelConversionException() {
-    super();
-  }
-
-  public RelConversionException(String message, Throwable cause,
-      boolean enableSuppression, boolean writableStackTrace) {
-    super(message, cause, enableSuppression, writableStackTrace);
-  }
-
-  public RelConversionException(String message, Throwable cause) {
-    super(message, cause);
-  }
-
-  public RelConversionException(String message) {
-    super(message);
-  }
-
-  public RelConversionException(Throwable cause) {
-    super(cause);
+public class PlannerTest {
+  @Ignore // there are still bugs
+  @Test public void testParse() throws SqlParseException {
+    Schema schema = ReflectiveSchema.create(null, "hr");
+    Planner planner =
+        Planner.getPlanner(schema, schema, SqlStdOperatorTable.instance());
+    SqlNode parse =
+        planner.parse("select * from \"emps\" where name like '%e%'");
+    assertEquals("xxx", parse.toString());
   }
 }
 
-// End RelConversionException.java
+// End PlannerTest.java

@@ -33,7 +33,6 @@ import org.eigenbase.reltype.RelDataTypeFactory;
 import org.eigenbase.rex.RexBuilder;
 import org.eigenbase.rex.RexNode;
 import org.eigenbase.sql.fun.SqlStdOperatorTable;
-import org.eigenbase.util.Pair;
 
 import org.junit.Test;
 
@@ -65,9 +64,9 @@ public class FrameworksTest {
                 typeFactory.createJavaType(Integer.class);
             final RelDataType rowType =
                 typeFactory.createStructType(
-                    Arrays.asList(
-                        Pair.of("s", stringType),
-                        Pair.of("i", integerType)));
+                    new RelDataTypeFactory.FieldInfoBuilder()
+                        .add("s", stringType)
+                        .add("i", integerType));
             final Table table = new AbstractTable(schema,
                 String.class,
                 rowType,
@@ -116,7 +115,7 @@ public class FrameworksTest {
             return planner.findBestExp();
           }
         });
-    assertEquals("EnumerableCalcRel#12", x.toString());
+    assertTrue(x.toString().startsWith("EnumerableCalcRel#"));
   }
 }
 
