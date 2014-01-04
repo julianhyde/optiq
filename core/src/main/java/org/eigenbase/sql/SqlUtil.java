@@ -33,7 +33,6 @@ import org.eigenbase.sql.type.*;
 import org.eigenbase.util.*;
 import org.eigenbase.util14.*;
 
-
 /**
  * Contains utility functions related to SQL parsing, all static.
  *
@@ -600,7 +599,7 @@ public abstract class SqlUtil
         SqlOperatorTable opTab,
         SqlIdentifier id)
     {
-        if (id.names.length == 1) {
+        if (id.names.size() == 1) {
             List<SqlOperator> list =
                 opTab.lookupOperatorOverloads(
                     id,
@@ -643,7 +642,7 @@ public abstract class SqlUtil
      */
     public static String getOperatorSignature(
         SqlOperator op,
-        List<? extends Object> typeList)
+        List<?> typeList)
     {
         return getAliasedSignature(
             op,
@@ -665,7 +664,7 @@ public abstract class SqlUtil
     public static String getAliasedSignature(
         SqlOperator op,
         String opName,
-        List<? extends Object> typeList)
+        List<?> typeList)
     {
         StringBuilder ret = new StringBuilder();
         String template = op.getSignatureTemplate(typeList.size());

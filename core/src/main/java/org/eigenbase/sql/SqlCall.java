@@ -26,7 +26,6 @@ import org.eigenbase.sql.validate.*;
 
 import com.google.common.collect.ImmutableList;
 
-
 /**
  * A <code>SqlCall</code> is a call to an {@link SqlOperator operator}.
  * (Operators can be used to describe any syntactic construct, so in practice,
@@ -172,7 +171,7 @@ public class SqlCall
                 if (idPos.toString().equals(pos.toString())) {
                     ((SqlValidatorImpl) validator).lookupNameCompletionHints(
                         scope,
-                        Arrays.asList(id.names),
+                        id.names,
                         pos,
                         hintList);
                     return;
@@ -262,7 +261,7 @@ public class SqlCall
             final SqlNode parm = operands[0];
             if (parm instanceof SqlIdentifier) {
                 SqlIdentifier id = (SqlIdentifier) parm;
-                if (id.isStar() && (id.names.length == 1)) {
+                if (id.isStar() && (id.names.size() == 1)) {
                     return true;
                 }
             }

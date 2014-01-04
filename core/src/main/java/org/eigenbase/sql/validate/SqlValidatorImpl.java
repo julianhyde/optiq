@@ -34,6 +34,9 @@ import org.eigenbase.trace.*;
 import org.eigenbase.util.*;
 
 import net.hydromatic.linq4j.Linq4j;
+import net.hydromatic.linq4j.Ord;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * Default implementation of {@link SqlValidator}.
@@ -339,8 +342,8 @@ public class SqlValidatorImpl
         final SelectScope scope = (SelectScope) getWhereScope(select);
         if (selectItem instanceof SqlIdentifier) {
             SqlIdentifier identifier = (SqlIdentifier) selectItem;
-            if ((identifier.names.length == 1)
-                && identifier.names[0].equals("*"))
+            if ((identifier.names.size() == 1)
+                && identifier.names.get(0).equals("*"))
             {
                 SqlParserPos starPosition = identifier.getParserPosition();
                 for (Pair<String, SqlValidatorNamespace> p : scope.children) {
@@ -354,7 +357,7 @@ public class SqlValidatorImpl
                         // TODO: do real implicit collation here
                         final SqlNode exp =
                             new SqlIdentifier(
-                                new String[] { p.left, columnName },
+                                ImmutableList.of(p.left, columnName),
                                 starPosition);
                         addToSelectList(
                             selectItems,
@@ -367,10 +370,10 @@ public class SqlValidatorImpl
                 }
                 return true;
             } else if (
-                (identifier.names.length == 2)
-                && identifier.names[1].equals("*"))
+                (identifier.names.size() == 2)
+                && identifier.names.get(1).equals("*"))
             {
-                final String tableName = identifier.names[0];
+                final String tableName = identifier.names.get(0);
                 SqlParserPos starPosition = identifier.getParserPosition();
                 final SqlValidatorNamespace childNs = scope.getChild(tableName);
                 if (childNs == null) {
@@ -390,7 +393,7 @@ public class SqlValidatorImpl
                     // TODO: do real implicit collation here
                     final SqlIdentifier exp =
                         new SqlIdentifier(
-                            new String[] { tableName, columnName },
+                            ImmutableList.of(tableName, columnName),
                             starPosition);
                     addToSelectList(
                         selectItems,
@@ -504,7 +507,7 @@ public class SqlValidatorImpl
         } else {
             lookupNameCompletionHints(
                 info.scope,
-                Arrays.asList(info.id.names),
+                info.id.names,
                 info.id.getParserPosition(),
                 hintList);
         }
@@ -531,14 +534,14 @@ public class SqlValidatorImpl
         if (ns.isWrapperFor(IdentifierNamespace.class)) {
             IdentifierNamespace idNs = ns.unwrap(IdentifierNamespace.class);
             final SqlIdentifier id = idNs.getId();
-            for (int i = 0; i < id.names.length; i++) {
+            for (int i = 0; i < id.names.size(); i++) {
                 if (pos.toString().equals(
                         id.getComponent(i).getParserPosition().toString()))
                 {
                     List<SqlMoniker> objNames = new ArrayList<SqlMoniker>();
                     SqlValidatorUtil.getSchemaObjectMonikers(
                         getCatalogReader(),
-                        Arrays.asList(id.names).subList(0, i + 1),
+                        id.names.subList(0, i + 1),
                         objNames);
                     for (SqlMoniker objName : objNames) {
                         if (objName.getType() != SqlMonikerType.Function) {
@@ -2949,8 +2952,8 @@ public class SqlValidatorImpl
 
     private RelDataType validateUsingCol(SqlIdentifier id, SqlNode leftOrRight)
     {
-        if (id.names.length == 1) {
-            String name = id.names[0];
+        if (id.names.size() == 1) {
+            String name = id.names.get(0);
             final SqlValidatorNamespace namespace = getNamespace(leftOrRight);
             final RelDataType rowType = namespace.getRowType();
             final RelDataTypeField field = rowType.getField(name);
@@ -3007,7 +3010,7 @@ public class SqlValidatorImpl
             final SqlNode selectItem = selectItems.get(0);
             if (selectItem instanceof SqlIdentifier) {
                 SqlIdentifier id = (SqlIdentifier) selectItem;
-                if (id.isStar() && (id.names.length == 1)) {
+                if (id.isStar() && (id.names.size() == 1)) {
                     // Special case: for INSERT ... VALUES(?,?), the SQL
                     // standard says we're supposed to propagate the target
                     // types down.  So iff the select list is an unqualified
@@ -4307,9 +4310,9 @@ public class SqlValidatorImpl
             if (!(scope instanceof EmptyScope)) {
                 id = scope.fullyQualify(id);
             }
-            for (int i = 0; i < id.names.length; i++) {
-                String name = id.names[i];
-                if (i == 0) {
+            for (Ord<String> ord : Ord.zip(id.names)) {
+                String name = ord.e;
+                if (ord.i == 0) {
                     // REVIEW jvs 9-June-2005: The name resolution rules used
                     // here are supposed to match SQL:2003 Part 2 Section 6.6
                     // (identifier chain), but we don't currently have enough
@@ -4334,7 +4337,7 @@ public class SqlValidatorImpl
 
                     // Give precedence to namespace found, unless there
                     // are no more identifier components.
-                    if ((type == null) || (id.names.length == 1)) {
+                    if ((type == null) || (id.names.size() == 1)) {
                         // See if there's a column with the name we seek in
                         // precisely one of the namespaces in this scope.
                         RelDataType colType = scope.resolveColumn(name, id);
@@ -4345,7 +4348,7 @@ public class SqlValidatorImpl
 
                     if (type == null) {
                         throw newValidationError(
-                            id.getComponent(i),
+                            id.getComponent(ord.i),
                             EigenbaseResource.instance().UnknownIdentifier.ex(
                                 name));
                     }
@@ -4354,7 +4357,7 @@ public class SqlValidatorImpl
                         SqlValidatorUtil.lookupFieldType(type, name);
                     if (fieldType == null) {
                         throw newValidationError(
-                            id.getComponent(i),
+                            id.getComponent(ord.i),
                             EigenbaseResource.instance().UnknownField.ex(name));
                     }
                     type = fieldType;

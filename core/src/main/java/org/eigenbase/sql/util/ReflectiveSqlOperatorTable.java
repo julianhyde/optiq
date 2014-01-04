@@ -24,7 +24,6 @@ import java.util.*;
 import org.eigenbase.sql.*;
 import org.eigenbase.util.*;
 
-
 /**
  * ReflectiveSqlOperatorTable implements the {@link SqlOperatorTable } interface
  * by reflecting the public fields of a subclass.
@@ -56,13 +55,10 @@ public abstract class ReflectiveSqlOperatorTable
      * be part of the constructor, because the subclass constructor needs to
      * complete first.
      */
-    public final void init()
-    {
+    public final void init() {
         // Use reflection to register the expressions stored in public fields.
-        Field [] fields = getClass().getFields();
-        for (int i = 0; i < fields.length; i++) {
+        for (Field field : getClass().getFields()) {
             try {
-                Field field = fields[i];
                 if (SqlFunction.class.isAssignableFrom(field.getType())) {
                     SqlFunction op = (SqlFunction) field.get(this);
                     if (op != null) {
@@ -96,12 +92,12 @@ public abstract class ReflectiveSqlOperatorTable
 
         List<SqlOperator> overloads = new ArrayList<SqlOperator>();
         String simpleName;
-        if (opName.names.length > 1) {
-            if (opName.names[opName.names.length - 2].equals(
+        if (opName.names.size() > 1) {
+            if (opName.names.get(opName.names.size() - 2).equals(
                     "INFORMATION_SCHEMA"))
             {
                 // per SQL99 Part 2 Section 10.4 Syntax Rule 7.b.ii.1
-                simpleName = opName.names[opName.names.length - 1];
+                simpleName = Util.last(opName.names);
             } else {
                 return overloads;
             }
@@ -109,12 +105,10 @@ public abstract class ReflectiveSqlOperatorTable
             simpleName = opName.getSimple();
         }
         final List<SqlOperator> list = operators.getMulti(simpleName);
-        for (int i = 0, n = list.size(); i < n; i++) {
-            SqlOperator op = list.get(i);
+        for (SqlOperator op : list) {
             if (op.getSyntax() == syntax) {
                 overloads.add(op);
-            } else if (
-                (syntax == SqlSyntax.Function)
+            } else if ((syntax == SqlSyntax.Function)
                 && (op instanceof SqlFunction))
             {
                 // this special case is needed for operators like CAST,
@@ -129,8 +123,10 @@ public abstract class ReflectiveSqlOperatorTable
         switch (syntax) {
         case Binary:
             extra = mapNameToOp.get(simpleName + ":BINARY");
+            break;
         case Prefix:
             extra = mapNameToOp.get(simpleName + ":PREFIX");
+            break;
         case Postfix:
             extra = mapNameToOp.get(simpleName + ":POSTFIX");
         default:

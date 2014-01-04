@@ -140,9 +140,7 @@ class JdbcTable extends AbstractQueryable<Object[]>
       strings.add(schema.schema);
     }
     strings.add(tableName);
-    return new SqlIdentifier(
-        strings.toArray(new String[strings.size()]),
-        SqlParserPos.ZERO);
+    return new SqlIdentifier(strings, SqlParserPos.ZERO);
   }
 
   public RelDataType getRowType() {

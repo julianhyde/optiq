@@ -24,7 +24,6 @@ import org.eigenbase.sql.fun.*;
 import org.eigenbase.sql.parser.*;
 import org.eigenbase.util.*;
 
-
 /**
  * The name-resolution scope of a SELECT clause. The objects visible are those
  * in the FROM clause, and objects inherited from the parent scope.
@@ -145,7 +144,7 @@ public class SelectScope
             SqlWindow window = (SqlWindow) windowList.get(i);
             final SqlIdentifier declId = window.getDeclName();
             assert declId.isSimple();
-            if (declId.names[0].equals(name)) {
+            if (declId.names.get(0).equals(name)) {
                 return window;
             }
         }

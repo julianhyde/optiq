@@ -26,7 +26,6 @@ import org.eigenbase.sql.type.*;
 import org.eigenbase.sql.validate.*;
 import org.eigenbase.util.*;
 
-
 /**
  * <code>SqlAdvisorValidator</code> is used by {@link SqlAdvisor} to traverse
  * the parse tree of a SQL statement, not for validation purpose but for setting
@@ -89,14 +88,12 @@ public class SqlAdvisorValidator
 
     private void registerId(SqlIdentifier id, SqlValidatorScope scope)
     {
-        for (int i = 0; i < id.names.length; i++) {
+        for (int i = 0; i < id.names.size(); i++) {
             final SqlParserPos subPos = id.getComponentParserPosition(i);
-            final List<String> nameList = Arrays.asList(id.names);
             SqlIdentifier subId =
-                (i == (id.names.length - 1)) ? id
-                : new SqlIdentifier(
-                    nameList.subList(0, i + 1).toArray(new String[i]),
-                    subPos);
+                (i == (id.names.size() - 1))
+                    ? id
+                    : new SqlIdentifier(id.names.subList(0, i + 1), subPos);
             idPositions.put(
                 subPos.toString(),
                 new IdInfo(scope, subId));

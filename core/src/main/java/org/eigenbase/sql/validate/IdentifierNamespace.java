@@ -25,7 +25,6 @@ import org.eigenbase.sql.*;
 import org.eigenbase.sql.parser.*;
 import org.eigenbase.util.*;
 
-
 /**
  * Namespace whose contents are defined by the type of an {@link
  * org.eigenbase.sql.SqlIdentifier identifier}.
@@ -73,7 +72,7 @@ public class IdentifierNamespace
 
     public RelDataType validateImpl()
     {
-        table = validator.catalogReader.getTable(Arrays.asList(id.names));
+        table = validator.catalogReader.getTable(id.names);
         if (table == null) {
             throw validator.newValidationError(
                 id,
@@ -87,22 +86,20 @@ public class IdentifierNamespace
                 // Assign positions to the components of the fully-qualified
                 // identifier, as best we can. We assume that qualification
                 // adds names to the front, e.g. FOO.BAR becomes BAZ.FOO.BAR.
-                SqlParserPos [] poses = new SqlParserPos[qualifiedNames.size()];
-                Arrays.fill(
-                    poses,
-                    id.getParserPosition());
-                int offset = qualifiedNames.size() - id.names.length;
+                List<SqlParserPos> poses =
+                    new ArrayList<SqlParserPos>(
+                        Collections.nCopies(
+                            qualifiedNames.size(), id.getParserPosition()));
+                int offset = qualifiedNames.size() - id.names.size();
 
                 // Test offset in case catalog supports fewer
                 // qualifiers than catalog reader.
                 if (offset >= 0) {
-                    for (int i = 0; i < id.names.length; i++) {
-                        poses[i + offset] = id.getComponentParserPosition(i);
+                    for (int i = 0; i < id.names.size(); i++) {
+                        poses.set(i + offset, id.getComponentParserPosition(i));
                     }
                 }
-              final String[] names =
-                  qualifiedNames.toArray(new String[qualifiedNames.size()]);
-              id.setNames(names, poses);
+              id.setNames(qualifiedNames, poses);
             }
         }
 

@@ -17,9 +17,10 @@
 */
 package org.eigenbase.sql.validate;
 
+import java.util.List;
+
 import org.eigenbase.sql.*;
 import org.eigenbase.util.*;
-
 
 /**
  * An implementation of {@link SqlMoniker} that encapsulates the normalized name
@@ -54,7 +55,7 @@ public class SqlIdentifierMoniker
         return SqlMonikerType.Column;
     }
 
-    public String [] getFullyQualifiedNames()
+    public List<String> getFullyQualifiedNames()
     {
         return id.names;
     }

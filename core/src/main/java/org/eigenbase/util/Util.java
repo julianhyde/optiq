@@ -711,8 +711,12 @@ public class Util
      * @param list List
      * @return String representation of string
      */
-    public static <T> String commaList(List<T> list)
-    {
+    public static <T> String commaList(List<T> list) {
+        return sepList(list, ", ");
+    }
+
+    /** Converts a list of a string, with a given separator between elements. */
+    public static <T> String sepList(List<T> list, String sep) {
         if (list.size() == 1) {
             return list.get(0).toString();
         }
@@ -720,7 +724,7 @@ public class Util
         int k = -1;
         for (T t : list) {
             if (++k > 0) {
-                buf.append(", ");
+                buf.append(sep);
             }
             buf.append(t);
         }
@@ -2015,6 +2019,14 @@ public class Util
 
     public static <T> T first(T t0, T t1) {
         return t0 != null ? t0 : t1;
+    }
+
+    /** Returns the last element of a list.
+     *
+     * @throws java.lang.IndexOutOfBoundsException if the list is empty
+     */
+    public static <E> E last(List<E> list) {
+        return list.get(list.size() - 1);
     }
 
     public static List<Integer> range(final int start, final int end) {

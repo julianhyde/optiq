@@ -17,8 +17,11 @@
 */
 package org.eigenbase.sql.validate;
 
+import java.util.List;
+
 import org.eigenbase.sql.*;
 
+import com.google.common.collect.ImmutableList;
 
 /**
  * An interface of an object identifier that represents a SqlIdentifier
@@ -39,7 +42,7 @@ public interface SqlMoniker
     /**
      * Returns the array of component names.
      */
-    String [] getFullyQualifiedNames();
+    List<String> getFullyQualifiedNames();
 
     /**
      * Creates a {@link SqlIdentifier} containing the fully-qualified name.

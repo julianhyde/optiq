@@ -1021,7 +1021,7 @@ public class OptiqPrepareImpl implements OptiqPrepare {
         return Collections.emptyList();
       }
       // FIXME: ignoring prefix of opName
-      String name = opName.names[opName.names.length - 1];
+      String name = Util.last(opName.names);
       Collection<Schema.TableFunctionInSchema> tableFunctions =
           rootSchema.getTableFunctions(name);
       if (tableFunctions.isEmpty()) {

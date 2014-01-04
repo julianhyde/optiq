@@ -22,7 +22,6 @@ import java.util.*;
 import org.eigenbase.reltype.*;
 import org.eigenbase.sql.*;
 
-
 /**
  * Represents the name-resolution context for expressions in an ORDER BY clause.
  *
@@ -78,7 +77,7 @@ public class OrderByScope
         if (identifier.isSimple()
             && validator.getConformance().isSortByAlias())
         {
-            String name = identifier.names[0];
+            String name = identifier.names.get(0);
             final SqlValidatorNamespace selectNs =
                 validator.getNamespace(select);
             final RelDataType rowType = selectNs.getRowType();

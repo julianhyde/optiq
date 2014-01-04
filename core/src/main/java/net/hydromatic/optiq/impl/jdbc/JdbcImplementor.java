@@ -307,8 +307,8 @@ public class JdbcImplementor {
         if (ordinal < fields.size()) {
           RelDataTypeField field = fields.get(ordinal);
           return new SqlIdentifier(!qualified
-              ? new String[] {field.getName()}
-              : new String[] {alias.left, field.getName()},
+              ? ImmutableList.of(field.getName())
+              : ImmutableList.of(alias.left, field.getName()),
               POS);
         }
         ordinal -= fields.size();

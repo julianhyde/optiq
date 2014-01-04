@@ -623,9 +623,7 @@ public class SqlWindowOperator
             new SqlNodeList(SqlParserPos.ZERO),
             new SqlNodeList(
                 Collections.singletonList(
-                    new SqlIdentifier(
-                        new String[] { columnName },
-                        SqlParserPos.ZERO)),
+                    new SqlIdentifier(columnName, SqlParserPos.ZERO)),
                 SqlParserPos.ZERO),
             SqlLiteral.createBoolean(true, SqlParserPos.ZERO),
             createCurrentRow(SqlParserPos.ZERO),
@@ -649,7 +647,7 @@ public class SqlWindowOperator
             new SqlNodeList(
                 Collections.singletonList(
                     new SqlIdentifier(
-                        new String[] { columnName },
+                        columnName,
                         SqlParserPos.ZERO)),
                 SqlParserPos.ZERO),
             SqlLiteral.createBoolean(false, SqlParserPos.ZERO),
