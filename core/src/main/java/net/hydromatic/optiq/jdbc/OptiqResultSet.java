@@ -27,12 +27,15 @@ import java.util.*;
  * for the Optiq engine.
  */
 public class OptiqResultSet extends AvaticaResultSet {
+  private final OptiqPrepare.PrepareResult prepareResult;
+  
   OptiqResultSet(
       AvaticaStatement statement,
       OptiqPrepare.PrepareResult prepareResult,
-      ResultSetMetaData resultSetMetaData,
+      AvaticaResultSetMetaData resultSetMetaData,
       TimeZone timeZone) {
-    super(statement, prepareResult, resultSetMetaData, timeZone);
+    super(statement, resultSetMetaData, timeZone);
+    this.prepareResult = prepareResult;
   }
 
   @Override protected OptiqResultSet execute() {

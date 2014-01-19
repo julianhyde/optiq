@@ -87,12 +87,12 @@ class AvaticaJdbc41Factory implements AvaticaFactory {
 
   public AvaticaResultSet newResultSet(
       AvaticaStatement statement,
-      AvaticaPrepareResult prepareResult,
+      ProvidesColumnMetaData columnProvider,
       TimeZone timeZone) {
-    final ResultSetMetaData metaData =
-        newResultSetMetaData(statement, prepareResult.getColumnList());
+    final AvaticaResultSetMetaData metaData =
+        newResultSetMetaData(statement, columnProvider.getColumnList());
     return new AvaticaResultSet(
-        statement, prepareResult, metaData, timeZone);
+        statement, metaData, timeZone);
   }
 
   public AvaticaResultSetMetaData newResultSetMetaData(

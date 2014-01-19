@@ -355,6 +355,7 @@ public abstract class AvaticaConnection implements Connection {
     return TimeZone.getDefault();
   }
 
+  
   /**
    * Executes a parsed query, closing any previously open result set.
    *
@@ -364,7 +365,7 @@ public abstract class AvaticaConnection implements Connection {
    */
   protected ResultSet executeQueryInternal(
       AvaticaStatement statement,
-      AvaticaPrepareResult prepareResult) throws SQLException {
+      ProvidesColumnMetaData columnProvider) throws SQLException {
     final TimeZone timeZone = getTimeZone();
 
     // Close the previous open CellSet, if there is one.
@@ -382,7 +383,7 @@ public abstract class AvaticaConnection implements Connection {
 
       statement.openResultSet =
           factory.newResultSet(
-              statement, prepareResult, timeZone);
+              statement, columnProvider, timeZone);
     }
     // Release the monitor before executing, to give another thread the
     // opportunity to call cancel.

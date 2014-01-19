@@ -81,15 +81,15 @@ public class OptiqJdbc41Factory extends OptiqFactory {
 
   public OptiqResultSet newResultSet(
       AvaticaStatement statement,
-      AvaticaPrepareResult prepareResult,
+      ProvidesColumnMetaData columnProvider,
       TimeZone timeZone) {
-    final ResultSetMetaData metaData =
-        newResultSetMetaData(statement, prepareResult.getColumnList());
+    final AvaticaResultSetMetaData metaData =
+        newResultSetMetaData(statement, columnProvider.getColumnList());
     return new OptiqResultSet(statement,
-        (OptiqPrepare.PrepareResult) prepareResult, metaData, timeZone);
+        ((OptiqPrepare.PrepareResult) columnProvider), metaData, timeZone);
   }
 
-  public ResultSetMetaData newResultSetMetaData(
+  public AvaticaResultSetMetaData newResultSetMetaData(
       AvaticaStatement statement,
       List<ColumnMetaData> columnMetaDataList) {
     return new AvaticaResultSetMetaData(

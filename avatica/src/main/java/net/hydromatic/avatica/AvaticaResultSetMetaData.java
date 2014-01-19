@@ -49,6 +49,10 @@ public class AvaticaResultSetMetaData implements ResultSetMetaData {
     return columnMetaDataList.size();
   }
 
+  public List<ColumnMetaData> getColumnList(){
+    return columnMetaDataList;
+  }
+  
   public boolean isAutoIncrement(int column) throws SQLException {
     return getColumnMetaData(column).autoIncrement;
   }
