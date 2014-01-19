@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Result of preparing a statement.
  */
-public interface AvaticaPrepareResult {
+public interface AvaticaPrepareResult extends ProvidesColumnMetaData{
   List<ColumnMetaData> getColumnList();
   String getSql();
   List<AvaticaParameter> getParameterList();

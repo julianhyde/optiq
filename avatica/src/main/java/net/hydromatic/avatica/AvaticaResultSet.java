@@ -31,9 +31,8 @@ import java.util.*;
  */
 public class AvaticaResultSet implements ResultSet {
   protected final AvaticaStatement statement;
-  protected final AvaticaPrepareResult prepareResult;
   protected final List<ColumnMetaData> columnMetaDataList;
-  private final ResultSetMetaData resultSetMetaData;
+  private final AvaticaResultSetMetaData resultSetMetaData;
   protected final Calendar localCalendar;
 
   protected Cursor cursor;
@@ -50,12 +49,10 @@ public class AvaticaResultSet implements ResultSet {
   private Cursor timeoutCursor;
 
   public AvaticaResultSet(AvaticaStatement statement,
-      AvaticaPrepareResult prepareResult,
-      ResultSetMetaData resultSetMetaData,
+      AvaticaResultSetMetaData resultSetMetaData,
       TimeZone timeZone) {
     this.statement = statement;
-    this.prepareResult = prepareResult;
-    this.columnMetaDataList = prepareResult.getColumnList();
+    this.columnMetaDataList = resultSetMetaData.getColumnList();
     this.type = statement.resultSetType;
     this.concurrency = statement.resultSetConcurrency;
     this.holdability = statement.resultSetHoldability;

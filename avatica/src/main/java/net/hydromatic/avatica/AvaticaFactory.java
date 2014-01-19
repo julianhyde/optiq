@@ -62,7 +62,7 @@ public interface AvaticaFactory {
    */
   AvaticaResultSet newResultSet(
       AvaticaStatement statement,
-      AvaticaPrepareResult prepareResult,
+      ProvidesColumnMetaData columnProvider,
       TimeZone timeZone);
 
   AvaticaDatabaseMetaData newDatabaseMetaData(

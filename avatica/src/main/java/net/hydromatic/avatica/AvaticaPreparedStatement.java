@@ -35,7 +35,7 @@ import java.util.List;
  */
 public abstract class AvaticaPreparedStatement
     extends AvaticaStatement
-    implements PreparedStatement, ParameterMetaData
+    implements PreparedStatement, ParameterMetaData, ProvidesColumnMetaData
 {
   private final AvaticaPrepareResult prepareResult;
   private final ResultSetMetaData resultSetMetaData;
@@ -71,7 +71,12 @@ public abstract class AvaticaPreparedStatement
     return list;
   }
 
+  
   // implement PreparedStatement
+
+  public List<ColumnMetaData> getColumnList() {
+    return prepareResult.getColumnList();
+  }
 
   public ResultSet executeQuery() throws SQLException {
     return getConnection().executeQueryInternal(this, prepareResult);
