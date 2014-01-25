@@ -91,21 +91,19 @@ class VolcanoCost implements RelOptCost {
   }
 
   public boolean isLe(RelOptCost other) {
-    VolcanoCost that = (VolcanoCost) other;
     if (true) {
-      return this == that
-          || this.dRows <= that.dRows;
+      return this == other
+          || this.dRows <= other.getRows();
     }
-    return (this == that)
-        || ((this.dRows <= that.dRows)
-        && (this.dCpu <= that.dCpu)
-        && (this.dIo <= that.dIo));
+    return (this == other)
+        || ((this.dRows <= other.getRows())
+        && (this.dCpu <= other.getCpu())
+        && (this.dIo <= other.getIo()));
   }
 
   public boolean isLt(RelOptCost other) {
     if (true) {
-      VolcanoCost that = (VolcanoCost) other;
-      return this.dRows < that.dRows;
+      return this.dRows < other.getRows();
     }
     return isLe(other) && !equals(other);
   }
@@ -115,36 +113,27 @@ class VolcanoCost implements RelOptCost {
   }
 
   public boolean equals(RelOptCost other) {
-    if (!(other instanceof VolcanoCost)) {
-      return false;
-    }
-    VolcanoCost that = (VolcanoCost) other;
-    return (this == that)
-        || ((this.dRows == that.dRows)
-        && (this.dCpu == that.dCpu)
-        && (this.dIo == that.dIo));
+    return (this == other)
+        || ((this.dRows == other.getRows())
+        && (this.dCpu == other.getCpu())
+        && (this.dIo == other.getIo()));
   }
 
   public boolean isEqWithEpsilon(RelOptCost other) {
-    if (!(other instanceof VolcanoCost)) {
-      return false;
-    }
-    VolcanoCost that = (VolcanoCost) other;
-    return (this == that)
-        || ((Math.abs(this.dRows - that.dRows) < RelOptUtil.EPSILON)
-        && (Math.abs(this.dCpu - that.dCpu) < RelOptUtil.EPSILON)
-        && (Math.abs(this.dIo - that.dIo) < RelOptUtil.EPSILON));
+    return (this == other)
+        || ((Math.abs(this.dRows - other.getRows()) < RelOptUtil.EPSILON)
+        && (Math.abs(this.dCpu - other.getCpu()) < RelOptUtil.EPSILON)
+        && (Math.abs(this.dIo - other.getIo()) < RelOptUtil.EPSILON));
   }
 
   public RelOptCost minus(RelOptCost other) {
     if (this == INFINITY) {
       return this;
     }
-    VolcanoCost that = (VolcanoCost) other;
     return new VolcanoCost(
-        this.dRows - that.dRows,
-        this.dCpu - that.dCpu,
-        this.dIo - that.dIo);
+        this.dRows - other.getRows(),
+        this.dCpu - other.getCpu(),
+        this.dIo - other.getIo());
   }
 
   public RelOptCost multiplyBy(double factor) {
@@ -157,28 +146,27 @@ class VolcanoCost implements RelOptCost {
   public double divideBy(RelOptCost cost) {
     // Compute the geometric average of the ratios of all of the factors
     // which are non-zero and finite.
-    VolcanoCost that = (VolcanoCost) cost;
     double d = 1;
     double n = 0;
     if ((this.dRows != 0)
         && !Double.isInfinite(this.dRows)
-        && (that.dRows != 0)
-        && !Double.isInfinite(that.dRows)) {
-      d *= this.dRows / that.dRows;
+        && (cost.getRows() != 0)
+        && !Double.isInfinite(cost.getRows())) {
+      d *= this.dRows / cost.getRows();
       ++n;
     }
     if ((this.dCpu != 0)
         && !Double.isInfinite(this.dCpu)
-        && (that.dCpu != 0)
-        && !Double.isInfinite(that.dCpu)) {
-      d *= this.dCpu / that.dCpu;
+        && (cost.getCpu() != 0)
+        && !Double.isInfinite(cost.getCpu())) {
+      d *= this.dCpu / cost.getCpu();
       ++n;
     }
     if ((this.dIo != 0)
         && !Double.isInfinite(this.dIo)
-        && (that.dIo != 0)
-        && !Double.isInfinite(that.dIo)) {
-      d *= this.dIo / that.dIo;
+        && (cost.getIo() != 0)
+        && !Double.isInfinite(cost.getIo())) {
+      d *= this.dIo / cost.getIo();
       ++n;
     }
     if (n == 0) {
@@ -188,14 +176,13 @@ class VolcanoCost implements RelOptCost {
   }
 
   public RelOptCost plus(RelOptCost other) {
-    VolcanoCost that = (VolcanoCost) other;
-    if ((this == INFINITY) || (that == INFINITY)) {
+    if ((this == INFINITY) || (other.isInfinite())) {
       return INFINITY;
     }
     return new VolcanoCost(
-        this.dRows + that.dRows,
-        this.dCpu + that.dCpu,
-        this.dIo + that.dIo);
+        this.dRows + other.getRows(),
+        this.dCpu + other.getCpu(),
+        this.dIo + other.getIo());
   }
 
   public void set(
