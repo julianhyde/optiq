@@ -52,8 +52,7 @@ public interface OptiqPrepare {
           return new OptiqPrepareImpl();
         }
       };
-  ThreadLocal<ArrayList<Context>>
-      THREAD_CONTEXT_STACK =
+  ThreadLocal<ArrayList<Context>> THREAD_CONTEXT_STACK =
       new ThreadLocal<ArrayList<Context>>() {
         @Override
         protected ArrayList<Context> initialValue() {
@@ -106,19 +105,20 @@ public interface OptiqPrepare {
   }
 
   public static class Dummy {
-    private static SparkHandler handler;
+    private static SparkHandler sparkHandler;
+
     public static synchronized SparkHandler getSparkHandler() {
-      if (handler == null) {
-        handler = createHandler();
+      if (sparkHandler == null) {
+        sparkHandler = createHandler();
       }
-      return handler;
+      return sparkHandler;
     }
 
     private static SparkHandler createHandler() {
       try {
         final Class<?> clazz =
             Class.forName("net.hydromatic.optiq.impl.spark.SparkHandlerImpl");
-        Method method = clazz.getMethod("INSTANCE");
+        Method method = clazz.getMethod("instance");
         return (OptiqPrepare.SparkHandler) method.invoke(null);
       } catch (ClassNotFoundException e) {
         return new TrivialSparkHandler();

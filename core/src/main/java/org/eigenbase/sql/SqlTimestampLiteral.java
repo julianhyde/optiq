@@ -21,6 +21,7 @@ import java.util.*;
 
 import org.eigenbase.sql.parser.*;
 import org.eigenbase.sql.type.*;
+import org.eigenbase.util14.DateTimeUtil;
 
 /**
  * A SQL literal representing a TIMESTAMP value, for example <code>TIMESTAMP
@@ -40,8 +41,7 @@ public class SqlTimestampLiteral extends SqlAbstractDateTimeLiteral {
         cal,
         hasTimeZone,
         SqlTypeName.TIMESTAMP,
-        precision,
-        SqlParserUtil.TimestampFormatStr,
+        precision, DateTimeUtil.TIMESTAMP_FORMAT_STRING,
         pos);
   }
 
@@ -98,7 +98,7 @@ public class SqlTimestampLiteral extends SqlAbstractDateTimeLiteral {
     String result = getTimestamp().toString(formatString);
     final Calendar cal = getCal();
     if (precision > 0) {
-      assert (precision <= 3);
+      assert precision <= 3;
 
       // get the millisecond count.  millisecond => at most 3 digits.
       String digits = Long.toString(cal.getTimeInMillis());
@@ -107,7 +107,7 @@ public class SqlTimestampLiteral extends SqlAbstractDateTimeLiteral {
           + digits.substring(digits.length() - 3,
               digits.length() - 3 + precision);
     } else {
-      assert (0 == cal.get(Calendar.MILLISECOND));
+      assert 0 == cal.get(Calendar.MILLISECOND);
     }
     return result;
   }

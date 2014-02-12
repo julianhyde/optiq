@@ -34,7 +34,7 @@ import com.google.common.collect.ImmutableSet;
 public abstract class SqlAbstractParserImpl {
   //~ Static fields/initializers ---------------------------------------------
 
-  private static final ImmutableSet<String> sql92ReservedWordSet =
+  private static final ImmutableSet<String> SQL_92_RESERVED_WORD_SET =
       ImmutableSet.of(
           "ABSOLUTE",
           "ACTION",
@@ -320,7 +320,7 @@ public abstract class SqlAbstractParserImpl {
    * @sql.92 Section 5.2
    */
   public static Set<String> getSql92ReservedWords() {
-    return sql92ReservedWordSet;
+    return SQL_92_RESERVED_WORD_SET;
   }
 
   /**
@@ -350,7 +350,7 @@ public abstract class SqlAbstractParserImpl {
           opTab.lookupOperatorOverloads(
               funName,
               null,
-              SqlSyntax.Function);
+              SqlSyntax.FUNCTION);
       if (list.size() == 1) {
         fun = list.get(0);
       }
@@ -384,6 +384,7 @@ public abstract class SqlAbstractParserImpl {
    *
    * @param reader provides new input
    */
+  // CHECKSTYLE: IGNORE 1
   public abstract void ReInit(Reader reader);
 
   /**
@@ -550,8 +551,7 @@ public abstract class SqlAbstractParserImpl {
      */
     private Object virtualCall(
         SqlAbstractParserImpl parserImpl,
-        String name)
-        throws Throwable {
+        String name) throws Throwable {
       Class<?> clazz = parserImpl.getClass();
       try {
         final Method method = clazz.getMethod(name, (Class[]) null);
@@ -573,7 +573,7 @@ public abstract class SqlAbstractParserImpl {
       StringBuilder sb = new StringBuilder();
       TreeSet<String> jdbcReservedSet = new TreeSet<String>();
       jdbcReservedSet.addAll(tokenSet);
-      jdbcReservedSet.removeAll(sql92ReservedWordSet);
+      jdbcReservedSet.removeAll(SQL_92_RESERVED_WORD_SET);
       jdbcReservedSet.removeAll(nonReservedKeyWordSet);
       int j = 0;
       for (String jdbcReserved : jdbcReservedSet) {
@@ -590,7 +590,7 @@ public abstract class SqlAbstractParserImpl {
     }
 
     public boolean isSql92ReservedWord(String token) {
-      return sql92ReservedWordSet.contains(token);
+      return SQL_92_RESERVED_WORD_SET.contains(token);
     }
 
     public String getJdbcKeywords() {

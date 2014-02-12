@@ -24,10 +24,10 @@ import org.eigenbase.rel.RelImplementorImpl;
 import org.eigenbase.relopt.*;
 import org.eigenbase.util.property.*;
 
-import net.hydromatic.optiq.prepare.Prepare;
-
 import net.hydromatic.linq4j.function.Function2;
 import net.hydromatic.linq4j.function.Functions;
+
+import net.hydromatic.optiq.prepare.Prepare;
 
 /**
  * Contains all of the {@link java.util.logging.Logger tracers} used within
@@ -57,10 +57,10 @@ public abstract class EigenbaseTrace {
    * org.eigenbase.sql.parser.SqlParser} and other classes (at level {@link
    * Level#FINE} or higher).
    */
-  public static final Logger parserTracer = getParserTracer();
+  public static final Logger PARSER_LOGGER = getParserTracer();
 
   private static final ThreadLocal<Function2<Void, File, String>>
-      DYNAMIC_HANDLER =
+  DYNAMIC_HANDLER =
       new ThreadLocal<Function2<Void, File, String>>() {
         @Override
         protected Function2<Void, File, String> initialValue() {

@@ -55,8 +55,7 @@ public class SerializableCharset implements Serializable {
   /**
    * Per {@link Serializable}.
    */
-  private void writeObject(ObjectOutputStream out)
-      throws IOException {
+  private void writeObject(ObjectOutputStream out) throws IOException {
     out.writeObject(charset.name());
   }
 
@@ -64,7 +63,7 @@ public class SerializableCharset implements Serializable {
    * Per {@link Serializable}.
    */
   private void readObject(ObjectInputStream in)
-      throws IOException, ClassNotFoundException {
+    throws IOException, ClassNotFoundException {
     charsetName = (String) in.readObject();
     charset = Charset.availableCharsets().get(this.charsetName);
   }
@@ -80,7 +79,7 @@ public class SerializableCharset implements Serializable {
 
   /**
    * Returns a SerializableCharset wrapping the given Charset, or null if the
-   * <coded>charset</code> is null.
+   * {@code charset} is null.
    *
    * @param charset Character set to wrap, or null
    * @return Wrapped charset

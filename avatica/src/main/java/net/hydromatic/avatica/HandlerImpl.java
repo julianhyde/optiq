@@ -26,23 +26,21 @@ import java.sql.SQLException;
  */
 public class HandlerImpl implements Handler {
   public void onConnectionInit(AvaticaConnection connection)
-      throws SQLException {
+    throws SQLException {
     // nothing
   }
 
-  public void onConnectionClose(AvaticaConnection connection)
-      throws RuntimeException {
+  public void onConnectionClose(AvaticaConnection connection) {
     // nothing
   }
 
   public void onStatementExecute(
       AvaticaStatement statement,
-      ResultSink resultSink) throws RuntimeException {
+      ResultSink resultSink) {
     // nothing
   }
 
-  public void onStatementClose(AvaticaStatement statement)
-      throws RuntimeException {
+  public void onStatementClose(AvaticaStatement statement) {
     // nothing
   }
 }

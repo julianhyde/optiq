@@ -96,15 +96,15 @@ public class StackWriter extends FilterWriter {
    * four-space indentation
    */
   public static final String INDENT_SPACE4 = "    ";
-  private static final Character singleQuote = new Character('\'');
-  private static final Character doubleQuote = new Character('"');
+  private static final Character SINGLE_QUOTE = '\'';
+  private static final Character DOUBLE_QUOTE = '"';
 
   //~ Instance fields --------------------------------------------------------
 
   private int indentationDepth;
   private String indentation;
   private boolean needIndent;
-  private LinkedList quoteStack;
+  private final List<Character> quoteStack = new ArrayList<Character>();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -112,20 +112,18 @@ public class StackWriter extends FilterWriter {
    * Creates a new StackWriter on top of an existing Writer, with the
    * specified string to be used for each level of indentation.
    *
-   * @param writer      underyling writer
+   * @param writer      underlying writer
    * @param indentation indentation unit such as {@link #INDENT_TAB} or {@link
    *                    #INDENT_SPACE4}
    */
   public StackWriter(Writer writer, String indentation) {
     super(writer);
     this.indentation = indentation;
-    quoteStack = new LinkedList();
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  private void indentIfNeeded()
-      throws IOException {
+  private void indentIfNeeded() throws IOException {
     if (needIndent) {
       for (int i = 0; i < indentationDepth; i++) {
         out.write(indentation);
@@ -134,37 +132,31 @@ public class StackWriter extends FilterWriter {
     }
   }
 
-  private void writeQuote(Character quoteChar)
-      throws IOException {
+  private void writeQuote(Character quoteChar) throws IOException {
     indentIfNeeded();
     int n = 1;
-    for (int i = 0; i < quoteStack.size(); i++) {
-      if (quoteStack.get(i).equals(quoteChar)) {
+    for (Character quote : quoteStack) {
+      if (quote.equals(quoteChar)) {
         n *= 2;
       }
     }
     for (int i = 0; i < n; i++) {
-      out.write(quoteChar.charValue());
+      out.write(quoteChar);
     }
   }
 
-  private void pushQuote(Character quoteChar)
-      throws IOException {
+  private void pushQuote(Character quoteChar) throws IOException {
     writeQuote(quoteChar);
-    quoteStack.addLast(quoteChar);
+    Stacks.push(quoteStack, quoteChar);
   }
 
-  private void popQuote(Character quoteChar)
-      throws IOException {
-    if (!(quoteStack.removeLast().equals(quoteChar))) {
-      throw new Error("mismatched quotes");
-    }
+  private void popQuote(Character quoteChar) throws IOException {
+    Stacks.pop(quoteStack, quoteChar);
     writeQuote(quoteChar);
   }
 
   // implement Writer
-  public void write(int c)
-      throws IOException {
+  public void write(int c) throws IOException {
     switch (c) {
     case INDENT:
       indentationDepth++;
@@ -173,16 +165,16 @@ public class StackWriter extends FilterWriter {
       indentationDepth--;
       break;
     case OPEN_SQL_STRING_LITERAL:
-      pushQuote(singleQuote);
+      pushQuote(SINGLE_QUOTE);
       break;
     case CLOSE_SQL_STRING_LITERAL:
-      popQuote(singleQuote);
+      popQuote(SINGLE_QUOTE);
       break;
     case OPEN_SQL_IDENTIFIER:
-      pushQuote(doubleQuote);
+      pushQuote(DOUBLE_QUOTE);
       break;
     case CLOSE_SQL_IDENTIFIER:
-      popQuote(doubleQuote);
+      popQuote(DOUBLE_QUOTE);
       break;
     case '\n':
       out.write(c);
@@ -195,10 +187,10 @@ public class StackWriter extends FilterWriter {
       out.write(c);
       break;
     case '\'':
-      writeQuote(singleQuote);
+      writeQuote(SINGLE_QUOTE);
       break;
     case '"':
-      writeQuote(doubleQuote);
+      writeQuote(DOUBLE_QUOTE);
       break;
     default:
       indentIfNeeded();
@@ -208,8 +200,7 @@ public class StackWriter extends FilterWriter {
   }
 
   // implement Writer
-  public void write(char[] cbuf, int off, int len)
-      throws IOException {
+  public void write(char[] cbuf, int off, int len) throws IOException {
     // TODO: something more efficient using searches for
     // special characters
     for (int i = off; i < (off + len); i++) {
@@ -218,8 +209,7 @@ public class StackWriter extends FilterWriter {
   }
 
   // implement Writer
-  public void write(String str, int off, int len)
-      throws IOException {
+  public void write(String str, int off, int len) throws IOException {
     // TODO: something more efficient using searches for
     // special characters
     for (int i = off; i < (off + len); i++) {

@@ -29,10 +29,8 @@ import org.eigenbase.sql.fun.*;
 public final class RemoveIsNotDistinctFromRule extends RelOptRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  /**
-   * The singleton.
-   */
-  public static final RemoveIsNotDistinctFromRule instance =
+  /** The singleton. */
+  public static final RemoveIsNotDistinctFromRule INSTANCE =
       new RemoveIsNotDistinctFromRule();
 
   //~ Constructors -----------------------------------------------------------
@@ -48,7 +46,7 @@ public final class RemoveIsNotDistinctFromRule extends RelOptRule {
     RexNode oldFilterCond = oldFilterRel.getCondition();
 
     if (RexUtil.findOperatorCall(
-        SqlStdOperatorTable.isNotDistinctFromOperator,
+        SqlStdOperatorTable.IS_NOT_DISTINCT_FROM,
         oldFilterCond)
         == null) {
       // no longer contains isNotDistinctFromOperator
@@ -85,7 +83,7 @@ public final class RemoveIsNotDistinctFromRule extends RelOptRule {
       RexNode newCall = super.visitCall(call);
 
       if (call.getOperator()
-          == SqlStdOperatorTable.isNotDistinctFromOperator) {
+          == SqlStdOperatorTable.IS_NOT_DISTINCT_FROM) {
         RexCall tmpCall = (RexCall) newCall;
         newCall =
             RelOptUtil.isDistinctFrom(

@@ -192,12 +192,12 @@ public abstract class RelOptUtil {
 
     String s =
         "Cannot add expression of different type to set: "
-        + Util.lineSeparator + "set type is "
+        + Util.LINE_SEPARATOR + "set type is "
         + expectedRowType.getFullTypeString()
-        + Util.lineSeparator + "expression type is "
+        + Util.LINE_SEPARATOR + "expression type is "
         + actualRowType.getFullTypeString()
-        + Util.lineSeparator + "set is " + equivalenceClass.toString()
-        + Util.lineSeparator
+        + Util.LINE_SEPARATOR + "set is " + equivalenceClass.toString()
+        + Util.LINE_SEPARATOR
         + "expression is " + newRel.toString();
     throw Util.newInternal(s);
   }
@@ -273,7 +273,7 @@ public abstract class RelOptUtil {
       RexBuilder rexBuilder = cluster.getRexBuilder();
       RelDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
 
-      assert (extraExpr == rexBuilder.makeLiteral(true));
+      assert extraExpr == rexBuilder.makeLiteral(true);
 
       // this should only be called for the exists case
       // first stick an Agg on top of the subquery
@@ -464,14 +464,14 @@ public abstract class RelOptUtil {
       }
       RexNode newCondition =
           rexBuilder.makeCall(
-              SqlStdOperatorTable.isNotNullOperator,
+              SqlStdOperatorTable.IS_NOT_NULL,
               rexBuilder.makeInputRef(type, iField));
       if (condition == null) {
         condition = newCondition;
       } else {
         condition =
             rexBuilder.makeCall(
-                SqlStdOperatorTable.andOperator,
+                SqlStdOperatorTable.AND,
                 condition,
                 newCondition);
       }
@@ -536,14 +536,14 @@ public abstract class RelOptUtil {
 
     for (int i = 0; i < aggCallCnt; i++) {
       RelDataType returnType =
-          SqlStdOperatorTable.singleValueOperator.inferReturnType(
+          SqlStdOperatorTable.SINGLE_VALUE.inferReturnType(
               cluster.getRexBuilder().getTypeFactory(),
               ImmutableList.of(
                   rel.getRowType().getFieldList().get(i).getType()));
 
       aggCalls.add(
           new AggregateCall(
-              SqlStdOperatorTable.singleValueOperator,
+              SqlStdOperatorTable.SINGLE_VALUE,
               false,
               Collections.singletonList(i),
               returnType,
@@ -654,7 +654,7 @@ public abstract class RelOptUtil {
   }
 
   /**
-   * Returns whether a join condition an "equi-join" condition.
+   * Returns whether a join condition is an "equi-join" condition.
    *
    * @param left      Left input of join
    * @param right     Right input of join
@@ -699,7 +699,7 @@ public abstract class RelOptUtil {
    *                      in this list; join keys associated with the non-equi
    *                      join predicate are at the end of the key lists
    *                      returned
-   * @return What's left
+   * @return What's left, never null
    */
   public static RexNode splitJoinCondition(
       List<RelDataTypeField> sysFieldList,
@@ -725,7 +725,7 @@ public abstract class RelOptUtil {
 
     // Convert the remainders into a list that are AND'ed together.
     return RexUtil.composeConjunction(
-        leftRel.getCluster().getRexBuilder(), nonEquiList, true);
+        leftRel.getCluster().getRexBuilder(), nonEquiList, false);
   }
 
   public static RexNode splitCorrelatedFilterCondition(
@@ -802,7 +802,7 @@ public abstract class RelOptUtil {
 
     if (condition instanceof RexCall) {
       RexCall call = (RexCall) condition;
-      if (call.getOperator() == SqlStdOperatorTable.andOperator) {
+      if (call.getOperator() == SqlStdOperatorTable.AND) {
         for (RexNode operand : call.getOperands()) {
           splitJoinCondition(
               sysFieldList,
@@ -954,11 +954,11 @@ public abstract class RelOptUtil {
         addJoinKey(
             leftJoinKeys,
             leftKey,
-            ((rangeOp != null) && !rangeOp.isEmpty()));
+            (rangeOp != null) && !rangeOp.isEmpty());
         addJoinKey(
             rightJoinKeys,
             rightKey,
-            ((rangeOp != null) && !rangeOp.isEmpty()));
+            (rangeOp != null) && !rangeOp.isEmpty());
         if (filterNulls != null
             && kind == SqlKind.EQUALS) {
           // nulls are considered not matching for equality comparison
@@ -1001,21 +1001,21 @@ public abstract class RelOptUtil {
   private static SqlOperator op(SqlKind kind, SqlOperator operator) {
     switch (kind) {
     case EQUALS:
-      return SqlStdOperatorTable.equalsOperator;
+      return SqlStdOperatorTable.EQUALS;
     case NOT_EQUALS:
-      return SqlStdOperatorTable.notEqualsOperator;
+      return SqlStdOperatorTable.NOT_EQUALS;
     case GREATER_THAN:
-      return SqlStdOperatorTable.greaterThanOperator;
+      return SqlStdOperatorTable.GREATER_THAN;
     case GREATER_THAN_OR_EQUAL:
-      return SqlStdOperatorTable.greaterThanOrEqualOperator;
+      return SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;
     case LESS_THAN:
-      return SqlStdOperatorTable.lessThanOperator;
+      return SqlStdOperatorTable.LESS_THAN;
     case LESS_THAN_OR_EQUAL:
-      return SqlStdOperatorTable.lessThanOrEqualOperator;
+      return SqlStdOperatorTable.LESS_THAN_OR_EQUAL;
     case IS_DISTINCT_FROM:
-      return SqlStdOperatorTable.isDistinctFromOperator;
+      return SqlStdOperatorTable.IS_DISTINCT_FROM;
     case IS_NOT_DISTINCT_FROM:
-      return SqlStdOperatorTable.isNotDistinctFromOperator;
+      return SqlStdOperatorTable.IS_NOT_DISTINCT_FROM;
     default:
       return operator;
     }
@@ -1040,7 +1040,7 @@ public abstract class RelOptUtil {
       List<RexNode> nonEquiList) {
     if (condition instanceof RexCall) {
       RexCall call = (RexCall) condition;
-      if (call.getOperator() == SqlStdOperatorTable.andOperator) {
+      if (call.getOperator() == SqlStdOperatorTable.AND) {
         for (RexNode operand : call.getOperands()) {
           splitCorrelatedFilterCondition(
               filterRel,
@@ -1052,7 +1052,7 @@ public abstract class RelOptUtil {
         return;
       }
 
-      if (call.getOperator() == SqlStdOperatorTable.equalsOperator) {
+      if (call.getOperator() == SqlStdOperatorTable.EQUALS) {
         final List<RexNode> operands = call.getOperands();
         RexNode op0 = operands.get(0);
         RexNode op1 = operands.get(1);
@@ -1087,7 +1087,7 @@ public abstract class RelOptUtil {
       boolean extractCorrelatedFieldAccess) {
     if (condition instanceof RexCall) {
       RexCall call = (RexCall) condition;
-      if (call.getOperator() == SqlStdOperatorTable.andOperator) {
+      if (call.getOperator() == SqlStdOperatorTable.AND) {
         for (RexNode operand : call.getOperands()) {
           splitCorrelatedFilterCondition(
               filterRel,
@@ -1100,7 +1100,7 @@ public abstract class RelOptUtil {
         return;
       }
 
-      if (call.getOperator() == SqlStdOperatorTable.equalsOperator) {
+      if (call.getOperator() == SqlStdOperatorTable.EQUALS) {
         final List<RexNode> operands = call.getOperands();
         RexNode op0 = operands.get(0);
         RexNode op1 = operands.get(1);
@@ -1150,7 +1150,7 @@ public abstract class RelOptUtil {
     if (condition instanceof RexCall) {
       RexCall call = (RexCall) condition;
       final SqlOperator operator = call.getOperator();
-      if (operator == SqlStdOperatorTable.andOperator) {
+      if (operator == SqlStdOperatorTable.AND) {
         for (RexNode operand : call.getOperands()) {
           splitJoinCondition(
               leftFieldCount,
@@ -1164,15 +1164,16 @@ public abstract class RelOptUtil {
 
       // "=" and "IS NOT DISTINCT FROM" are the same except for how they
       // treat nulls. TODO: record null treatment
-      if (operator == SqlStdOperatorTable.equalsOperator
-          || operator == SqlStdOperatorTable.isNotDistinctFromOperator) {
+      if (operator == SqlStdOperatorTable.EQUALS
+          || operator == SqlStdOperatorTable.IS_NOT_DISTINCT_FROM) {
         final List<RexNode> operands = call.getOperands();
         if ((operands.get(0) instanceof RexInputRef)
             && (operands.get(1) instanceof RexInputRef)) {
           RexInputRef op0 = (RexInputRef) operands.get(0);
           RexInputRef op1 = (RexInputRef) operands.get(1);
 
-          RexInputRef leftField, rightField;
+          RexInputRef leftField;
+          RexInputRef rightField;
           if ((op0.getIndex() < leftFieldCount)
               && (op1.getIndex() >= leftFieldCount)) {
             // Arguments were of form 'op0 = op1'
@@ -1366,7 +1367,7 @@ public abstract class RelOptUtil {
   }
 
   public static void registerAbstractRels(RelOptPlanner planner) {
-    planner.addRule(PullConstantsThroughAggregatesRule.instance);
+    planner.addRule(PullConstantsThroughAggregatesRule.INSTANCE);
     planner.addRule(RemoveEmptyRules.UNION_INSTANCE);
     planner.addRule(RemoveEmptyRules.PROJECT_INSTANCE);
     planner.addRule(RemoveEmptyRules.FILTER_INSTANCE);
@@ -1539,7 +1540,7 @@ public abstract class RelOptUtil {
       boolean neg) {
     RexNode ret = null;
     if (x.getType().isStruct()) {
-      assert (y.getType().isStruct());
+      assert y.getType().isStruct();
       List<RelDataTypeField> xFields = x.getType().getFieldList();
       List<RelDataTypeField> yFields = y.getType().getFieldList();
       assert xFields.size() == yFields.size();
@@ -1562,7 +1563,7 @@ public abstract class RelOptUtil {
         } else {
           ret =
               rexBuilder.makeCall(
-                  SqlStdOperatorTable.andOperator,
+                  SqlStdOperatorTable.AND,
                   ret,
                   newCall);
         }
@@ -1589,21 +1590,21 @@ public abstract class RelOptUtil {
     SqlOperator nullOp;
     SqlOperator eqOp;
     if (neg) {
-      nullOp = SqlStdOperatorTable.isNullOperator;
-      eqOp = SqlStdOperatorTable.equalsOperator;
+      nullOp = SqlStdOperatorTable.IS_NULL;
+      eqOp = SqlStdOperatorTable.EQUALS;
     } else {
-      nullOp = SqlStdOperatorTable.isNotNullOperator;
-      eqOp = SqlStdOperatorTable.notEqualsOperator;
+      nullOp = SqlStdOperatorTable.IS_NOT_NULL;
+      eqOp = SqlStdOperatorTable.NOT_EQUALS;
     }
     RexNode[] whenThenElse = {
         // when x is null
-        rexBuilder.makeCall(SqlStdOperatorTable.isNullOperator, x),
+        rexBuilder.makeCall(SqlStdOperatorTable.IS_NULL, x),
 
         // then return y is [not] null
         rexBuilder.makeCall(nullOp, y),
 
         // when y is null
-        rexBuilder.makeCall(SqlStdOperatorTable.isNullOperator, y),
+        rexBuilder.makeCall(SqlStdOperatorTable.IS_NULL, y),
 
         // then return x is [not] null
         rexBuilder.makeCall(nullOp, x),
@@ -1612,7 +1613,7 @@ public abstract class RelOptUtil {
         rexBuilder.makeCall(eqOp, x, y)
     };
     return rexBuilder.makeCall(
-        SqlStdOperatorTable.caseOperator,
+        SqlStdOperatorTable.CASE,
         whenThenElse);
   }
 
@@ -1814,7 +1815,7 @@ public abstract class RelOptUtil {
       if ((right != null) && !right.isAlwaysTrue()) {
         left =
             rexBuilder.makeCall(
-                SqlStdOperatorTable.andOperator,
+                SqlStdOperatorTable.AND,
                 left,
                 right);
       }
@@ -2053,7 +2054,7 @@ public abstract class RelOptUtil {
       int rightKey = rightKeys.get(i);
       RexNode equi =
           rexBuilder.makeCall(
-              SqlStdOperatorTable.equalsOperator,
+              SqlStdOperatorTable.EQUALS,
               rexBuilder.makeInputRef(
                   left.getRowType().getFieldList().get(leftKey).getType(),
                   leftKey),
@@ -2066,7 +2067,7 @@ public abstract class RelOptUtil {
       } else {
         equiCondition =
             rexBuilder.makeCall(
-                SqlStdOperatorTable.andOperator,
+                SqlStdOperatorTable.AND,
                 equiCondition,
                 equi);
       }
@@ -2122,7 +2123,7 @@ public abstract class RelOptUtil {
 
     // inputs are the same; return value depends on the checkNames
     // parameter
-    return (!checkNames || namesDifferent);
+    return !checkNames || namesDifferent;
   }
 
   /**
@@ -2293,7 +2294,7 @@ public abstract class RelOptUtil {
       names.add(field.getName());
     }
     return new ProjectRel(
-        child.getCluster(), child, nodes, names, ProjectRel.Flags.Boxed);
+        child.getCluster(), child, nodes, names, ProjectRel.Flags.BOXED);
   }
 
   /** Returns whether relational expression {@code target} occurs within a
@@ -2311,6 +2312,7 @@ public abstract class RelOptUtil {
           }
           super.visit(node, ordinal, parent);
         }
+      // CHECKSTYLE: IGNORE 1
       }.go(ancestor);
       return false;
     } catch (Util.FoundOne e) {
@@ -2546,7 +2548,7 @@ public abstract class RelOptUtil {
       if (leftDestFields == null) {
         nLeftDestFields = 0;
       } else {
-        assert (destFields == null);
+        assert destFields == null;
         nLeftDestFields = leftDestFields.length;
       }
     }

@@ -15,7 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 */
-package org.eigenbase.test.concurrent;
 
 /**
  * A framework for concurrent JDBC unit tests.
@@ -186,7 +185,9 @@ package org.eigenbase.test.concurrent;
  *
  *     <li>Variable Declaration: Before being used, a script variable must be
  *         explicitly declared in the script (or an included script)
- *         by a &#64;var command.<br>
+ *         by a &#64;var command.</li>
+ * </ul>
+ *
  * <pre>
  * &#64;var VAR
  *     Declares a variable VAR
@@ -321,5 +322,6 @@ package org.eigenbase.test.concurrent;
  *         </ul>
  *
  */
+package org.eigenbase.test.concurrent;
 
 // End package-info.java

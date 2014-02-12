@@ -30,9 +30,9 @@ import org.eigenbase.sql.validate.*;
 import org.eigenbase.util.Pair;
 import org.eigenbase.util.Util;
 
-import net.hydromatic.optiq.prepare.Prepare;
-
 import net.hydromatic.linq4j.expressions.Expression;
+
+import net.hydromatic.optiq.prepare.Prepare;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
@@ -44,11 +44,11 @@ import com.google.common.collect.Ordering;
 public class MockCatalogReader implements Prepare.CatalogReader {
   //~ Static fields/initializers ---------------------------------------------
 
-  protected static final String defaultCatalog = "CATALOG";
-  protected static final String defaultSchema = "SALES";
+  protected static final String DEFAULT_CATALOG = "CATALOG";
+  protected static final String DEFAULT_SCHEMA = "SALES";
 
   public static final Ordering<Iterable<String>>
-      CASE_INSENSITIVE_LIST_COMPARATOR =
+  CASE_INSENSITIVE_LIST_COMPARATOR =
       Ordering.<String>from(String.CASE_INSENSITIVE_ORDER).lexicographical();
 
   //~ Instance fields --------------------------------------------------------
@@ -87,8 +87,8 @@ public class MockCatalogReader implements Prepare.CatalogReader {
     this.caseSensitive = caseSensitive;
     assert !dummy;
     if (caseSensitive) {
-    tables = new HashMap<List<String>, MockTable>();
-    schemas = new HashMap<String, MockSchema>();
+      tables = new HashMap<List<String>, MockTable>();
+      schemas = new HashMap<String, MockSchema>();
     } else {
       tables = new TreeMap<List<String>, MockTable>(
           CASE_INSENSITIVE_LIST_COMPARATOR);
@@ -229,10 +229,10 @@ public class MockCatalogReader implements Prepare.CatalogReader {
       // if it's not supplied, because SqlValidatorTest is effectively
       // using SALES as its default schema.
       return tables.get(
-          ImmutableList.of(defaultCatalog, defaultSchema, names.get(0)));
+          ImmutableList.of(DEFAULT_CATALOG, DEFAULT_SCHEMA, names.get(0)));
     case 2:
       return tables.get(
-          ImmutableList.of(defaultCatalog, names.get(0), names.get(1)));
+          ImmutableList.of(DEFAULT_CATALOG, names.get(0), names.get(1)));
     case 3:
       return tables.get(names);
     default:
@@ -281,7 +281,7 @@ public class MockCatalogReader implements Prepare.CatalogReader {
   }
 
   public String getSchemaName() {
-    return defaultSchema;
+    return DEFAULT_SCHEMA;
   }
 
   public RelDataTypeField field(RelDataType rowType, String alias) {
@@ -345,7 +345,7 @@ public class MockCatalogReader implements Prepare.CatalogReader {
     }
 
     public String getCatalogName() {
-      return defaultCatalog;
+      return DEFAULT_CATALOG;
     }
   }
 

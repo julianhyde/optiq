@@ -45,19 +45,18 @@ import java.util.Properties;
  * members:
  *
  * <dl>
- * <dt>{@link #parse(String)}</dt>
- * <dd>Parses the connect string into a new Properties object.</dd>
+ * <dt>{@link #parse(String)}
+ * <dd>Parses the connect string into a new Properties object.
  *
- * <dt>{@link #parse(String, Properties)}</dt>
- * <dd>Parses the connect string into an existing Properties object.</dd>
+ * <dt>{@link #parse(String, Properties)}
+ * <dd>Parses the connect string into an existing Properties object.
  *
- * <dt>{@link #getParamString(Properties)}</dt>
+ * <dt>{@link #getParamString(Properties)}
  * <dd>Returns a param string, quoted and escaped as needed, to represent the
- * supplied name-value pairs.</dd>
+ * supplied name-value pairs.
  * </dl>
  */
-public class ConnectStringParser
-{
+public class ConnectStringParser {
   //~ Instance fields --------------------------------------------------------
 
   private final String s;
@@ -94,8 +93,8 @@ public class ConnectStringParser
    * @throws SQLException error parsing name-value pairs
    */
   public static Properties parse(String s)
-      throws SQLException {
-    return new ConnectStringParser(s).parse_(null);
+    throws SQLException {
+    return new ConnectStringParser(s).parseInternal(null);
   }
 
   /**
@@ -111,8 +110,8 @@ public class ConnectStringParser
    * @throws SQLException error parsing name-value pairs
    */
   public static Properties parse(String s, Properties props)
-      throws SQLException {
-    return new ConnectStringParser(s).parse_(props);
+    throws SQLException {
+    return new ConnectStringParser(s).parseInternal(props);
   }
 
   /**
@@ -128,8 +127,8 @@ public class ConnectStringParser
    *
    * @throws SQLException error parsing name-value pairs
    */
-  Properties parse_(Properties props)
-      throws SQLException {
+  Properties parseInternal(Properties props)
+    throws SQLException {
     if (props == null) {
       props = new Properties();
     }
@@ -145,7 +144,7 @@ public class ConnectStringParser
    * @throws SQLException error parsing value
    */
   void parsePair(Properties props)
-      throws SQLException {
+    throws SQLException {
     String name = parseName();
     String value;
     if (i >= n) {
@@ -183,9 +182,8 @@ public class ConnectStringParser
           // ignore preceding spaces
           i++;
           break;
-        } else {
-          // fall through
         }
+        // fall through
       default:
         nameBuf.append(c);
         i++;
@@ -202,7 +200,7 @@ public class ConnectStringParser
    * @throws SQLException if find an unterminated quoted value
    */
   String parseValue()
-      throws SQLException {
+    throws SQLException {
     char c;
 
     // skip over leading white space
@@ -252,7 +250,7 @@ public class ConnectStringParser
    * @throws SQLException if find an unterminated quoted value
    */
   String parseQuoted(char q)
-      throws SQLException {
+    throws SQLException {
     char c = s.charAt(i++);
     if (c != q) {
       throw new AssertionError("c != q: c=" + c + " q=" + q);

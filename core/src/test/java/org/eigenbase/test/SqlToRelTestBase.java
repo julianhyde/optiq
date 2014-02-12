@@ -31,9 +31,9 @@ import org.eigenbase.sql.validate.*;
 import org.eigenbase.sql2rel.*;
 import org.eigenbase.util.*;
 
-import net.hydromatic.optiq.prepare.Prepare;
-
 import net.hydromatic.linq4j.expressions.Expression;
+
+import net.hydromatic.optiq.prepare.Prepare;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -94,7 +94,7 @@ public abstract class SqlToRelTestBase {
    * Helper class which contains default implementations of methods used for
    * running sql-to-rel conversion tests.
    */
-  public static interface Tester {
+  public interface Tester {
     /**
      * Converts a SQL string to a {@link RelNode} tree.
      *
@@ -103,8 +103,7 @@ public abstract class SqlToRelTestBase {
      */
     RelNode convertSqlToRel(String sql);
 
-    SqlNode parseQuery(String sql)
-        throws Exception;
+    SqlNode parseQuery(String sql) throws Exception;
 
     /**
      * Factory method to create a {@link SqlValidator}.
@@ -267,8 +266,7 @@ public abstract class SqlToRelTestBase {
       return typeFactory;
     }
 
-    public void registerRules(RelOptPlanner planner)
-        throws Exception {
+    public void registerRules(RelOptPlanner planner) throws Exception {
     }
 
     protected class MockColumnSet implements RelOptTable {
@@ -458,8 +456,7 @@ public abstract class SqlToRelTestBase {
       return planner;
     }
 
-    public SqlNode parseQuery(String sql)
-        throws Exception {
+    public SqlNode parseQuery(String sql) throws Exception {
       SqlParser parser = new SqlParser(sql);
       SqlNode sqlNode = parser.parseQuery();
       return sqlNode;

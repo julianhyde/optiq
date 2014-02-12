@@ -26,10 +26,10 @@ import org.eigenbase.sql.type.*;
 public class SqlOverlayFunction extends SqlFunction {
   //~ Static fields/initializers ---------------------------------------------
 
-  private static final SqlOperandTypeChecker otcCustom =
-      SqlTypeStrategies.or(
-          SqlTypeStrategies.otcStringX2Int,
-          SqlTypeStrategies.otcStringX2IntX2);
+  private static final SqlOperandTypeChecker OTC_CUSTOM =
+      OperandTypes.or(
+          OperandTypes.STRING_STRING_INTEGER,
+          OperandTypes.STRING_STRING_INTEGER_INTEGER);
 
   //~ Constructors -----------------------------------------------------------
 
@@ -37,10 +37,10 @@ public class SqlOverlayFunction extends SqlFunction {
     super(
         "OVERLAY",
         SqlKind.OTHER_FUNCTION,
-        SqlTypeStrategies.rtiNullableVaryingDyadicStringSumPrecision,
+        ReturnTypes.DYADIC_STRING_SUM_PRECISION_NULLABLE_VARYING,
         null,
-        otcCustom,
-        SqlFunctionCategory.String);
+        OTC_CUSTOM,
+        SqlFunctionCategory.STRING);
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -70,7 +70,7 @@ public class SqlOverlayFunction extends SqlFunction {
     case 4:
       return "{0}({1} PLACING {2} FROM {3} FOR {4})";
     }
-    assert (false);
+    assert false;
     return null;
   }
 }

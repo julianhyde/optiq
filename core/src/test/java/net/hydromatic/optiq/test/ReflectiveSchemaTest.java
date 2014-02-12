@@ -320,29 +320,32 @@ public class ReflectiveSchemaTest {
         .returns("C=1\n");
   }
 
-  /** Test case for https://github.com/julianhyde/optiq/issues/119. */
-  @Ignore
-  @Test public void testJavaBoolean2() throws Exception {
+  /** Test case for
+   * <a href="https://github.com/julianhyde/optiq/issues/119">optiq-119</a>.
+   * Comparing a Java type with a SQL type. */
+  @Test public void testCompareJavaAndSqlTypes() throws Exception {
     final OptiqAssert.AssertThat with =
         OptiqAssert.that().with("s", new CatchallSchema());
-    // should return "C=1" but with optiq-119 it does not
+    // With optiq-119, returned 0 rows. The problem was that when comparing
+    // a Java type (long) and a SQL type (INTEGER), the SQL type was deemed
+    // "less restrictive". So, the long value got truncated to an int value.
     with.query(
-        "select \"wrapperLong\" as c from \"s\".\"everyTypes\"\n"
-        + "where \"wrapperLong\" > 0")
-        .returns("C=1\n");
+        "select \"primitiveLong\" as c from \"s\".\"everyTypes\"\n"
+        + "where \"primitiveLong\" > 0")
+        .returns("C=9223372036854775807\n");
 
     // count(nullif(b, false)) counts how many times b is true
     with.query(
         "select count(\"primitiveBoolean\") as p,\n"
         + "  count(\"wrapperBoolean\") as w,\n"
-        + "  count(nullif(\"primitiveShort\" > 0, false)) as sp,\n"
-        + "  count(nullif(\"wrapperShort\" > 0, false)) as sw,\n"
-        + "  count(nullif(\"primitiveInt\" > 0, false)) as ip,\n"
-        + "  count(nullif(\"wrapperInteger\" > 0, false)) as iw,\n"
-        + "  count(nullif(\"primitiveLong\" > 0, false)) as lp,\n"
-        + "  count(nullif(\"wrapperLong\" > 0, false)) as lw\n"
+        + "  count(nullif(\"primitiveShort\" >= 0, false)) as sp,\n"
+        + "  count(nullif(\"wrapperShort\" >= 0, false)) as sw,\n"
+        + "  count(nullif(\"primitiveInt\" >= 0, false)) as ip,\n"
+        + "  count(nullif(\"wrapperInteger\" >= 0, false)) as iw,\n"
+        + "  count(nullif(\"primitiveLong\" >= 0, false)) as lp,\n"
+        + "  count(nullif(\"wrapperLong\" >= 0, false)) as lw\n"
         + "from \"s\".\"everyTypes\"")
-        .returns("P=2; W=1; SP=1; SW=0; IP=1; IW=0; LP=1; LW=0\n");
+        .returns("P=2; W=1; SP=2; SW=1; IP=2; IW=1; LP=2; LW=1\n");
   }
 
   @Test public void testDivide() throws Exception {
@@ -458,7 +461,7 @@ public class ReflectiveSchemaTest {
         .returns(
             "empid=2; deptno=10; name=Ab; salary=0.0; commission=null\n"
             + "empid=4; deptno=10; name=Abd; salary=0.0; commission=null\n");
- }
+  }
 
   /** If a method returns a
    * {@link net.hydromatic.optiq.impl.ViewTable.ViewTableFunction}, then it
@@ -604,17 +607,17 @@ public class ReflectiveSchemaTest {
     public final BitSet bitSet = new BitSet(1);
 
     public final EveryType[] everyTypes = {
-        new EveryType(
-            false, (byte) 0, (char) 0, (short) 0, 0, 0L, 0F, 0D,
-            false, (byte) 0, (char) 0, (short) 0, 0, 0L, 0F, 0D,
-            new java.sql.Date(0), new Time(0), new Timestamp(0),
-            new Date(0), "1"),
-        new EveryType(
-            true, Byte.MAX_VALUE, Character.MAX_VALUE, Short.MAX_VALUE,
-            Integer.MAX_VALUE, Long.MAX_VALUE, Float.MAX_VALUE,
-            Double.MAX_VALUE,
-            null, null, null, null, null, null, null, null,
-            null, null, null, null, null),
+      new EveryType(
+          false, (byte) 0, (char) 0, (short) 0, 0, 0L, 0F, 0D,
+          false, (byte) 0, (char) 0, (short) 0, 0, 0L, 0F, 0D,
+          new java.sql.Date(0), new Time(0), new Timestamp(0),
+          new Date(0), "1"),
+      new EveryType(
+          true, Byte.MAX_VALUE, Character.MAX_VALUE, Short.MAX_VALUE,
+          Integer.MAX_VALUE, Long.MAX_VALUE, Float.MAX_VALUE,
+          Double.MAX_VALUE,
+          null, null, null, null, null, null, null, null,
+          null, null, null, null, null),
     };
 
     public final AllPrivate[] allPrivates = { new AllPrivate() };
@@ -622,18 +625,18 @@ public class ReflectiveSchemaTest {
     public final BadType[] badTypes = { new BadType() };
 
     public final Employee[] prefixEmps = {
-        new Employee(1, 10, "A", 0f, null),
-        new Employee(2, 10, "Ab", 0f, null),
-        new Employee(3, 10, "Abc", 0f, null),
-        new Employee(4, 10, "Abd", 0f, null),
+      new Employee(1, 10, "A", 0f, null),
+      new Employee(2, 10, "Ab", 0f, null),
+      new Employee(3, 10, "Abc", 0f, null),
+      new Employee(4, 10, "Abd", 0f, null),
     };
   }
 
   public static class DateColumnSchema {
     public final EmployeeWithHireDate[] emps = {
-        new EmployeeWithHireDate(
-            10, 20, "fred", 0f, null, new java.sql.Date(0)), // 1970-1-1
-        new EmployeeWithHireDate(
+      new EmployeeWithHireDate(
+          10, 20, "fred", 0f, null, new java.sql.Date(0)), // 1970-1-1
+      new EmployeeWithHireDate(
             10, 20, "bill", 0f, null,
             new java.sql.Date(100 * DateTimeUtil.MILLIS_PER_DAY)) // 1970-04-11
     };

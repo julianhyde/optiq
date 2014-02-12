@@ -55,6 +55,9 @@ public class RexUtil {
         }
       };
 
+  private RexUtil() {
+  }
+
   //~ Methods ----------------------------------------------------------------
 
   /**
@@ -144,7 +147,7 @@ public class RexUtil {
     if (node instanceof RexLiteral) {
       RexLiteral literal = (RexLiteral) node;
       if (literal.getTypeName() == SqlTypeName.NULL) {
-        assert (null == literal.getValue());
+        assert null == literal.getValue();
         return true;
       } else {
         // We don't regard UNKNOWN -- SqlLiteral(null,Boolean) -- as
@@ -582,6 +585,7 @@ public class RexUtil {
    * If there are zero expressions, returns TRUE.
    * If there is one expression, returns just that expression.
    * Removes expressions that always evaluate to TRUE.
+   * Returns null only if {@code nullOnEmpty} and expression is TRUE.
    */
   public static RexNode composeConjunction(
       RexBuilder rexBuilder, List<RexNode> nodes, boolean nullOnEmpty) {
@@ -596,7 +600,7 @@ public class RexUtil {
       return nodes2.get(0);
     default:
       return rexBuilder.makeCall(
-          SqlStdOperatorTable.andOperator, nodes2);
+          SqlStdOperatorTable.AND, nodes2);
     }
   }
 
@@ -619,7 +623,7 @@ public class RexUtil {
       return nodes2.get(0);
     default:
       return rexBuilder.makeCall(
-          SqlStdOperatorTable.orOperator, nodes2);
+          SqlStdOperatorTable.OR, nodes2);
     }
   }
 

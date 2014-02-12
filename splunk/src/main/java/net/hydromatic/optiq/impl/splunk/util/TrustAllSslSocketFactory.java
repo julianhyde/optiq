@@ -17,18 +17,17 @@
 */
 package net.hydromatic.optiq.impl.splunk.util;
 
-import javax.net.ssl.*;
-
 import java.io.*;
 import java.net.*;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import javax.net.ssl.*;
 
 /**
  * Socket factory that trusts all SSL connections.
  */
 public class TrustAllSslSocketFactory extends SocketFactoryImpl {
-  private static TrustAllSslSocketFactory DEFAULT =
+  private static final TrustAllSslSocketFactory DEFAULT =
       new TrustAllSslSocketFactory();
 
   private final SSLSocketFactory sslSocketFactory;
@@ -57,9 +56,8 @@ public class TrustAllSslSocketFactory extends SocketFactoryImpl {
   }
 
   @Override
-  public Socket createSocket(
-      InetAddress address, int port, InetAddress localAddress, int localPort)
-      throws IOException {
+  public Socket createSocket(InetAddress address, int port,
+      InetAddress localAddress, int localPort) throws IOException {
     return applySettings(
         sslSocketFactory.createSocket(
             address, port, localAddress, localPort));
@@ -71,9 +69,8 @@ public class TrustAllSslSocketFactory extends SocketFactoryImpl {
   }
 
   @Override
-  public Socket createSocket(
-      String host, int port, InetAddress localHost, int localPort)
-      throws IOException {
+  public Socket createSocket(String host, int port, InetAddress localHost,
+      int localPort) throws IOException {
     return applySettings(
         sslSocketFactory.createSocket(host, port, localHost, localPort));
   }

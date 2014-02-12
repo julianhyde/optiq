@@ -50,8 +50,8 @@ public class SqlInOperator extends SqlBinaryOperator {
         SqlKind.IN,
         30,
         true,
-        SqlTypeStrategies.rtiNullableBoolean,
-        SqlTypeStrategies.otiFirstKnown,
+        ReturnTypes.BOOLEAN_NULLABLE,
+        InferTypes.FIRST_KNOWN,
         null);
     this.isNotIn = isNotIn;
   }
@@ -72,7 +72,7 @@ public class SqlInOperator extends SqlBinaryOperator {
       SqlValidatorScope scope,
       SqlCall call) {
     final SqlNode[] operands = call.getOperands();
-    assert (operands.length == 2);
+    assert operands.length == 2;
 
     final RelDataTypeFactory typeFactory = validator.getTypeFactory();
     RelDataType leftType = validator.deriveType(scope, operands[0]);
@@ -125,7 +125,7 @@ public class SqlInOperator extends SqlBinaryOperator {
 
     final ComparableOperandTypeChecker checker =
         (ComparableOperandTypeChecker)
-            SqlTypeStrategies.otcComparableUnorderedX2;
+            OperandTypes.COMPARABLE_UNORDERED_COMPARABLE_UNORDERED;
     if (!checker.checkOperandTypes(
         new ExplicitOperatorBinding(
             new SqlCallBinding(
@@ -136,7 +136,7 @@ public class SqlInOperator extends SqlBinaryOperator {
       throw validator.newValidationError(
           call,
           EigenbaseResource.instance().IncompatibleValueType.ex(
-              SqlStdOperatorTable.inOperator.getName()));
+              SqlStdOperatorTable.IN.getName()));
     }
 
     // Result is a boolean, nullable if there are any nullable types

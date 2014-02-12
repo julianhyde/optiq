@@ -31,10 +31,10 @@ public class SqlFloorFunction extends SqlFunction {
     super(
         "FLOOR",
         SqlKind.OTHER_FUNCTION,
-        SqlTypeStrategies.rtiFirstArgType,
+        ReturnTypes.ARG0,
         null,
-        SqlTypeStrategies.otcNumeric,
-        SqlFunctionCategory.Numeric);
+        OperandTypes.NUMERIC,
+        SqlFunctionCategory.NUMERIC);
   }
 
   //~ Methods ----------------------------------------------------------------

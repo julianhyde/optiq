@@ -36,10 +36,12 @@ import java.util.*;
  * calling convention.
  */
 public class MongoRules {
-  public static RelOptRule[] RULES = {
-      new PushProjectOntoMongoRule(),
-      new MongoSortRule(),
-      new MongoFilterRule(),
+  private MongoRules() {}
+
+  public static final RelOptRule[] RULES = {
+    new PushProjectOntoMongoRule(),
+    new MongoSortRule(),
+    new MongoFilterRule(),
   };
 
   /** Rule that combines a {@link ProjectRel} with a {@link MongoTableScan},
@@ -83,7 +85,7 @@ public class MongoRules {
       final ProjectRel newProject =
           new ProjectRel(cluster, cluster.traitSetOf(RelCollationImpl.EMPTY),
               newTable, newProjects,
-              project.getRowType(), ProjectRel.Flags.Boxed);
+              project.getRowType(), ProjectRel.Flags.BOXED);
       call.transformTo(newProject);
     }
   }
@@ -91,7 +93,7 @@ public class MongoRules {
   private static String parseFieldAccess(RexNode rex) {
     if (rex instanceof RexCall) {
       final RexCall call = (RexCall) rex;
-      if (call.getOperator() == SqlStdOperatorTable.itemOp
+      if (call.getOperator() == SqlStdOperatorTable.ITEM
           && call.getOperands().size() == 2
           && call.getOperands().get(0) instanceof RexInputRef
           && ((RexInputRef) call.getOperands().get(0)).getIndex() == 0
@@ -108,7 +110,7 @@ public class MongoRules {
   private static RelDataType parseCast(RexNode rex) {
     if (rex instanceof RexCall) {
       final RexCall call = (RexCall) rex;
-      if (call.getOperator() == SqlStdOperatorTable.castFunc) {
+      if (call.getOperator() == SqlStdOperatorTable.CAST) {
         assert call.getOperands().size() == 1;
         return call.getType();
       }
@@ -160,7 +162,7 @@ public class MongoRules {
   }
 
 
-  static abstract class MongoConverterRule extends ConverterRule {
+  abstract static class MongoConverterRule extends ConverterRule {
     protected final Convention out;
     public MongoConverterRule(
         Class<? extends RelNode> clazz,

@@ -70,7 +70,7 @@ public class VolcanoPlannerTest {
   @Test public void testTransformLeaf() {
     VolcanoPlanner planner = new VolcanoPlanner();
 
-    planner.addRelTraitDef(ConventionTraitDef.instance);
+    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     planner.addRule(new PhysLeafRule());
 
@@ -93,7 +93,7 @@ public class VolcanoPlannerTest {
    */
   @Test public void testTransformSingleGood() {
     VolcanoPlanner planner = new VolcanoPlanner();
-    planner.addRelTraitDef(ConventionTraitDef.instance);
+    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     planner.addRule(new PhysLeafRule());
     planner.addRule(new GoodSingleRule());
@@ -123,7 +123,7 @@ public class VolcanoPlannerTest {
   @Ignore // broken, because ReformedSingleRule matches child traits strictly
   @Test public void testTransformSingleReformed() {
     VolcanoPlanner planner = new VolcanoPlanner();
-    planner.addRelTraitDef(ConventionTraitDef.instance);
+    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     planner.addRule(new PhysLeafRule());
     planner.addRule(new ReformedSingleRule());
@@ -150,10 +150,10 @@ public class VolcanoPlannerTest {
     VolcanoPlanner planner = new VolcanoPlanner();
     planner.ambitious = true;
 
-    planner.addRelTraitDef(ConventionTraitDef.instance);
+    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     if (useRule) {
-      planner.addRule(RemoveTrivialProjectRule.instance);
+      planner.addRule(RemoveTrivialProjectRule.INSTANCE);
     }
 
     planner.addRule(new PhysLeafRule());
@@ -216,7 +216,7 @@ public class VolcanoPlannerTest {
   @Test public void testRemoveSingleReformed() {
     VolcanoPlanner planner = new VolcanoPlanner();
     planner.ambitious = true;
-    planner.addRelTraitDef(ConventionTraitDef.instance);
+    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     planner.addRule(new PhysLeafRule());
     planner.addRule(new ReformedRemoveSingleRule());
@@ -251,7 +251,7 @@ public class VolcanoPlannerTest {
   @Test public void testRemoveSingleGood() {
     VolcanoPlanner planner = new VolcanoPlanner();
     planner.ambitious = true;
-    planner.addRelTraitDef(ConventionTraitDef.instance);
+    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     planner.addRule(new PhysLeafRule());
     planner.addRule(new GoodSingleRule());
@@ -289,7 +289,7 @@ public class VolcanoPlannerTest {
     VolcanoPlanner planner = new VolcanoPlanner();
     planner.addListener(listener);
 
-    planner.addRelTraitDef(ConventionTraitDef.instance);
+    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     planner.addRule(new PhysLeafRule());
 
@@ -408,7 +408,7 @@ public class VolcanoPlannerTest {
 
   //~ Inner Classes ----------------------------------------------------------
 
-  private static abstract class TestLeafRel extends AbstractRelNode {
+  private abstract static class TestLeafRel extends AbstractRelNode {
     private String label;
 
     protected TestLeafRel(
@@ -425,7 +425,7 @@ public class VolcanoPlannerTest {
 
     // implement RelNode
     public RelOptCost computeSelfCost(RelOptPlanner planner) {
-      return planner.makeInfiniteCost();
+      return planner.getCostFactory().makeInfiniteCost();
     }
 
     // implement RelNode
@@ -443,7 +443,7 @@ public class VolcanoPlannerTest {
     }
   }
 
-  private static abstract class TestSingleRel extends SingleRel {
+  private abstract static class TestSingleRel extends SingleRel {
     protected TestSingleRel(
         RelOptCluster cluster,
         RelTraitSet traits,
@@ -453,7 +453,7 @@ public class VolcanoPlannerTest {
 
     // implement RelNode
     public RelOptCost computeSelfCost(RelOptPlanner planner) {
-      return planner.makeInfiniteCost();
+      return planner.getCostFactory().makeInfiniteCost();
     }
 
     // implement RelNode
@@ -509,7 +509,7 @@ public class VolcanoPlannerTest {
 
     // implement RelNode
     public RelOptCost computeSelfCost(RelOptPlanner planner) {
-      return planner.makeTinyCost();
+      return planner.getCostFactory().makeTinyCost();
     }
 
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
@@ -531,7 +531,7 @@ public class VolcanoPlannerTest {
 
     // implement RelNode
     public RelOptCost computeSelfCost(RelOptPlanner planner) {
-      return planner.makeTinyCost();
+      return planner.getCostFactory().makeTinyCost();
     }
 
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
@@ -548,7 +548,7 @@ public class VolcanoPlannerTest {
         RelNode child) {
       super(
           cluster,
-          ConventionTraitDef.instance,
+          ConventionTraitDef.INSTANCE,
           cluster.traitSetOf(EnumerableConvention.INSTANCE),
           child);
     }

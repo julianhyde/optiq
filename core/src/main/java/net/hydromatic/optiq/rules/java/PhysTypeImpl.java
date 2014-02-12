@@ -19,6 +19,7 @@ package net.hydromatic.optiq.rules.java;
 
 import net.hydromatic.linq4j.expressions.*;
 import net.hydromatic.linq4j.function.Function1;
+
 import net.hydromatic.optiq.BuiltinMethod;
 import net.hydromatic.optiq.impl.java.JavaTypeFactory;
 import net.hydromatic.optiq.runtime.Utilities;
@@ -101,8 +102,7 @@ public class PhysTypeImpl implements PhysType {
               public int size() {
                 return integers.size();
               }
-            }
-        );
+            });
     return of(typeFactory, projectedRowType, format.optimize(projectedRowType));
   }
 

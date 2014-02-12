@@ -116,7 +116,7 @@ public class SqlSelect extends SqlCall {
       fromClause = tableId;
     } else {
       fromClause =
-          SqlStdOperatorTable.joinOperator.createCall(
+          SqlStdOperatorTable.JOIN.createCall(
               null,
               fromClause,
               tableId);
@@ -152,7 +152,7 @@ public class SqlSelect extends SqlCall {
 
   public boolean hasOrderBy() {
     SqlNodeList orderList = getOrderList();
-    return ((null != orderList) && (0 != orderList.size()));
+    return (null != orderList) && (0 != orderList.size());
   }
 
   public boolean hasWhere() {

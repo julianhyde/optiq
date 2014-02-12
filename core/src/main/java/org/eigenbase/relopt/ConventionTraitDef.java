@@ -24,10 +24,10 @@ import org.eigenbase.rel.convert.*;
 import org.eigenbase.util.Pair;
 import org.eigenbase.util.Util;
 
+import net.hydromatic.optiq.util.graph.*;
+
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-
-import net.hydromatic.optiq.util.graph.*;
 
 /**
  * Definition of the the convention trait.
@@ -43,7 +43,7 @@ import net.hydromatic.optiq.util.graph.*;
 public class ConventionTraitDef extends RelTraitDef<Convention> {
   //~ Static fields/initializers ---------------------------------------------
 
-  public static final ConventionTraitDef instance =
+  public static final ConventionTraitDef INSTANCE =
       new ConventionTraitDef();
 
   //~ Instance fields --------------------------------------------------------
@@ -53,7 +53,8 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
    * the planner goes away, so does the map entry.
    */
   private final WeakHashMap<RelOptPlanner, ConversionData>
-      plannerConversionMap = new WeakHashMap<RelOptPlanner, ConversionData>();
+  plannerConversionMap =
+      new WeakHashMap<RelOptPlanner, ConversionData>();
 
   //~ Constructors -----------------------------------------------------------
 
@@ -128,7 +129,7 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
     List<List<Convention>> conversionPaths =
         conversionData.getPaths(fromConvention, toConvention);
 
-    loop:
+  loop:
     for (List<Convention> conversionPath : conversionPaths) {
       assert conversionPath.get(0) == fromConvention;
       assert conversionPath.get(conversionPath.size() - 1)
@@ -196,13 +197,12 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
   }
 
   private ConversionData getConversionData(RelOptPlanner planner) {
-    if (plannerConversionMap.containsKey(planner)) {
-      return plannerConversionMap.get(planner);
+    ConversionData conversionData = plannerConversionMap.get(planner);
+    if (conversionData == null) {
+      // Create new, empty ConversionData
+      conversionData = new ConversionData();
+      plannerConversionMap.put(planner, conversionData);
     }
-
-    // Create new, empty ConversionData
-    ConversionData conversionData = new ConversionData();
-    plannerConversionMap.put(planner, conversionData);
     return conversionData;
   }
 
@@ -218,8 +218,9 @@ public class ConventionTraitDef extends RelTraitDef<Convention> {
      * collection of {@link ConverterRule} objects.
      */
     final Multimap<Pair<Convention, Convention>, ConverterRule>
-        mapArcToConverterRule =
+    mapArcToConverterRule =
         HashMultimap.create();
+
     private Graphs.FrozenGraph<Convention, DefaultEdge> pathMap;
 
     public List<List<Convention>> getPaths(

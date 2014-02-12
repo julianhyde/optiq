@@ -25,13 +25,13 @@ import org.eigenbase.relopt.*;
 import org.eigenbase.reltype.*;
 import org.eigenbase.util.*;
 
+import net.hydromatic.optiq.rules.java.EnumerableConvention;
+
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
 import org.junit.Ignore;
 import org.junit.Test;
-
-import net.hydromatic.optiq.rules.java.EnumerableConvention;
 
 import static org.junit.Assert.*;
 
@@ -84,7 +84,7 @@ public class VolcanoPlannerTraitTest {
   @Test public void testDoubleConversion() {
     VolcanoPlanner planner = new VolcanoPlanner();
 
-    planner.addRelTraitDef(ConventionTraitDef.instance);
+    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
     planner.addRelTraitDef(ALT_TRAIT_DEF);
 
     planner.addRule(new PhysToIteratorConverterRule());
@@ -118,7 +118,7 @@ public class VolcanoPlannerTraitTest {
     assertTrue(result instanceof IterSingleRel);
     assertEquals(
         EnumerableConvention.INSTANCE,
-        result.getTraitSet().getTrait(ConventionTraitDef.instance));
+        result.getTraitSet().getTrait(ConventionTraitDef.INSTANCE));
     assertEquals(
         ALT_TRAIT2,
         result.getTraitSet().getTrait(ALT_TRAIT_DEF));
@@ -141,7 +141,7 @@ public class VolcanoPlannerTraitTest {
   @Test public void testTraitPropagation() {
     VolcanoPlanner planner = new VolcanoPlanner();
 
-    planner.addRelTraitDef(ConventionTraitDef.instance);
+    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
     planner.addRelTraitDef(ALT_TRAIT_DEF);
 
     planner.addRule(new PhysToIteratorConverterRule());
@@ -177,7 +177,7 @@ public class VolcanoPlannerTraitTest {
     assertTrue(result instanceof IterSingleRel);
     assertEquals(
         EnumerableConvention.INSTANCE,
-        result.getTraitSet().getTrait(ConventionTraitDef.instance));
+        result.getTraitSet().getTrait(ConventionTraitDef.INSTANCE));
     assertEquals(
         ALT_TRAIT2,
         result.getTraitSet().getTrait(ALT_TRAIT_DEF));
@@ -186,7 +186,7 @@ public class VolcanoPlannerTraitTest {
     assertTrue(child instanceof IterSingleRel);
     assertEquals(
         EnumerableConvention.INSTANCE,
-        child.getTraitSet().getTrait(ConventionTraitDef.instance));
+        child.getTraitSet().getTrait(ConventionTraitDef.INSTANCE));
     assertEquals(
         ALT_TRAIT2,
         child.getTraitSet().getTrait(ALT_TRAIT_DEF));
@@ -320,7 +320,7 @@ public class VolcanoPlannerTraitTest {
     }
   }
 
-  private static abstract class TestLeafRel extends AbstractRelNode {
+  private abstract static class TestLeafRel extends AbstractRelNode {
     private String label;
 
     protected TestLeafRel(
@@ -337,7 +337,7 @@ public class VolcanoPlannerTraitTest {
 
     // implement RelNode
     public RelOptCost computeSelfCost(RelOptPlanner planner) {
-      return planner.makeInfiniteCost();
+      return planner.getCostFactory().makeInfiniteCost();
     }
 
     // implement RelNode
@@ -383,13 +383,13 @@ public class VolcanoPlannerTraitTest {
 
     // implement RelNode
     public RelOptCost computeSelfCost(RelOptPlanner planner) {
-      return planner.makeTinyCost();
+      return planner.getCostFactory().makeTinyCost();
     }
 
     // TODO: SWZ Implement clone?
   }
 
-  private static abstract class TestSingleRel extends SingleRel {
+  private abstract static class TestSingleRel extends SingleRel {
     protected TestSingleRel(
         RelOptCluster cluster,
         RelTraitSet traits,
@@ -399,7 +399,7 @@ public class VolcanoPlannerTraitTest {
 
     // implement RelNode
     public RelOptCost computeSelfCost(RelOptPlanner planner) {
-      return planner.makeInfiniteCost();
+      return planner.getCostFactory().makeInfiniteCost();
     }
 
     // implement RelNode
@@ -453,7 +453,7 @@ public class VolcanoPlannerTraitTest {
 
     // implement RelNode
     public RelOptCost computeSelfCost(RelOptPlanner planner) {
-      return planner.makeTinyCost();
+      return planner.getCostFactory().makeTinyCost();
     }
 
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
@@ -627,7 +627,7 @@ public class VolcanoPlannerTraitTest {
         RelNode child) {
       super(
           cluster,
-          ConventionTraitDef.instance,
+          ConventionTraitDef.INSTANCE,
           child.getTraitSet().replace(EnumerableConvention.INSTANCE),
           child);
     }

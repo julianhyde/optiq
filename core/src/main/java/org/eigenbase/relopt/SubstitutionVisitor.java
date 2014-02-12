@@ -140,6 +140,7 @@ public class SubstitutionVisitor {
           }
           super.visit(node, ordinal, parent);
         }
+        // CHECKSTYLE: IGNORE 1
       }.go(ancestor);
       return false;
     } catch (FoundRel e) {
@@ -354,7 +355,7 @@ public class SubstitutionVisitor {
     for (RexNode notDisjunction : notDisjunctions) {
       disjunctions.add(
           rexBuilder.makeCall(
-              SqlStdOperatorTable.notOperator,
+              SqlStdOperatorTable.NOT,
               notDisjunction));
     }
     return RexUtil.composeConjunction(rexBuilder, disjunctions, false);
@@ -365,10 +366,10 @@ public class SubstitutionVisitor {
    */
   static RexNode andNot(RexBuilder rexBuilder, RexNode e1, RexNode e2) {
     return rexBuilder.makeCall(
-        SqlStdOperatorTable.andOperator,
+        SqlStdOperatorTable.AND,
         e1,
         rexBuilder.makeCall(
-            SqlStdOperatorTable.notOperator,
+            SqlStdOperatorTable.NOT,
             e2));
   }
 
@@ -595,7 +596,7 @@ public class SubstitutionVisitor {
     }
   }
 
-  private static abstract
+  private abstract static
   class AbstractUnifyRule<Q extends RelNode, T extends RelNode>
       implements UnifyRule<Q, T> {
     private final Class<Q> queryClass;

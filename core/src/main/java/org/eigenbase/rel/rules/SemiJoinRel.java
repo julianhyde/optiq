@@ -71,11 +71,9 @@ public final class SemiJoinRel extends JoinRelBase {
   //~ Methods ----------------------------------------------------------------
 
   @Override
-  public SemiJoinRel copy(
-      RelTraitSet traitSet,
-      RexNode conditionExpr,
-      RelNode left,
-      RelNode right) {
+  public SemiJoinRel copy(RelTraitSet traitSet, RexNode conditionExpr,
+      RelNode left, RelNode right, JoinRelType joinType) {
+    assert joinType == JoinRelType.INNER;
     return new SemiJoinRel(
         getCluster(),
         left,
@@ -88,7 +86,7 @@ public final class SemiJoinRel extends JoinRelBase {
   // implement RelNode
   public RelOptCost computeSelfCost(RelOptPlanner planner) {
     // REVIEW jvs 9-Apr-2006:  Just for now...
-    return planner.makeTinyCost();
+    return planner.getCostFactory().makeTinyCost();
   }
 
   // implement RelNode

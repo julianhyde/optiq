@@ -46,7 +46,7 @@ import com.google.common.collect.Iterables;
  *
  * The switched form of the <code>CASE</code> statement is normalized to the
  * simple form by inserting calls to the <code>=</code> operator. For example,
- * <blockquote<code>
+ * <blockquote><code>
  * <pre>CASE x + y
  *   WHEN 1 THEN 'fee'
  *   WHEN 2 THEN 'fie'
@@ -118,7 +118,7 @@ import com.google.common.collect.Iterables;
 public class SqlCaseOperator extends SqlOperator {
   //~ Static fields/initializers ---------------------------------------------
 
-  private static final SqlWriter.FrameType CaseFrameType =
+  private static final SqlWriter.FrameType FRAME_TYPE =
       SqlWriter.FrameTypeEnum.create("CASE");
 
   //~ Constructors -----------------------------------------------------------
@@ -126,11 +126,10 @@ public class SqlCaseOperator extends SqlOperator {
   public SqlCaseOperator() {
     super(
         "CASE",
-        SqlKind.CASE,
-        MaxPrec,
+        SqlKind.CASE, MDX_PRECEDENCE,
         true,
         null,
-        SqlTypeStrategies.otiReturnType,
+        InferTypes.RETURN_TYPE,
         null);
   }
 
@@ -171,7 +170,7 @@ public class SqlCaseOperator extends SqlOperator {
     SqlCase caseCall = (SqlCase) callBinding.getCall();
     SqlNodeList whenList = caseCall.getWhenOperands();
     SqlNodeList thenList = caseCall.getThenOperands();
-    assert (whenList.size() == thenList.size());
+    assert whenList.size() == thenList.size();
 
     // checking that search conditions are ok...
     for (SqlNode node : whenList) {
@@ -280,7 +279,7 @@ public class SqlCaseOperator extends SqlOperator {
   }
 
   public SqlSyntax getSyntax() {
-    return SqlSyntax.Special;
+    return SqlSyntax.SPECIAL;
   }
 
   public SqlCall createCall(
@@ -313,7 +312,7 @@ public class SqlCaseOperator extends SqlOperator {
         SqlNode e = list.get(i);
         list.set(
             i,
-            SqlStdOperatorTable.equalsOperator.createCall(
+            SqlStdOperatorTable.EQUALS.createCall(
                 pos,
                 value,
                 e));
@@ -338,7 +337,7 @@ public class SqlCaseOperator extends SqlOperator {
       int leftPrec,
       int rightPrec) {
     final SqlWriter.Frame frame =
-        writer.startList(CaseFrameType, "CASE", "END");
+        writer.startList(FRAME_TYPE, "CASE", "END");
     SqlNode value = operands[SqlCase.VALUE_OPERAND];
     SqlNodeList whenList = (SqlNodeList) operands[SqlCase.WHEN_OPERANDS];
     SqlNodeList thenList = (SqlNodeList) operands[SqlCase.THEN_OPERANDS];

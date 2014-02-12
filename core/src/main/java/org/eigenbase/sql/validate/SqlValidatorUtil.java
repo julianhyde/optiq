@@ -34,6 +34,8 @@ import net.hydromatic.optiq.prepare.Prepare;
  * Utility methods related to validation.
  */
 public class SqlValidatorUtil {
+  private SqlValidatorUtil() {}
+
   //~ Methods ----------------------------------------------------------------
 
   /**
@@ -85,11 +87,11 @@ public class SqlValidatorUtil {
       boolean caseSensitive,
       final RelDataType rowType,
       String columnName) {
-    for (RelDataTypeField field : rowType.getFieldList()) {
-      if (Util.match(caseSensitive, columnName, field.getName())) {
-        return field;
-      }
+    RelDataTypeField field = rowType.getField(columnName, caseSensitive);
+    if (field != null) {
+      return field;
     }
+
     // If record type is flagged as having "any field you ask for",
     // return a type. (TODO: Better way to mark accommodating types.)
     RelDataTypeField extra = RelDataTypeImpl.extra(rowType);
@@ -105,8 +107,8 @@ public class SqlValidatorUtil {
     if (SqlTypeUtil.inCharFamily(type)) {
       Charset strCharset = type.getCharset();
       Charset colCharset = type.getCollation().getCharset();
-      assert (null != strCharset);
-      assert (null != colCharset);
+      assert null != strCharset;
+      assert null != colCharset;
       if (!strCharset.equals(colCharset)) {
         if (false) {
           // todo: enable this checking when we have a charset to
@@ -129,7 +131,7 @@ public class SqlValidatorUtil {
       String alias) {
     final SqlParserPos pos = expr.getParserPosition();
     final SqlIdentifier id = new SqlIdentifier(alias, pos);
-    return SqlStdOperatorTable.asOperator.createCall(pos, expr, id);
+    return SqlStdOperatorTable.AS.createCall(pos, expr, id);
   }
 
   /**
@@ -189,7 +191,7 @@ public class SqlValidatorUtil {
       }
     }
     final String originalName = name;
-    for (int j = 0; ; j++) {
+    for (int j = 0;; j++) {
       name = suggester.apply(originalName, j, nameList.size());
       if (nameList.add(name)) {
         return name;

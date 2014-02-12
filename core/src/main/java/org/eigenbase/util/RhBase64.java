@@ -17,6 +17,10 @@
 */
 package org.eigenbase.util;
 
+import java.io.*;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+
 /**
  * Encodes and decodes to and from Base64 notation.
  *
@@ -65,7 +69,7 @@ package org.eigenbase.util;
  * @version 2.1
  */
 public class RhBase64 {
-    /* ********  P U B L I C   F I E L D S  ******** */
+  // ********  P U B L I C   F I E L D S  ********
 
   //~ Static fields/initializers ---------------------------------------------
 
@@ -94,7 +98,7 @@ public class RhBase64 {
    */
   public static final int DONT_BREAK_LINES = 8;
 
-    /* ********  P R I V A T E   F I E L D S  ******** */
+  // ********  P R I V A T E   F I E L D S  ********
 
   /**
    * Maximum line length (76) of Base64 output.
@@ -120,39 +124,34 @@ public class RhBase64 {
    * The 64 valid Base64 values.
    */
   private static final byte[] ALPHABET;
-  private static final byte[] _NATIVE_ALPHABET = {
-      // May be something funny like EBCDIC
-      (byte) 'A', (byte) 'B', (byte) 'C', (byte) 'D', (byte) 'E', (byte) 'F',
-      (byte) 'G',
-      (byte) 'H', (byte) 'I', (byte) 'J', (byte) 'K', (byte) 'L', (byte) 'M',
-      (byte) 'N',
-      (byte) 'O', (byte) 'P', (byte) 'Q', (byte) 'R', (byte) 'S', (byte) 'T',
-      (byte) 'U',
-      (byte) 'V', (byte) 'W', (byte) 'X', (byte) 'Y', (byte) 'Z',
-      (byte) 'a', (byte) 'b', (byte) 'c', (byte) 'd', (byte) 'e', (byte) 'f',
-      (byte) 'g',
-      (byte) 'h', (byte) 'i', (byte) 'j', (byte) 'k', (byte) 'l', (byte) 'm',
-      (byte) 'n',
-      (byte) 'o', (byte) 'p', (byte) 'q', (byte) 'r', (byte) 's', (byte) 't',
-      (byte) 'u',
-      (byte) 'v', (byte) 'w', (byte) 'x', (byte) 'y', (byte) 'z',
-      (byte) '0', (byte) '1', (byte) '2', (byte) '3', (byte) '4', (byte) '5',
-      (byte) '6', (byte) '7', (byte) '8', (byte) '9', (byte) '+', (byte) '/'
+  private static final byte[] NATIVE_ALPHABET = {
+    // May be something funny like EBCDIC
+    (byte) 'A', (byte) 'B', (byte) 'C', (byte) 'D', (byte) 'E', (byte) 'F',
+    (byte) 'G', (byte) 'H', (byte) 'I', (byte) 'J', (byte) 'K', (byte) 'L',
+    (byte) 'M', (byte) 'N', (byte) 'O', (byte) 'P', (byte) 'Q', (byte) 'R',
+    (byte) 'S', (byte) 'T', (byte) 'U', (byte) 'V', (byte) 'W', (byte) 'X',
+    (byte) 'Y', (byte) 'Z', (byte) 'a', (byte) 'b', (byte) 'c', (byte) 'd',
+    (byte) 'e', (byte) 'f', (byte) 'g', (byte) 'h', (byte) 'i', (byte) 'j',
+    (byte) 'k', (byte) 'l', (byte) 'm', (byte) 'n', (byte) 'o', (byte) 'p',
+    (byte) 'q', (byte) 'r', (byte) 's', (byte) 't', (byte) 'u', (byte) 'v',
+    (byte) 'w', (byte) 'x', (byte) 'y', (byte) 'z', (byte) '0', (byte) '1',
+    (byte) '2', (byte) '3', (byte) '4', (byte) '5', (byte) '6', (byte) '7',
+    (byte) '8', (byte) '9', (byte) '+', (byte) '/'
   };
 
   /**
    * Determine which ALPHABET to use.
    */
   static {
-    byte[] __bytes;
+    byte[] bytes;
     try {
-      __bytes =
+      bytes =
           "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
               .getBytes(PREFERRED_ENCODING);
-    } catch (java.io.UnsupportedEncodingException use) {
-      __bytes = _NATIVE_ALPHABET; // Fall back to native encoding
+    } catch (UnsupportedEncodingException use) {
+      bytes = NATIVE_ALPHABET; // Fall back to native encoding
     }
-    ALPHABET = __bytes;
+    ALPHABET = bytes;
   }
 
   /**
@@ -160,29 +159,29 @@ public class RhBase64 {
    * negative number indicating some other meaning.
    */
   private static final byte[] DECODABET = {
-      -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal  0 -  8
-      -5, -5, // Whitespace: Tab and Linefeed
-      -9, -9, // Decimal 11 - 12
-      -5, // Whitespace: Carriage Return
-      -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal 14 - 26
-      -9, -9, -9, -9, -9, // Decimal 27 - 31
-      -5, // Whitespace: Space
-      -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal 33 - 42
-      62, // Plus sign at decimal 43
-      -9, -9, -9, // Decimal 44 - 46
-      63, // Slash at decimal 47
-      52, 53, 54, 55, 56, 57, 58, 59, 60, 61, // Numbers zero through nine
-      -9, -9, -9, // Decimal 58 - 60
-      -1, // Equals sign at decimal 61
-      -9, -9, -9, // Decimal 62 - 64
-      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, // Letters 'A' through 'N'
-      14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, // Letters 'O' through 'Z'
-      -9, -9, -9, -9, -9, -9, // Decimal 91 - 96
-      26, 27, 28, 29, 30, 31, 32, // Letters 'a' through 'f'
-      33, 34, 35, 36, 37, 38,     // Letters 'g' through 'm'
-      39, 40, 41, 42, 43, 44, 45, // Letters 'n' through 't'
-      46, 47, 48, 49, 50, 51,     // Letters 'u' through 'z'
-      -9, -9, -9, -9 // Decimal 123 - 126
+    -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal  0 -  8
+    -5, -5, // Whitespace: Tab and Linefeed
+    -9, -9, // Decimal 11 - 12
+    -5, // Whitespace: Carriage Return
+    -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal 14 - 26
+    -9, -9, -9, -9, -9, // Decimal 27 - 31
+    -5, // Whitespace: Space
+    -9, -9, -9, -9, -9, -9, -9, -9, -9, -9, // Decimal 33 - 42
+    62, // Plus sign at decimal 43
+    -9, -9, -9, // Decimal 44 - 46
+    63, // Slash at decimal 47
+    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, // Numbers zero through nine
+    -9, -9, -9, // Decimal 58 - 60
+    -1, // Equals sign at decimal 61
+    -9, -9, -9, // Decimal 62 - 64
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, // Letters 'A' through 'N'
+    14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, // Letters 'O' through 'Z'
+    -9, -9, -9, -9, -9, -9, // Decimal 91 - 96
+    26, 27, 28, 29, 30, 31, 32, // Letters 'a' through 'f'
+    33, 34, 35, 36, 37, 38,     // Letters 'g' through 'm'
+    39, 40, 41, 42, 43, 44, 45, // Letters 'n' through 't'
+    46, 47, 48, 49, 50, 51,     // Letters 'u' through 'z'
+    -9, -9, -9, -9 // Decimal 123 - 126
 
 /*
         ,
@@ -197,7 +196,7 @@ public class RhBase64 {
          -9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,     // Decimal 231 -
          243-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9,-9         // Decimal 244 - 255
 */
-      };
+  };
 
   // I think I end up not using the BAD_ENCODING indicator. private final
   // static byte BAD_ENCODING    = -9; // Indicates error in encoding
@@ -216,15 +215,15 @@ public class RhBase64 {
 
   //~ Methods ----------------------------------------------------------------
 
-    /* ********  E N C O D I N G   M E T H O D S  ******** */
+  // ********  E N C O D I N G   M E T H O D S  ********
 
   /**
-   * Encodes up to the first three bytes of array <var>threeBytes</var> and
+   * Encodes up to the first three bytes of array {@code threeBytes} and
    * returns a four-byte array in Base64 notation. The actual number of
-   * significant bytes in your array is given by <var>numSigBytes</var>. The
-   * array <var>threeBytes</var> needs only be as big as <var>
-   * numSigBytes</var>. Code can reuse a byte array by passing a four-byte
-   * array as <var>b4</var>.
+   * significant bytes in your array is given by {@code numSigBytes}. The
+   * array {@code threeBytes} needs only be as big as {@code numSigBytes}.
+   * Code can reuse a byte array by passing a four-byte
+   * array as {@code b4}.
    *
    * @param b4          A reusable byte array to reduce array instantiation
    * @param threeBytes  the array to convert
@@ -241,22 +240,21 @@ public class RhBase64 {
   }
 
   /**
-   * Encodes up to three bytes of the array <var>source</var> and writes the
-   * resulting four Base64 bytes to <var>destination</var>. The source and
+   * Encodes up to three bytes of the array {@code source} and writes the
+   * resulting four Base64 bytes to {@code destination}. The source and
    * destination arrays can be manipulated anywhere along their length by
-   * specifying <var>srcOffset</var> and <var>destOffset</var>. This method
+   * specifying {@code srcOffset} and {@code destOffset}. This method
    * does not check to make sure your arrays are large enough to accomodate
-   * <var>srcOffset</var> + 3 for the <var>source</var> array or <var>
-   * destOffset</var> + 4 for the <var>destination</var> array. The actual
-   * number of significant bytes in your array is given by <var>
-   * numSigBytes</var>.
+   * {@code srcOffset} + 3 for the {@code source} array or
+   * {@code destOffset} + 4 for the {@code destination} array. The actual
+   * number of significant bytes in your array is given by {@code numSigBytes}.
    *
    * @param source      the array to convert
    * @param srcOffset   the index where conversion begins
    * @param numSigBytes the number of significant bytes in your array
    * @param destination the array to hold the conversion
    * @param destOffset  the index where output will be put
-   * @return the <var>destination</var> array
+   * @return the {@code destination} array
    * @since 1.3
    */
   private static byte[] encode3to4(
@@ -283,21 +281,21 @@ public class RhBase64 {
 
     switch (numSigBytes) {
     case 3:
-      destination[destOffset] = ALPHABET[(inBuff >>> 18)];
+      destination[destOffset] = ALPHABET[inBuff >>> 18];
       destination[destOffset + 1] = ALPHABET[(inBuff >>> 12) & 0x3f];
       destination[destOffset + 2] = ALPHABET[(inBuff >>> 6) & 0x3f];
-      destination[destOffset + 3] = ALPHABET[(inBuff) & 0x3f];
+      destination[destOffset + 3] = ALPHABET[inBuff & 0x3f];
       return destination;
 
     case 2:
-      destination[destOffset] = ALPHABET[(inBuff >>> 18)];
+      destination[destOffset] = ALPHABET[inBuff >>> 18];
       destination[destOffset + 1] = ALPHABET[(inBuff >>> 12) & 0x3f];
       destination[destOffset + 2] = ALPHABET[(inBuff >>> 6) & 0x3f];
       destination[destOffset + 3] = EQUALS_SIGN;
       return destination;
 
     case 1:
-      destination[destOffset] = ALPHABET[(inBuff >>> 18)];
+      destination[destOffset] = ALPHABET[inBuff >>> 18];
       destination[destOffset + 1] = ALPHABET[(inBuff >>> 12) & 0x3f];
       destination[destOffset + 2] = EQUALS_SIGN;
       destination[destOffset + 3] = EQUALS_SIGN;
@@ -318,7 +316,7 @@ public class RhBase64 {
    * @return The Base64-encoded object
    * @since 1.4
    */
-  public static String encodeObject(java.io.Serializable serializableObject) {
+  public static String encodeObject(Serializable serializableObject) {
     return encodeObject(serializableObject, NO_OPTIONS);
   }
 
@@ -348,51 +346,55 @@ public class RhBase64 {
    * @since 2.0
    */
   public static String encodeObject(
-      java.io.Serializable serializableObject,
+      Serializable serializableObject,
       int options) {
     // Streams
-    java.io.ByteArrayOutputStream baos = null;
-    java.io.OutputStream b64os = null;
-    java.io.ObjectOutputStream oos = null;
-    java.util.zip.GZIPOutputStream gzos = null;
+    ByteArrayOutputStream baos = null;
+    OutputStream b64os = null;
+    ObjectOutputStream oos = null;
+    GZIPOutputStream gzos = null;
 
     // Isolate options
-    int gzip = (options & GZIP);
-    int dontBreakLines = (options & DONT_BREAK_LINES);
+    int gzip = options & GZIP;
+    int dontBreakLines = options & DONT_BREAK_LINES;
 
     try {
       // ObjectOutputStream -> (GZIP) -> Base64 -> ByteArrayOutputStream
-      baos = new java.io.ByteArrayOutputStream();
+      baos = new ByteArrayOutputStream();
       b64os = new RhBase64.OutputStream(baos, ENCODE | dontBreakLines);
 
       // GZip?
       if (gzip == GZIP) {
-        gzos = new java.util.zip.GZIPOutputStream(b64os);
-        oos = new java.io.ObjectOutputStream(gzos);
+        gzos = new GZIPOutputStream(b64os);
+        oos = new ObjectOutputStream(gzos);
       } else {
-        oos = new java.io.ObjectOutputStream(b64os);
+        oos = new ObjectOutputStream(b64os);
       }
 
       oos.writeObject(serializableObject);
-    } catch (java.io.IOException e) {
+    } catch (IOException e) {
       e.printStackTrace();
       return null;
     } finally {
       try {
         oos.close();
       } catch (Exception e) {
+          // ignore
       }
       try {
         gzos.close();
       } catch (Exception e) {
+          // ignore
       }
       try {
         b64os.close();
       } catch (Exception e) {
+          // ignore
       }
       try {
         baos.close();
       } catch (Exception e) {
+          // ignore
       }
     }
 
@@ -401,7 +403,7 @@ public class RhBase64 {
       return new String(
           baos.toByteArray(),
           PREFERRED_ENCODING);
-    } catch (java.io.UnsupportedEncodingException uue) {
+    } catch (UnsupportedEncodingException uue) {
       return new String(baos.toByteArray());
     }
   }
@@ -484,39 +486,42 @@ public class RhBase64 {
       int len,
       int options) {
     // Isolate options
-    int dontBreakLines = (options & DONT_BREAK_LINES);
-    int gzip = (options & GZIP);
+    int dontBreakLines = options & DONT_BREAK_LINES;
+    int gzip = options & GZIP;
 
     // Compress?
     if (gzip == GZIP) {
-      java.io.ByteArrayOutputStream baos = null;
-      java.util.zip.GZIPOutputStream gzos = null;
+      ByteArrayOutputStream baos = null;
+      GZIPOutputStream gzos = null;
       RhBase64.OutputStream b64os = null;
 
       try {
         // GZip -> Base64 -> ByteArray
-        baos = new java.io.ByteArrayOutputStream();
+        baos = new ByteArrayOutputStream();
         b64os =
             new RhBase64.OutputStream(baos, ENCODE | dontBreakLines);
-        gzos = new java.util.zip.GZIPOutputStream(b64os);
+        gzos = new GZIPOutputStream(b64os);
 
         gzos.write(source, off, len);
         gzos.close();
-      } catch (java.io.IOException e) {
+      } catch (IOException e) {
         e.printStackTrace();
         return null;
       } finally {
         try {
           gzos.close();
         } catch (Exception e) {
+          // ignore
         }
         try {
           b64os.close();
         } catch (Exception e) {
+          // ignore
         }
         try {
           baos.close();
         } catch (Exception e) {
+          // ignore
         }
       }
 
@@ -525,7 +530,7 @@ public class RhBase64 {
         return new String(
             baos.toByteArray(),
             PREFERRED_ENCODING);
-      } catch (java.io.UnsupportedEncodingException uue) {
+      } catch (UnsupportedEncodingException uue) {
         return new String(baos.toByteArray());
       }
     } else {
@@ -536,7 +541,7 @@ public class RhBase64 {
       int len43 = len * 4 / 3;
       byte[] outBuff =
           new byte[
-              (len43) // Main 4:3
+              len43 // Main 4:3
                   + (((len % 3) > 0) ? 4 : 0) // Account for padding
                   + (breakLines
                   ? (len43 / MAX_LINE_LENGTH)
@@ -564,22 +569,22 @@ public class RhBase64 {
       // Return value according to relevant encoding.
       try {
         return new String(outBuff, 0, e, PREFERRED_ENCODING);
-      } catch (java.io.UnsupportedEncodingException uue) {
+      } catch (UnsupportedEncodingException uue) {
         return new String(outBuff, 0, e);
       }
     }
   }
 
-    /* ********  D E C O D I N G   M E T H O D S  ******** */
+  // ********  D E C O D I N G   M E T H O D S  ********
 
   /**
-   * Decodes four bytes from array <var>source</var> and writes the resulting
-   * bytes (up to three of them) to <var>destination</var>. The source and
+   * Decodes four bytes from array {@code source} and writes the resulting
+   * bytes (up to three of them) to {@code destination}. The source and
    * destination arrays can be manipulated anywhere along their length by
-   * specifying <var>srcOffset</var> and <var>destOffset</var>. This method
+   * specifying {@code srcOffset} and {@code destOffset}. This method
    * does not check to make sure your arrays are large enough to accomodate
-   * <var>srcOffset</var> + 4 for the <var>source</var> array or <var>
-   * destOffset</var> + 3 for the <var>destination</var> array. This method
+   * {@code srcOffset} + 4 for the {@code source} array or
+   * {@code destOffset} + 3 for the {@code destination} array. This method
    * returns the actual number of bytes that were converted from the Base64
    * encoding.
    *
@@ -639,7 +644,7 @@ public class RhBase64 {
 
         destination[destOffset] = (byte) (outBuff >> 16);
         destination[destOffset + 1] = (byte) (outBuff >> 8);
-        destination[destOffset + 2] = (byte) (outBuff);
+        destination[destOffset + 2] = (byte) outBuff;
 
         return 3;
       } catch (Exception e) {
@@ -724,7 +729,7 @@ public class RhBase64 {
     byte[] bytes;
     try {
       bytes = s.getBytes(PREFERRED_ENCODING);
-    } catch (java.io.UnsupportedEncodingException uee) {
+    } catch (UnsupportedEncodingException uee) {
       bytes = s.getBytes();
     }
 
@@ -737,17 +742,17 @@ public class RhBase64 {
     // GZIP Magic Two-Byte Number: 0x8b1f (35615)
     if ((bytes != null) && (bytes.length >= 4)) {
       int head = ((int) bytes[0] & 0xff) | ((bytes[1] << 8) & 0xff00);
-      if (java.util.zip.GZIPInputStream.GZIP_MAGIC == head) {
-        java.io.ByteArrayInputStream bais = null;
-        java.util.zip.GZIPInputStream gzis = null;
-        java.io.ByteArrayOutputStream baos = null;
+      if (GZIPInputStream.GZIP_MAGIC == head) {
+        ByteArrayInputStream bais = null;
+        GZIPInputStream gzis = null;
+        ByteArrayOutputStream baos = null;
         byte[] buffer = new byte[2048];
         int length = 0;
 
         try {
-          baos = new java.io.ByteArrayOutputStream();
-          bais = new java.io.ByteArrayInputStream(bytes);
-          gzis = new java.util.zip.GZIPInputStream(bais);
+          baos = new ByteArrayOutputStream();
+          bais = new ByteArrayInputStream(bytes);
+          gzis = new GZIPInputStream(bais);
 
           while ((length = gzis.read(buffer)) >= 0) {
             baos.write(buffer, 0, length);
@@ -755,20 +760,23 @@ public class RhBase64 {
 
           // No error? Get new bytes.
           bytes = baos.toByteArray();
-        } catch (java.io.IOException e) {
+        } catch (IOException e) {
           // Just return originally-decoded bytes
         } finally {
           try {
             baos.close();
           } catch (Exception e) {
+            // ignore
           }
           try {
             gzis.close();
           } catch (Exception e) {
+            // ignore
           }
           try {
             bais.close();
           } catch (Exception e) {
+            // ignore
           }
         }
       }
@@ -789,16 +797,16 @@ public class RhBase64 {
     // Decode and gunzip if necessary
     byte[] objBytes = decode(encodedObject);
 
-    java.io.ByteArrayInputStream bais = null;
-    java.io.ObjectInputStream ois = null;
+    ByteArrayInputStream bais = null;
+    ObjectInputStream ois = null;
     Object obj = null;
 
     try {
-      bais = new java.io.ByteArrayInputStream(objBytes);
-      ois = new java.io.ObjectInputStream(bais);
+      bais = new ByteArrayInputStream(objBytes);
+      ois = new ObjectInputStream(bais);
 
       obj = ois.readObject();
-    } catch (java.io.IOException e) {
+    } catch (IOException e) {
       e.printStackTrace();
       obj = null;
     } catch (java.lang.ClassNotFoundException e) {
@@ -808,10 +816,12 @@ public class RhBase64 {
       try {
         bais.close();
       } catch (Exception e) {
+          // ignore
       }
       try {
         ois.close();
       } catch (Exception e) {
+          // ignore
       }
     }
 
@@ -832,16 +842,17 @@ public class RhBase64 {
     try {
       bos =
           new RhBase64.OutputStream(
-              new java.io.FileOutputStream(filename),
+              new FileOutputStream(filename),
               RhBase64.ENCODE);
       bos.write(dataToEncode);
       success = true;
-    } catch (java.io.IOException e) {
+    } catch (IOException e) {
       success = false;
     } finally {
       try {
         bos.close();
       } catch (Exception e) {
+          // ignore
       }
     }
 
@@ -862,16 +873,17 @@ public class RhBase64 {
     try {
       bos =
           new RhBase64.OutputStream(
-              new java.io.FileOutputStream(filename),
+              new FileOutputStream(filename),
               RhBase64.DECODE);
       bos.write(dataToDecode.getBytes(PREFERRED_ENCODING));
       success = true;
-    } catch (java.io.IOException e) {
+    } catch (IOException e) {
       success = false;
     } finally {
       try {
         bos.close();
       } catch (Exception e) {
+          // ignore
       }
     }
 
@@ -890,7 +902,7 @@ public class RhBase64 {
     RhBase64.InputStream bis = null;
     try {
       // Set up some useful variables
-      java.io.File file = new java.io.File(filename);
+      File file = new File(filename);
       byte[] buffer = null;
       int length = 0;
       int numBytes = 0;
@@ -907,8 +919,8 @@ public class RhBase64 {
       // Open a stream
       bis =
           new RhBase64.InputStream(
-              new java.io.BufferedInputStream(
-                  new java.io.FileInputStream(file)),
+              new BufferedInputStream(
+                  new FileInputStream(file)),
               RhBase64.DECODE);
 
       // Read until done
@@ -919,12 +931,13 @@ public class RhBase64 {
       // Save in a variable to return
       decodedData = new byte[length];
       System.arraycopy(buffer, 0, decodedData, 0, length);
-    } catch (java.io.IOException e) {
+    } catch (IOException e) {
       System.err.println("Error decoding from file " + filename);
     } finally {
       try {
         bis.close();
       } catch (Exception e) {
+          // ignore
       }
     }
 
@@ -943,7 +956,7 @@ public class RhBase64 {
     RhBase64.InputStream bis = null;
     try {
       // Set up some useful variables
-      java.io.File file = new java.io.File(filename);
+      File file = new File(filename);
       byte[] buffer = new byte[(int) (file.length() * 1.4)];
       int length = 0;
       int numBytes = 0;
@@ -951,8 +964,8 @@ public class RhBase64 {
       // Open a stream
       bis =
           new RhBase64.InputStream(
-              new java.io.BufferedInputStream(
-                  new java.io.FileInputStream(file)),
+              new BufferedInputStream(
+                  new FileInputStream(file)),
               RhBase64.ENCODE);
 
       // Read until done
@@ -963,12 +976,13 @@ public class RhBase64 {
       // Save in a variable to return
       encodedData =
           new String(buffer, 0, length, RhBase64.PREFERRED_ENCODING);
-    } catch (java.io.IOException e) {
+    } catch (IOException e) {
       System.err.println("Error encoding from file " + filename);
     } finally {
       try {
         bis.close();
       } catch (Exception e) {
+          // ignore
       }
     }
 
@@ -977,16 +991,16 @@ public class RhBase64 {
 
   //~ Inner Classes ----------------------------------------------------------
 
-    /* ********  I N N E R   C L A S S   I N P U T S T R E A M  ******** */
+  // ********  I N N E R   C L A S S   I N P U T S T R E A M  ********
 
   /**
    * A {@link RhBase64.InputStream} will read data from another <tt>
-   * java.io.InputStream</tt>, given in the constructor, and encode/decode
+   * InputStream</tt>, given in the constructor, and encode/decode
    * to/from Base64 notation on the fly.
    *
    * @see RhBase64
    */
-  public static class InputStream extends java.io.FilterInputStream {
+  public static class InputStream extends FilterInputStream {
     private boolean encode; // Encoding or decoding
     private int position; // Current position in the buffer
     private byte[] buffer; // Small buffer holding converted data
@@ -998,10 +1012,10 @@ public class RhBase64 {
     /**
      * Constructs a {@link RhBase64.InputStream} in DECODE mode.
      *
-     * @param in the <tt>java.io.InputStream</tt> from which to read data.
+     * @param in the <tt>InputStream</tt> from which to read data.
      * @since 1.3
      */
-    public InputStream(java.io.InputStream in) {
+    public InputStream(InputStream in) {
       this(in, DECODE);
     }
 
@@ -1021,7 +1035,7 @@ public class RhBase64 {
      * <p>Example: <code>new RhBase64.InputStream( in, RhBase64.DECODE
      * )</code>
      *
-     * @param in      the <tt>java.io.InputStream</tt> from which to read data.
+     * @param in      the <tt>InputStream</tt> from which to read data.
      * @param options Specified options
      * @see RhBase64#ENCODE
      * @see RhBase64#DECODE
@@ -1045,8 +1059,7 @@ public class RhBase64 {
      * @return next byte
      * @since 1.3
      */
-    public int read()
-        throws java.io.IOException {
+    public int read() throws IOException {
       // Do we need to get data?
       if (position < 0) {
         if (encode) {
@@ -1061,7 +1074,7 @@ public class RhBase64 {
                 b3[i] = (byte) b;
                 numBinaryBytes++;
               }
-            } catch (java.io.IOException e) {
+            } catch (IOException e) {
               // Only a problem if we got no data at all.
               if (i == 0) {
                 throw e;
@@ -1103,7 +1116,7 @@ public class RhBase64 {
             return -1;
           } else {
             // Must have broken out from above.
-            throw new java.io.IOException(
+            throw new IOException(
                 "Improperly padded Base64 input.");
           }
         }
@@ -1137,14 +1150,14 @@ public class RhBase64 {
       } else {
         // Else error
         // When JDK1.4 is more accepted, use an assertion here.
-        throw new java.io.IOException(
+        throw new IOException(
             "Error in Base64 code reading stream.");
       }
     }
 
     /**
      * Calls {@link #read()} repeatedly until the end of stream is reached
-     * or <var>len</var> bytes are read. Returns number of bytes read into
+     * or {@code len} bytes are read. Returns number of bytes read into
      * array or -1 if end of stream is encountered.
      *
      * @param dest array to hold values
@@ -1153,8 +1166,7 @@ public class RhBase64 {
      * @return bytes read into array or -1 if end of stream is encountered.
      * @since 1.3
      */
-    public int read(byte[] dest, int off, int len)
-        throws java.io.IOException {
+    public int read(byte[] dest, int off, int len) throws IOException {
       int i;
       int b;
       for (i = 0; i < len; i++) {
@@ -1172,17 +1184,17 @@ public class RhBase64 {
     }
   }
 
-    /* ********  I N N E R   C L A S S   O U T P U T S T R E A M  ******** */
+  // ********  I N N E R   C L A S S   O U T P U T S T R E A M  ********
 
   /**
    * A {@link RhBase64.OutputStream} will write data to another <tt>
-   * java.io.OutputStream</tt>, given in the constructor, and encode/decode
+   * OutputStream</tt>, given in the constructor, and encode/decode
    * to/from Base64 notation on the fly.
    *
    * @see RhBase64
    * @since 1.3
    */
-  public static class OutputStream extends java.io.FilterOutputStream {
+  public static class OutputStream extends FilterOutputStream {
     private boolean encode;
     private int position;
     private byte[] buffer;
@@ -1195,11 +1207,11 @@ public class RhBase64 {
     /**
      * Constructs a {@link RhBase64.OutputStream} in ENCODE mode.
      *
-     * @param out the <tt>java.io.OutputStream</tt> to which data will be
+     * @param out the <tt>OutputStream</tt> to which data will be
      *            written.
      * @since 1.3
      */
-    public OutputStream(java.io.OutputStream out) {
+    public OutputStream(OutputStream out) {
       this(out, ENCODE);
     }
 
@@ -1219,7 +1231,7 @@ public class RhBase64 {
      * <p>Example: <code>new RhBase64.OutputStream( out, RhBase64.ENCODE
      * )</code>
      *
-     * @param out     the <tt>java.io.OutputStream</tt> to which data will be
+     * @param out     the <tt>OutputStream</tt> to which data will be
      *                written.
      * @param options Specified options.
      * @see RhBase64#ENCODE
@@ -1248,8 +1260,7 @@ public class RhBase64 {
      * @param theByte the byte to write
      * @since 1.3
      */
-    public void write(int theByte)
-        throws java.io.IOException {
+    public void write(int theByte) throws IOException {
       // Encoding suspended?
       if (suspendEncoding) {
         super.out.write(theByte);
@@ -1285,14 +1296,14 @@ public class RhBase64 {
             position = 0;
           }
         } else if (DECODABET[theByte & 0x7f] != WHITE_SPACE_ENC) {
-          throw new java.io.IOException(
+          throw new IOException(
               "Invalid character in Base64 data.");
         }
       }
     }
 
     /**
-     * Calls {@link #write(int)} repeatedly until <var>len</var> bytes are
+     * Calls {@link #write(int)} repeatedly until {@code len} bytes are
      * written.
      *
      * @param theBytes array from which to read bytes
@@ -1300,8 +1311,7 @@ public class RhBase64 {
      * @param len      max number of bytes to read into array
      * @since 1.3
      */
-    public void write(byte[] theBytes, int off, int len)
-        throws java.io.IOException {
+    public void write(byte[] theBytes, int off, int len) throws IOException {
       // Encoding suspended?
       if (suspendEncoding) {
         super.out.write(theBytes, off, len);
@@ -1317,14 +1327,13 @@ public class RhBase64 {
      * Method added by PHIL. [Thanks, PHIL. -Rob] This pads the buffer
      * without closing the stream.
      */
-    public void flushBase64()
-        throws java.io.IOException {
+    public void flushBase64() throws IOException {
       if (position > 0) {
         if (encode) {
           out.write(encode3to4(b4, buffer, position));
           position = 0;
         } else {
-          throw new java.io.IOException(
+          throw new IOException(
               "Base64 input not properly padded.");
         }
       }
@@ -1335,8 +1344,7 @@ public class RhBase64 {
      *
      * @since 1.3
      */
-    public void close()
-        throws java.io.IOException {
+    public void close() throws IOException {
       // 1. Ensure that pending characters are written
       flushBase64();
 
@@ -1354,8 +1362,7 @@ public class RhBase64 {
      *
      * @since 1.5.1
      */
-    public void suspendEncoding()
-        throws java.io.IOException {
+    public void suspendEncoding() throws IOException {
       flushBase64();
       this.suspendEncoding = true;
     }

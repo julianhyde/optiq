@@ -20,6 +20,7 @@ package net.hydromatic.optiq;
 import net.hydromatic.linq4j.QueryProvider;
 import net.hydromatic.linq4j.expressions.Expressions;
 import net.hydromatic.linq4j.expressions.ParameterExpression;
+
 import net.hydromatic.optiq.impl.java.JavaTypeFactory;
 
 import org.eigenbase.util.Util;
@@ -59,6 +60,7 @@ public interface DataContext {
    */
   Object get(String name);
 
+  /** Variable that may be asked for in a call to {@link DataContext#get}. */
   enum Variable {
     /** The time at which the current statement started executing. In
      * milliseconds after 1970-01-01 00:00:00, UTC. Required. */

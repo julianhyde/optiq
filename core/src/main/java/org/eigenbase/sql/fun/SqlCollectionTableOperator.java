@@ -26,7 +26,7 @@ import org.eigenbase.sql.type.*;
  * TABLE(ramp(5))</code>".
  *
  * <p>This operator has function syntax (with one argument), whereas {@link
- * SqlStdOperatorTable#explicitTableOperator} is a prefix operator.
+ * SqlStdOperatorTable#EXPLICIT_TABLE} is a prefix operator.
  */
 public class SqlCollectionTableOperator extends SqlFunctionalOperator {
   //~ Static fields/initializers ---------------------------------------------
@@ -46,9 +46,9 @@ public class SqlCollectionTableOperator extends SqlFunctionalOperator {
         SqlKind.COLLECTION_TABLE,
         200,
         true,
-        SqlTypeStrategies.rtiFirstArgType,
+        ReturnTypes.ARG0,
         null,
-        SqlTypeStrategies.otcAny);
+        OperandTypes.ANY);
 
     this.modality = modality;
   }

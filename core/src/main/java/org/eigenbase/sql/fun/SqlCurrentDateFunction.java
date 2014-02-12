@@ -31,16 +31,16 @@ public class SqlCurrentDateFunction extends SqlFunction {
     super(
         "CURRENT_DATE",
         SqlKind.OTHER_FUNCTION,
-        SqlTypeStrategies.rtiDate,
+        ReturnTypes.DATE,
         null,
-        SqlTypeStrategies.otcNiladic,
-        SqlFunctionCategory.TimeDate);
+        OperandTypes.NILADIC,
+        SqlFunctionCategory.TIMEDATE);
   }
 
   //~ Methods ----------------------------------------------------------------
 
   public SqlSyntax getSyntax() {
-    return SqlSyntax.FunctionId;
+    return SqlSyntax.FUNCTION_ID;
   }
 
   public SqlMonotonicity getMonotonicity(

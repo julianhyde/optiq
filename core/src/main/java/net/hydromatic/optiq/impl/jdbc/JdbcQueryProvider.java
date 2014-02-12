@@ -18,7 +18,6 @@
 package net.hydromatic.optiq.impl.jdbc;
 
 import net.hydromatic.linq4j.Enumerator;
-import net.hydromatic.linq4j.QueryProvider;
 import net.hydromatic.linq4j.QueryProviderImpl;
 import net.hydromatic.linq4j.Queryable;
 
@@ -26,7 +25,7 @@ import net.hydromatic.linq4j.Queryable;
  * Implementation of {@link QueryProvider} that talks to JDBC databases.
  */
 public final class JdbcQueryProvider extends QueryProviderImpl {
-  public static JdbcQueryProvider INSTANCE = new JdbcQueryProvider();
+  public static final JdbcQueryProvider INSTANCE = new JdbcQueryProvider();
 
   private JdbcQueryProvider() {
   }

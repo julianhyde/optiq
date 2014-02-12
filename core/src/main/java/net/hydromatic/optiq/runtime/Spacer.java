@@ -28,7 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Efficiently writes strings of spaces.
  */
 public class Spacer {
-  private static final ReentrantLock lock = new ReentrantLock();
+  private static final ReentrantLock LOCK = new ReentrantLock();
 
   /** Array of spaces at least as long as any Spacer in existence. */
   private static char[] spaces = {' '};
@@ -97,7 +97,7 @@ public class Spacer {
   }
 
   private static void ensureSpaces(int n) {
-    lock.lock();
+    LOCK.lock();
     try {
       if (spaces.length < n) {
         char[] newSpaces = new char[n];
@@ -106,7 +106,7 @@ public class Spacer {
         spaces = newSpaces;
       }
     } finally {
-      lock.unlock();
+      LOCK.unlock();
     }
   }
 
@@ -117,6 +117,8 @@ public class Spacer {
     if (x <= 0) {
       return string;
     }
+    // Replacing StringBuffer with String would hurt performance.
+    //noinspection StringBufferReplaceableByString
     return new StringBuilder(string).append(spaces, 0, x).toString();
   }
 }

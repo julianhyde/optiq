@@ -75,11 +75,12 @@ public interface Planner {
    *                             at the termination of the planning cycle.
    * @param rel The root of the RelNode tree to convert.
    * @return The root of the new RelNode tree.
-   * @throws net.hydromatic.optiq.tools.RelConversionException on conversion error
+   * @throws net.hydromatic.optiq.tools.RelConversionException on conversion
+   *     error
    */
   RelNode transform(int ruleSetIndex,
       RelTraitSet requiredOutputTraits, RelNode rel)
-      throws RelConversionException;
+    throws RelConversionException;
 
   /**
    * Resets this {@code Planner} to be used with a new query. This

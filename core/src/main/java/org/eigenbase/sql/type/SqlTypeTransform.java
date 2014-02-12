@@ -27,7 +27,7 @@ import org.eigenbase.sql.*;
  * object of type {@link SqlTypeTransformCascade}.
  *
  * <p>This class is an example of the {@link
- * org.eigenbase.util.Glossary#StrategyPattern strategy pattern}.</p>
+ * org.eigenbase.util.Glossary#STRATEGY_PATTERN strategy pattern}.</p>
  */
 public interface SqlTypeTransform {
   //~ Methods ----------------------------------------------------------------
@@ -40,7 +40,7 @@ public interface SqlTypeTransform {
    * @param typeToTransform type to be transformed, never null
    * @return transformed type, never null
    */
-  public RelDataType transformType(
+  RelDataType transformType(
       SqlOperatorBinding opBinding,
       RelDataType typeToTransform);
 }

@@ -277,8 +277,7 @@ public abstract class SqlTypeUtil {
    * @return true if type is in SqlTypeFamily.Character
    */
   public static boolean inCharFamily(SqlTypeName typeName) {
-    return SqlTypeFamily.getFamilyForSqlType(typeName)
-        == SqlTypeFamily.CHARACTER;
+    return typeName.getFamily() == SqlTypeFamily.CHARACTER;
   }
 
   /**
@@ -406,7 +405,7 @@ public abstract class SqlTypeUtil {
    * Returns the maximum value of an integral type, as a long value
    */
   public static long maxValue(RelDataType type) {
-    assert (SqlTypeUtil.isIntType(type));
+    assert SqlTypeUtil.isIntType(type);
     switch (type.getSqlTypeName()) {
     case TINYINT:
       return Byte.MAX_VALUE;
@@ -859,7 +858,7 @@ public abstract class SqlTypeUtil {
     // no null indicator is required for structured type columns declared
     // as NOT NULL.  However, the uniformity of always having a null
     // indicator makes things cleaner in many places.
-    return (recordType.getSqlTypeName() == SqlTypeName.STRUCTURED);
+    return recordType.getSqlTypeName() == SqlTypeName.STRUCTURED;
   }
 
   private static boolean flattenFields(
@@ -935,7 +934,7 @@ public abstract class SqlTypeUtil {
 
     // TODO jvs 28-Dec-2004:  support row types, user-defined types,
     // interval types, multiset types, etc
-    assert (typeName != null);
+    assert typeName != null;
     SqlIdentifier typeIdentifier =
         new SqlIdentifier(
             typeName.name(),

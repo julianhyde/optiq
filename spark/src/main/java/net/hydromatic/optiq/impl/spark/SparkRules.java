@@ -23,11 +23,6 @@ import net.hydromatic.optiq.BuiltinMethod;
 import net.hydromatic.optiq.impl.java.JavaTypeFactory;
 import net.hydromatic.optiq.rules.java.*;
 
-import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.FlatMapFunction;
-import org.apache.spark.api.java.function.Function;
-
 import org.eigenbase.rel.*;
 import org.eigenbase.rel.convert.ConverterRule;
 import org.eigenbase.rel.metadata.RelMetadataQuery;
@@ -39,19 +34,26 @@ import org.eigenbase.rex.RexMultisetUtil;
 import org.eigenbase.rex.RexProgram;
 import org.eigenbase.util.Pair;
 
-import scala.Tuple2;
-
 import com.google.common.collect.ImmutableList;
+
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.Function;
 
 import java.lang.reflect.Type;
 import java.util.*;
+
+import scala.Tuple2;
 
 /**
  * Rules for the {@link SparkRel#CONVENTION Spark calling convention}.
  *
  * @see JdbcToSparkConverterRule
  */
-public class SparkRules {
+public abstract class SparkRules {
+  private SparkRules() {}
+
   public static List<RelOptRule> rules() {
     return ImmutableList.<RelOptRule>of(
         EnumerableToSparkConverterRule.INSTANCE,
@@ -219,7 +221,7 @@ public class SparkRules {
           convert(calc.getChild(),
               calc.getChild().getTraitSet().replace(SparkRel.CONVENTION)),
           program,
-          ProjectRelBase.Flags.Boxed);
+          ProjectRelBase.Flags.BOXED);
     }
   }
 
@@ -259,9 +261,9 @@ public class SparkRules {
       double dRows = RelMetadataQuery.getRowCount(this);
       double dCpu =
           RelMetadataQuery.getRowCount(getChild())
-          * program.getExprCount();
+              * program.getExprCount();
       double dIo = 0;
-      return planner.makeCost(dRows, dCpu, dIo);
+      return planner.getCostFactory().makeCost(dRows, dCpu, dIo);
     }
 
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
@@ -385,6 +387,7 @@ public class SparkRules {
                 return s.substring(0, Math.min(s.length(), 1));
               }
             }
+            //CHECKSTYLE: IGNORE 1
         ).map(
             new Function<Tuple2<String, List<String>>, Object>() {
               @Override
@@ -419,13 +422,13 @@ public class SparkRules {
     System.out.println(
         file.flatMap(
             new FlatMapFunction<String, Pair<String, Integer>>() {
-                public List<Pair<String, Integer>> call(String x) {
-                    if (!x.startsWith("a")) {
-                        return Collections.emptyList();
-                    }
-                    return Collections.singletonList(
-                        Pair.of(x.toUpperCase(), x.length()));
+              public List<Pair<String, Integer>> call(String x) {
+                if (!x.startsWith("a")) {
+                  return Collections.emptyList();
                 }
+                return Collections.singletonList(
+                    Pair.of(x.toUpperCase(), x.length()));
+              }
             })
             .take(5)
             .toString());

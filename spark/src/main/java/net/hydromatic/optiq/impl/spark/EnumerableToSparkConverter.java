@@ -18,6 +18,7 @@
 package net.hydromatic.optiq.impl.spark;
 
 import net.hydromatic.linq4j.expressions.*;
+
 import net.hydromatic.optiq.rules.java.*;
 
 import org.eigenbase.rel.RelNode;
@@ -39,7 +40,7 @@ public class EnumerableToSparkConverter
     implements SparkRel {
   protected EnumerableToSparkConverter(RelOptCluster cluster,
       RelTraitSet traits, RelNode input) {
-    super(cluster, ConventionTraitDef.instance, traits, input);
+    super(cluster, ConventionTraitDef.INSTANCE, traits, input);
   }
 
   @Override

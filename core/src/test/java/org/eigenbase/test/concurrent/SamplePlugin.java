@@ -36,7 +36,7 @@ public class SamplePlugin extends ConcurrentTestPlugin {
     if (name.equals(DESCRIBE_RESULT_SET_CMD)) {
       return new DescribeResultSet();
     }
-    assert (false);
+    assert false;
     return null;
   }
 
@@ -51,8 +51,7 @@ public class SamplePlugin extends ConcurrentTestPlugin {
           (PreparedStatement) testContext.getCurrentStatement();
       if (stmt == null) {
         testContext.storeMessage("No current statement");
-      } else if (!(stmt instanceof PreparedStatement)) {
-      } else {
+      } else if (stmt instanceof PreparedStatement) {
         try {
           ResultSetMetaData metadata =
               ((PreparedStatement) stmt).getMetaData();

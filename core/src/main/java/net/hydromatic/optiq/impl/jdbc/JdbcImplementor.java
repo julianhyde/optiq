@@ -82,11 +82,11 @@ public class JdbcImplementor {
         || node instanceof SqlIdentifier
         || node instanceof SqlCall
         && (((SqlCall) node).getOperator() instanceof SqlSetOperator
-        || ((SqlCall) node).getOperator() == SqlStdOperatorTable.asOperator)
+        || ((SqlCall) node).getOperator() == SqlStdOperatorTable.AS)
         : node;
-    return SqlStdOperatorTable.selectOperator.createCall(
-        SqlNodeList.Empty, null, node, null, null, null,
-        SqlNodeList.Empty, null, null, null, POS);
+    return SqlStdOperatorTable.SELECT.createCall(
+        SqlNodeList.EMPTY, null, node, null, null, null,
+        SqlNodeList.EMPTY, null, null, null, POS);
   }
 
   public Result visitChild(int i, RelNode e) {
@@ -127,6 +127,14 @@ public class JdbcImplementor {
               literal.getValue().toString(), POS);
         case BOOLEAN:
           return SqlLiteral.createBoolean((Boolean) literal.getValue(), POS);
+        case DATE:
+          return SqlLiteral.createDate((Calendar) literal.getValue(), POS);
+        case TIME:
+          return SqlLiteral.createTime((Calendar) literal.getValue(),
+              literal.getType().getPrecision(), POS);
+        case TIMESTAMP:
+          return SqlLiteral.createTimestamp((Calendar) literal.getValue(),
+              literal.getType().getPrecision(), POS);
         case ANY:
           switch (literal.getTypeName()) {
           case NULL:
@@ -134,13 +142,13 @@ public class JdbcImplementor {
           // fall through
           }
         default:
-          throw new AssertionError(literal);
+          throw new AssertionError(literal + ": " + literal.getTypeName());
         }
       } else if (rex instanceof RexCall) {
         final RexCall call = (RexCall) rex;
         final SqlOperator op = call.getOperator();
         final List<SqlNode> nodeList = toSql(program, call.getOperands());
-        if (op == SqlStdOperatorTable.castFunc) {
+        if (op == SqlStdOperatorTable.CAST) {
           RelDataType type = call.getType();
           if (type.getSqlTypeName() == SqlTypeName.VARCHAR
               && dialect.getDatabaseProduct()
@@ -153,7 +161,7 @@ public class JdbcImplementor {
             nodeList.add(toSql(type));
           }
         }
-        if (op == SqlStdOperatorTable.caseOperator) {
+        if (op == SqlStdOperatorTable.CASE) {
           final SqlNode valueNode;
           final List<SqlNode> whenList = Expressions.list();
           final List<SqlNode> thenList = Expressions.list();
@@ -265,14 +273,14 @@ public class JdbcImplementor {
       switch (collation.getDirection()) {
       case Descending:
       case StrictlyDescending:
-        node = SqlStdOperatorTable.descendingOperator.createCall(POS, node);
+        node = SqlStdOperatorTable.DESC.createCall(POS, node);
       }
       switch (collation.nullDirection) {
       case FIRST:
-        node = SqlStdOperatorTable.nullsFirstOperator.createCall(POS, node);
+        node = SqlStdOperatorTable.NULLS_FIRST.createCall(POS, node);
         break;
       case LAST:
-        node = SqlStdOperatorTable.nullsLastOperator.createCall(POS, node);
+        node = SqlStdOperatorTable.NULLS_LAST.createCall(POS, node);
         break;
       }
       return node;
@@ -318,6 +326,7 @@ public class JdbcImplementor {
     }
   }
 
+  /** Result of implementing a node. */
   public class Result {
     final SqlNode node;
     private final String neededAlias;
@@ -378,7 +387,7 @@ public class JdbcImplementor {
             final SqlNode selectItem = selectList.get(ordinal);
             if (selectItem instanceof SqlCall
                 && ((SqlCall) selectItem).getOperator()
-                   == SqlStdOperatorTable.asOperator) {
+                   == SqlStdOperatorTable.AS) {
               return ((SqlCall) selectItem).operands[0];
             }
             return selectItem;
@@ -408,7 +417,7 @@ public class JdbcImplementor {
      * equivalent to "SELECT * FROM emp AS emp".) */
     public SqlNode asFrom() {
       if (neededAlias != null) {
-        return SqlStdOperatorTable.asOperator.createCall(POS, node,
+        return SqlStdOperatorTable.AS.createCall(POS, node,
             new SqlIdentifier(neededAlias, POS));
       }
       return node;
@@ -445,6 +454,7 @@ public class JdbcImplementor {
     }
   }
 
+  /** Builder. */
   public class Builder {
     private final JdbcRel rel;
     private final List<Clause> clauses;

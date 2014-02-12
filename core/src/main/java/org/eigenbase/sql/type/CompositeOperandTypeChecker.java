@@ -89,8 +89,8 @@ public class CompositeOperandTypeChecker
   //~ Constructors -----------------------------------------------------------
 
   /**
-   * Package private. Use {@link SqlTypeStrategies#and},
-   * {@link SqlTypeStrategies#or}.
+   * Package private. Use {@link OperandTypes#and},
+   * {@link OperandTypes#or}.
    */
   CompositeOperandTypeChecker(
       Composition composition,
@@ -242,7 +242,7 @@ public class CompositeOperandTypeChecker
       ret = typeErrorCount == 0;
       break;
     case OR:
-      ret = (typeErrorCount < allowedRules.size());
+      ret = typeErrorCount < allowedRules.size();
       break;
     default:
       // should never come here
@@ -274,7 +274,7 @@ public class CompositeOperandTypeChecker
       boolean throwOnFailure) {
     int typeErrorCount = 0;
 
-    label:
+  label:
     for (Ord<SqlSingleOperandTypeChecker> ord : Ord.zip(allowedRules)) {
       SqlSingleOperandTypeChecker rule = ord.e;
 
@@ -306,7 +306,7 @@ public class CompositeOperandTypeChecker
       failed = typeErrorCount > 0;
       break;
     case OR:
-      failed = (typeErrorCount == allowedRules.size());
+      failed = typeErrorCount == allowedRules.size();
       break;
     default:
       throw new AssertionError();

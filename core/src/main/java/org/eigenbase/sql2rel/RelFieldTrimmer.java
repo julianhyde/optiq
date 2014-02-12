@@ -196,7 +196,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
         : "target: " + mapping.getTargetCount()
         + " + " + extraFields.size()
         + " != " + newFieldCount;
-    if (Bug.TodoFixed) {
+    if (Bug.TODO_FIXED) {
       assert newFieldCount > 0 : "rel has no fields after trim: " + rel;
     }
     if (newRel.equals(rel)) {
@@ -536,8 +536,8 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
       // Move offset to point to start of next input.
       offset += inputFieldCount;
-      newFieldCount
-          += inputMapping.getTargetCount() + inputExtraFields.size();
+      newFieldCount +=
+          inputMapping.getTargetCount() + inputExtraFields.size();
     }
 
     Mapping mapping =
@@ -573,11 +573,8 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
         conditionExpr.accept(shuttle);
 
     final JoinRel newJoin =
-        join.copy(
-            join.getTraitSet(),
-            newConditionExpr,
-            newInputs.get(0),
-            newInputs.get(1));
+        join.copy(join.getTraitSet(), newConditionExpr, newInputs.get(0),
+            newInputs.get(1), join.getJoinType());
 
     return new TrimResult(newJoin, mapping);
   }

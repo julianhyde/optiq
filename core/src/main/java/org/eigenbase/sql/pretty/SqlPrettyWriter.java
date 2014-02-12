@@ -106,14 +106,14 @@ import org.eigenbase.util.*;
 public class SqlPrettyWriter implements SqlWriter {
   //~ Static fields/initializers ---------------------------------------------
 
-  protected static final EigenbaseLogger logger =
+  protected static final EigenbaseLogger LOGGER =
       new EigenbaseLogger(
           Logger.getLogger("org.eigenbase.sql.pretty.SqlPrettyWriter"));
 
   /**
    * Bean holding the default property values.
    */
-  private static final Bean defaultBean =
+  private static final Bean DEFAULT_BEAN =
       new SqlPrettyWriter(SqlDialect.DUMMY).getBean();
   protected static final String NL = System.getProperty("line.separator");
 
@@ -297,7 +297,7 @@ public class SqlPrettyWriter implements SqlWriter {
     for (int i = 0; i < propertyNames.length; i++) {
       String key = propertyNames[i];
       final Object value = bean.get(key);
-      final Object defaultValue = defaultBean.get(key);
+      final Object defaultValue = DEFAULT_BEAN.get(key);
       if (Util.equal(value, defaultValue)) {
         continue;
       }
@@ -402,16 +402,16 @@ public class SqlPrettyWriter implements SqlWriter {
     if (indent < 0) {
       throw new IllegalArgumentException("negative indent " + indent);
     } else if (indent <= 8) {
-      pw.print(Util.spaces[indent]);
+      pw.print(Util.SPACES[indent]);
     } else {
       // Print space in chunks of 8 to amortize cost of calls to print.
       final int rem = indent % 8;
       final int div = indent / 8;
       for (int i = 0; i < div; ++i) {
-        pw.print(Util.spaces[8]);
+        pw.print(Util.SPACES[8]);
       }
       if (rem > 0) {
-        pw.print(Util.spaces[rem]);
+        pw.print(Util.SPACES[rem]);
       }
     }
     charCount += indent;
@@ -678,7 +678,7 @@ public class SqlPrettyWriter implements SqlWriter {
                 newlineBeforeSep
                     && !sep.equals(",");
             boolean newlineAfter =
-                (newlineAfterSep && sep.equals(","));
+                newlineAfterSep && sep.equals(",");
             if ((itemCount > 0) || printFirst) {
               if (newlineBefore && (itemCount > 0)) {
                 pw.println();
@@ -687,7 +687,7 @@ public class SqlPrettyWriter implements SqlWriter {
                 setNeedWhitespace(false);
               }
               keyword(sep);
-              nextWhitespace = (newlineAfter) ? NL : " ";
+              nextWhitespace = newlineAfter ? NL : " ";
             }
             ++itemCount;
           }
@@ -861,13 +861,13 @@ public class SqlPrettyWriter implements SqlWriter {
 
   protected boolean tooLong(String s) {
     boolean result =
-        ((lineLength > 0)
+        lineLength > 0
             && (charCount > currentIndent)
-            && ((charCount + s.length()) >= lineLength));
+            && ((charCount + s.length()) >= lineLength);
     if (result) {
       nextWhitespace = NL;
     }
-    logger.finest("Token is '" + s + "'; result is " + result);
+    LOGGER.finest("Token is '" + s + "'; result is " + result);
     return result;
   }
 
@@ -1047,7 +1047,7 @@ public class SqlPrettyWriter implements SqlWriter {
       }
       if ((itemCount > 0) || printFirst) {
         keyword(sep);
-        nextWhitespace = (newlineAfterSep) ? NL : " ";
+        nextWhitespace = newlineAfterSep ? NL : " ";
       }
       ++itemCount;
     }

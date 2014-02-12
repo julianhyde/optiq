@@ -143,7 +143,7 @@ public abstract class AggregateRelBase extends SingleRel {
       return 1;
     } else {
       double rowCount = super.getRows();
-      rowCount *= (1.0 - Math.pow(.5, groupCount));
+      rowCount *= 1.0 - Math.pow(.5, groupCount);
       return rowCount;
     }
   }
@@ -152,7 +152,7 @@ public abstract class AggregateRelBase extends SingleRel {
     // REVIEW jvs 24-Aug-2008:  This is bogus, but no more bogus
     // than what's currently in JoinRelBase.
     double rowCount = RelMetadataQuery.getRowCount(this);
-    return planner.makeCost(rowCount, 0, 0);
+    return planner.getCostFactory().makeCost(rowCount, 0, 0);
   }
 
   protected RelDataType deriveRowType() {
@@ -189,8 +189,7 @@ public abstract class AggregateRelBase extends SingleRel {
                 return new RelDataTypeFieldImpl(
                     name, index, aggCall.type);
               }
-            }
-        ));
+            }));
   }
 
   /**

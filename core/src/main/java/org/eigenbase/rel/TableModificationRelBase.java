@@ -125,7 +125,7 @@ public abstract class TableModificationRelBase extends SingleRel {
 
   // override RelNode
   public RelDataType getExpectedInputRowType(int ordinalInParent) {
-    assert (ordinalInParent == 0);
+    assert ordinalInParent == 0;
 
     if (inputRowType != null) {
       return inputRowType;
@@ -178,7 +178,7 @@ public abstract class TableModificationRelBase extends SingleRel {
   public RelOptCost computeSelfCost(RelOptPlanner planner) {
     // REVIEW jvs 21-Apr-2006:  Just for now...
     double rowCount = RelMetadataQuery.getRowCount(this);
-    return planner.makeCost(rowCount, 0, 0);
+    return planner.getCostFactory().makeCost(rowCount, 0, 0);
   }
 }
 

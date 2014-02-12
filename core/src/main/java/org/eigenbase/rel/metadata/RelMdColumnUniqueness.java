@@ -107,7 +107,7 @@ public class RelMdColumnUniqueness extends ReflectiveRelMetadataProvider {
         // is nullable.  Check that the types are the same by making a
         // nullable copy of both types and then comparing them.
         RexCall call = (RexCall) projExpr;
-        if (call.getOperator() != SqlStdOperatorTable.castFunc) {
+        if (call.getOperator() != SqlStdOperatorTable.CAST) {
           continue;
         }
         RexNode castOperand = call.getOperands().get(0);
@@ -179,7 +179,7 @@ public class RelMdColumnUniqueness extends ReflectiveRelMetadataProvider {
       if ((leftUnique == null) || (rightUnique == null)) {
         return null;
       } else {
-        return (leftUnique && rightUnique);
+        return leftUnique && rightUnique;
       }
     }
 
@@ -210,7 +210,7 @@ public class RelMdColumnUniqueness extends ReflectiveRelMetadataProvider {
       if ((rightJoinColsUnique == null) || (leftUnique == null)) {
         return null;
       }
-      return (rightJoinColsUnique && leftUnique);
+      return rightJoinColsUnique && leftUnique;
     } else if (rightColumns.cardinality() > 0) {
       if (rel.getJoinType().generatesNullsOnRight()) {
         return false;
@@ -223,7 +223,7 @@ public class RelMdColumnUniqueness extends ReflectiveRelMetadataProvider {
       if ((leftJoinColsUnique == null) || (rightUnique == null)) {
         return null;
       }
-      return (leftJoinColsUnique && rightUnique);
+      return leftJoinColsUnique && rightUnique;
     }
 
     throw new AssertionError();

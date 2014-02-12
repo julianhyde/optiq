@@ -84,7 +84,7 @@ public class SqlCollation implements Serializable {
     strength = parseValues.getStrength();
     String c = charset.name().toUpperCase() + "$" + locale.toString();
     if ((strength != null) && (strength.length() > 0)) {
-      c += ("$" + strength);
+      c += "$" + strength;
     }
     collationName = c;
   }
@@ -104,9 +104,14 @@ public class SqlCollation implements Serializable {
   //~ Methods ----------------------------------------------------------------
 
   public boolean equals(Object o) {
-    return (o instanceof SqlCollation)
-        && ((SqlCollation) o).getCollationName().equals(
-            this.getCollationName());
+    return this == o
+        || o instanceof SqlCollation
+        && collationName.equals(((SqlCollation) o).collationName);
+  }
+
+  @Override
+  public int hashCode() {
+    return collationName.hashCode();
   }
 
   /**
@@ -174,8 +179,8 @@ public class SqlCollation implements Serializable {
   protected static SqlCollation getCoercibilityDyadic(
       SqlCollation col1,
       SqlCollation col2) {
-    assert (null != col1);
-    assert (null != col2);
+    assert null != col1;
+    assert null != col2;
     final Coercibility coercibility1 = col1.getCoercibility();
     final Coercibility coercibility2 = col2.getCoercibility();
     switch (coercibility1) {

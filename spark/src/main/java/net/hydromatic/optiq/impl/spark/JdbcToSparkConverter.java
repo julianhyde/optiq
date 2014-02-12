@@ -18,6 +18,7 @@
 package net.hydromatic.optiq.impl.spark;
 
 import net.hydromatic.linq4j.expressions.*;
+
 import net.hydromatic.optiq.BuiltinMethod;
 import net.hydromatic.optiq.impl.java.JavaTypeFactory;
 import net.hydromatic.optiq.impl.jdbc.*;
@@ -38,11 +39,10 @@ import java.util.List;
  */
 public class JdbcToSparkConverter
     extends ConverterRelImpl
-    implements SparkRel
-{
+    implements SparkRel {
   protected JdbcToSparkConverter(RelOptCluster cluster, RelTraitSet traits,
       RelNode input) {
-    super(cluster, ConventionTraitDef.instance, traits, input);
+    super(cluster, ConventionTraitDef.INSTANCE, traits, input);
   }
 
   @Override

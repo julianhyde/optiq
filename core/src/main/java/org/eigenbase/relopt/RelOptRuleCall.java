@@ -33,12 +33,12 @@ import com.google.common.collect.ImmutableMap;
 public abstract class RelOptRuleCall {
   //~ Static fields/initializers ---------------------------------------------
 
-  protected static final Logger tracer = EigenbaseTrace.getPlannerTracer();
+  protected static final Logger LOGGER = EigenbaseTrace.getPlannerTracer();
 
   /**
    * Generator for {@link #id} values.
    */
-  static int nextId = 0;
+  private static int nextId = 0;
 
   //~ Instance fields --------------------------------------------------------
 

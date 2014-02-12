@@ -41,7 +41,6 @@ import org.eigenbase.trace.EigenbaseTimingTracer;
 import org.eigenbase.trace.EigenbaseTrace;
 
 import java.lang.reflect.Type;
-import java.sql.Connection;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -50,7 +49,7 @@ import java.util.logging.Logger;
  * the process of preparing and executing SQL expressions.
  */
 public abstract class Prepare {
-  protected static final Logger tracer = EigenbaseTrace.getStatementTracer();
+  protected static final Logger LOGGER = EigenbaseTrace.getStatementTracer();
 
   protected final OptiqPrepare.Context context;
   protected final CatalogReader catalogReader;
@@ -63,7 +62,7 @@ public abstract class Prepare {
   protected List<List<String>> fieldOrigins;
   protected RelDataType parameterRowType;
 
-  public static boolean TRIM = false; // temporary. for testing.
+  public static boolean trim = false; // temporary. for testing.
 
   public Prepare(OptiqPrepare.Context context, CatalogReader catalogReader,
       Convention resultConvention) {
@@ -130,22 +129,23 @@ public abstract class Prepare {
         .addRuleInstance(JavaRules.ENUMERABLE_CALC_RULE)
         .addRuleInstance(JavaRules.ENUMERABLE_FILTER_TO_CALC_RULE)
         .addRuleInstance(JavaRules.ENUMERABLE_PROJECT_TO_CALC_RULE)
-        .addRuleInstance(MergeCalcRule.instance)
-        .addRuleInstance(MergeFilterOntoCalcRule.instance)
-        .addRuleInstance(MergeProjectOntoCalcRule.instance)
-        .addRuleInstance(FilterToCalcRule.instance)
-        .addRuleInstance(ProjectToCalcRule.instance)
-        .addRuleInstance(MergeCalcRule.instance)
+        .addRuleInstance(MergeCalcRule.INSTANCE)
+        .addRuleInstance(MergeFilterOntoCalcRule.INSTANCE)
+        .addRuleInstance(MergeProjectOntoCalcRule.INSTANCE)
+        .addRuleInstance(FilterToCalcRule.INSTANCE)
+        .addRuleInstance(ProjectToCalcRule.INSTANCE)
+        .addRuleInstance(MergeCalcRule.INSTANCE)
 
             // REVIEW jvs 9-Apr-2006: Do we still need these two?  Doesn't the
             // combination of MergeCalcRule, FilterToCalcRule, and
             // ProjectToCalcRule have the same effect?
-        .addRuleInstance(MergeFilterOntoCalcRule.instance)
-        .addRuleInstance(MergeProjectOntoCalcRule.instance)
+        .addRuleInstance(MergeFilterOntoCalcRule.INSTANCE)
+        .addRuleInstance(MergeProjectOntoCalcRule.INSTANCE)
         .build();
     final HepPlanner planner3 =
         new HepPlanner(program, true,
-            Functions.<RelNode, RelNode, Void>ignore2());
+            Functions.<RelNode, RelNode, Void>ignore2(),
+            RelOptCostImpl.FACTORY);
     planner3.setRoot(rootRel3);
     final RelNode rootRel4 = planner3.findBestExp();
 
@@ -342,7 +342,7 @@ public abstract class Prepare {
     // For now, don't trim if there are more than 3 joins. The projects
     // near the leaves created by trim migrate past joins and seem to
     // prevent join-reordering.
-    return TRIM || countJoins(rootRel) < 2;
+    return trim || countJoins(rootRel) < 2;
   }
 
   /** Returns the number of {@link JoinRelBase} nodes in a tree. */
@@ -405,7 +405,7 @@ public abstract class Prepare {
    * PreparedExplanation is a PreparedResult for an EXPLAIN PLAN statement.
    * It's always good to have an explanation prepared.
    */
-  public static abstract class PreparedExplain
+  public abstract static class PreparedExplain
       implements PreparedResult {
     private final RelDataType rowType;
     private final RelDataType parameterRowType;
@@ -502,7 +502,7 @@ public abstract class Prepare {
   /**
    * Abstract implementation of {@link PreparedResult}.
    */
-  public static abstract class PreparedResultImpl
+  public abstract static class PreparedResultImpl
       implements PreparedResult, Typed {
     protected final RelNode rootRel;
     protected final RelDataType parameterRowType;

@@ -37,10 +37,8 @@ import com.google.common.collect.ImmutableSet;
 public final class RemoveDistinctAggregateRule extends RelOptRule {
   //~ Static fields/initializers ---------------------------------------------
 
-  /**
-   * The singleton.
-   */
-  public static final RemoveDistinctAggregateRule instance =
+  /** The singleton. */
+  public static final RemoveDistinctAggregateRule INSTANCE =
       new RemoveDistinctAggregateRule();
 
   //~ Constructors -----------------------------------------------------------
@@ -347,7 +345,7 @@ public final class RemoveDistinctAggregateRule extends RelOptRule {
       // allows null values to match.
       RexNode equi =
           rexBuilder.makeCall(
-              SqlStdOperatorTable.isNotDistinctFromOperator,
+              SqlStdOperatorTable.IS_NOT_DISTINCT_FROM,
               RexInputRef.of(leftOrdinal, leftFields),
               new RexInputRef(
                   leftFields.size() + rightOrdinal,
@@ -357,7 +355,7 @@ public final class RemoveDistinctAggregateRule extends RelOptRule {
       } else {
         condition =
             rexBuilder.makeCall(
-                SqlStdOperatorTable.andOperator,
+                SqlStdOperatorTable.AND,
                 condition,
                 equi);
       }

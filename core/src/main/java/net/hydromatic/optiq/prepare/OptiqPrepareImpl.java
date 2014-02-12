@@ -54,11 +54,11 @@ import org.eigenbase.sql.validate.*;
 import org.eigenbase.sql2rel.SqlToRelConverter;
 import org.eigenbase.util.Util;
 
+import com.google.common.collect.*;
+
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.janino.*;
 import org.codehaus.janino.Scanner;
-
-import com.google.common.collect.*;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -147,7 +147,7 @@ public class OptiqPrepareImpl implements OptiqPrepare {
    * rules. */
   protected RelOptPlanner createPlanner(Context context) {
     final VolcanoPlanner planner = new VolcanoPlanner();
-    planner.addRelTraitDef(ConventionTraitDef.instance);
+    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
     if (ENABLE_COLLATION_TRAIT) {
       planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
       planner.registerAbstractRelationalRules();
@@ -167,13 +167,13 @@ public class OptiqPrepareImpl implements OptiqPrepare {
     planner.addRule(JavaRules.ENUMERABLE_WINDOW_RULE);
     planner.addRule(JavaRules.ENUMERABLE_ONE_ROW_RULE);
     planner.addRule(JavaRules.ENUMERABLE_EMPTY_RULE);
-    planner.addRule(TableAccessRule.instance);
-    planner.addRule(MergeProjectRule.instance);
-    planner.addRule(PushFilterPastProjectRule.instance);
+    planner.addRule(TableAccessRule.INSTANCE);
+    planner.addRule(MergeProjectRule.INSTANCE);
+    planner.addRule(PushFilterPastProjectRule.INSTANCE);
     planner.addRule(PushFilterPastJoinRule.FILTER_ON_JOIN);
-    planner.addRule(RemoveDistinctAggregateRule.instance);
-    planner.addRule(ReduceAggregatesRule.instance);
-    planner.addRule(SwapJoinRule.instance);
+    planner.addRule(RemoveDistinctAggregateRule.INSTANCE);
+    planner.addRule(ReduceAggregatesRule.INSTANCE);
+    planner.addRule(SwapJoinRule.INSTANCE);
     planner.addRule(PushJoinThroughJoinRule.RIGHT);
     planner.addRule(PushJoinThroughJoinRule.LEFT);
     planner.addRule(PushSortPastProjectRule.INSTANCE);
@@ -948,9 +948,9 @@ public class OptiqPrepareImpl implements OptiqPrepare {
             true);
       case GreaterThan:
         return binary(
-            expression, SqlStdOperatorTable.greaterThanOperator);
+            expression, SqlStdOperatorTable.GREATER_THAN);
       case LessThan:
-        return binary(expression, SqlStdOperatorTable.lessThanOperator);
+        return binary(expression, SqlStdOperatorTable.LESS_THAN);
       case Parameter:
         return parameter((ParameterExpression) expression);
       case Call:

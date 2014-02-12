@@ -22,6 +22,7 @@ import net.hydromatic.linq4j.expressions.FunctionExpression;
 import net.hydromatic.linq4j.expressions.Primitive;
 import net.hydromatic.linq4j.expressions.Types;
 import net.hydromatic.linq4j.function.*;
+
 import net.hydromatic.optiq.impl.java.ReflectiveSchema;
 import net.hydromatic.optiq.impl.jdbc.JdbcSchema;
 import net.hydromatic.optiq.runtime.*;
@@ -176,8 +177,7 @@ public enum BuiltinMethod {
   TIMESTAMP_TO_LONG_OPTIONAL(SqlFunctions.class, "toLongOptional",
       Timestamp.class),
   TIMESTAMP_TO_LONG_OPTIONAL_OFFSET(SqlFunctions.class, "toLongOptional",
-      Timestamp.class, TimeZone.class),
-  ;
+      Timestamp.class, TimeZone.class);
 
   public final Method method;
   public final Constructor constructor;

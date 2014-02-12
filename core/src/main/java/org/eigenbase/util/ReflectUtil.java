@@ -94,7 +94,7 @@ public abstract class ReflectUtil {
    * @return corresponding method
    */
   public static Method getByteBufferReadMethod(Class clazz) {
-    assert (clazz.isPrimitive());
+    assert clazz.isPrimitive();
     return primitiveToByteBufferReadMethod.get(clazz);
   }
 
@@ -106,7 +106,7 @@ public abstract class ReflectUtil {
    * @return corresponding method
    */
   public static Method getByteBufferWriteMethod(Class clazz) {
-    assert (clazz.isPrimitive());
+    assert clazz.isPrimitive();
     return primitiveToByteBufferWriteMethod.get(clazz);
   }
 
@@ -118,7 +118,7 @@ public abstract class ReflectUtil {
    * @return corresponding boxing Class (e.g. java.lang.Integer)
    */
   public static Class getBoxingClass(Class primitiveClass) {
-    assert (primitiveClass.isPrimitive());
+    assert primitiveClass.isPrimitive();
     return primitiveToBoxingMap.get(primitiveClass);
   }
 
@@ -182,7 +182,7 @@ public abstract class ReflectUtil {
   }
 
   /**
-   * Implements the {@link Glossary#VisitorPattern} via reflection. The basic
+   * Implements the {@link Glossary#VISITOR_PATTERN} via reflection. The basic
    * technique is taken from <a
    * href="http://www.javaworld.com/javaworld/javatips/jw-javatip98.html">a
    * Javaworld article</a>. For an example of how to use it, see {@code
@@ -521,7 +521,7 @@ public abstract class ReflectUtil {
       final Class... otherArgClasses) {
     final List<Class> otherArgClassList =
         ImmutableList.copyOf(otherArgClasses);
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({"unchecked" })
     final ReflectiveVisitDispatcher<ReflectiveVisitor, E>
         dispatcher =
         createDispatcher(

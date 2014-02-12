@@ -18,7 +18,6 @@
 package org.eigenbase.sql.fun;
 
 import java.math.*;
-import java.util.*;
 
 import org.eigenbase.reltype.*;
 import org.eigenbase.sql.*;
@@ -26,6 +25,8 @@ import org.eigenbase.sql.type.*;
 import org.eigenbase.sql.validate.*;
 
 import net.hydromatic.linq4j.Ord;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * Definition of the "SUBSTRING" builtin SQL function.
@@ -40,10 +41,10 @@ public class SqlSubstringFunction extends SqlFunction {
     super(
         "SUBSTRING",
         SqlKind.OTHER_FUNCTION,
-        SqlTypeStrategies.rtiNullableVaryingFirstArgType,
+        ReturnTypes.ARG0_NULLABLE_VARYING,
         null,
         null,
-        SqlFunctionCategory.String);
+        SqlFunctionCategory.STRING);
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -61,17 +62,18 @@ public class SqlSubstringFunction extends SqlFunction {
 
   public String getAllowedSignatures(String opName) {
     StringBuilder ret = new StringBuilder();
-    for (Ord<SqlTypeName> typeName : Ord.zip(SqlTypeName.stringTypes)) {
+    for (Ord<SqlTypeName> typeName : Ord.zip(SqlTypeName.STRING_TYPES)) {
       if (typeName.i > 0) {
         ret.append(NL);
       }
-      ArrayList<SqlTypeName> list = new ArrayList<SqlTypeName>();
-      list.add(typeName.e);
-      list.add(SqlTypeName.INTEGER);
-      ret.append(SqlUtil.getAliasedSignature(this, opName, list));
+      ret.append(
+          SqlUtil.getAliasedSignature(this, opName,
+              ImmutableList.of(typeName.e, SqlTypeName.INTEGER)));
       ret.append(NL);
-      list.add(SqlTypeName.INTEGER);
-      ret.append(SqlUtil.getAliasedSignature(this, opName, list));
+      ret.append(
+          SqlUtil.getAliasedSignature(this, opName,
+              ImmutableList.of(typeName.e, SqlTypeName.INTEGER,
+                  SqlTypeName.INTEGER)));
     }
     return ret.toString();
   }
@@ -84,8 +86,8 @@ public class SqlSubstringFunction extends SqlFunction {
     SqlValidatorScope scope = callBinding.getScope();
 
     int n = call.operands.length;
-    assert ((3 == n) || (2 == n));
-    if (!SqlTypeStrategies.otcString.checkSingleOperandType(
+    assert (3 == n) || (2 == n);
+    if (!OperandTypes.STRING.checkSingleOperandType(
         callBinding,
         call.operands[0],
         0,
@@ -93,7 +95,7 @@ public class SqlSubstringFunction extends SqlFunction {
       return false;
     }
     if (2 == n) {
-      if (!SqlTypeStrategies.otcNumeric.checkSingleOperandType(
+      if (!OperandTypes.NUMERIC.checkSingleOperandType(
           callBinding,
           call.operands[1],
           0,
@@ -105,14 +107,14 @@ public class SqlSubstringFunction extends SqlFunction {
       RelDataType t2 = validator.deriveType(scope, call.operands[2]);
 
       if (SqlTypeUtil.inCharFamily(t1)) {
-        if (!SqlTypeStrategies.otcString.checkSingleOperandType(
+        if (!OperandTypes.STRING.checkSingleOperandType(
             callBinding,
             call.operands[1],
             0,
             throwOnFailure)) {
           return false;
         }
-        if (!SqlTypeStrategies.otcString.checkSingleOperandType(
+        if (!OperandTypes.STRING.checkSingleOperandType(
             callBinding,
             call.operands[2],
             0,
@@ -127,14 +129,14 @@ public class SqlSubstringFunction extends SqlFunction {
           return false;
         }
       } else {
-        if (!SqlTypeStrategies.otcNumeric.checkSingleOperandType(
+        if (!OperandTypes.NUMERIC.checkSingleOperandType(
             callBinding,
             call.operands[1],
             0,
             throwOnFailure)) {
           return false;
         }
-        if (!SqlTypeStrategies.otcNumeric.checkSingleOperandType(
+        if (!OperandTypes.NUMERIC.checkSingleOperandType(
             callBinding,
             call.operands[2],
             0,

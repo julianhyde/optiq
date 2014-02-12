@@ -61,16 +61,14 @@ public class SqlTrimFunction extends SqlFunction {
     super(
         "TRIM",
         SqlKind.TRIM,
-        new SqlTypeTransformCascade(
-            SqlTypeStrategies.rtiThirdArgType,
-            SqlTypeTransforms.toNullable,
-            SqlTypeTransforms.toVarying),
+        ReturnTypes.cascade(
+            ReturnTypes.ARG2,
+            SqlTypeTransforms.TO_NULLABLE,
+            SqlTypeTransforms.TO_VARYING),
         null,
-        SqlTypeStrategies.and(
-            SqlTypeStrategies.family(
-                SqlTypeFamily.ANY,
-                SqlTypeFamily.STRING,
-                SqlTypeFamily.STRING),
+        OperandTypes.and(
+            OperandTypes.family(
+                SqlTypeFamily.ANY, SqlTypeFamily.STRING, SqlTypeFamily.STRING),
             // Arguments 1 and 2 must have same type
             new SameOperandTypeChecker(3) {
               @Override
@@ -78,7 +76,7 @@ public class SqlTrimFunction extends SqlFunction {
                 return ImmutableList.of(1, 2);
               }
             }),
-        SqlFunctionCategory.String);
+        SqlFunctionCategory.STRING);
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -116,9 +114,9 @@ public class SqlTrimFunction extends SqlFunction {
       // This variant occurs when someone writes TRIM(string)
       // as opposed to the sugared syntax TRIM(string FROM string).
       operands = new SqlNode[]{
-          SqlLiteral.createSymbol(Flag.BOTH, SqlParserPos.ZERO),
-          SqlLiteral.createCharString(" ", pos),
-          operands[0]
+        SqlLiteral.createSymbol(Flag.BOTH, SqlParserPos.ZERO),
+        SqlLiteral.createCharString(" ", pos),
+        operands[0]
       };
       break;
     case 3:

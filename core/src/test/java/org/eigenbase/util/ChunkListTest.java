@@ -131,15 +131,15 @@ public class ChunkListTest {
    * operations.
    */
   @Test public void testRandom() {
-    final int ITERATION_COUNT = 10000;
-    checkRandom(new Random(1), new ChunkList<Integer>(), ITERATION_COUNT);
+    final int iterationCount = 10000;
+    checkRandom(new Random(1), new ChunkList<Integer>(), iterationCount);
     final Random random = new Random(2);
     for (int j = 0; j < 10; j++) {
-      checkRandom(random, new ChunkList<Integer>(), ITERATION_COUNT);
+      checkRandom(random, new ChunkList<Integer>(), iterationCount);
     }
     checkRandom(
         new Random(3), new ChunkList<Integer>(Collections.nCopies(1000, 5)),
-        ITERATION_COUNT);
+        iterationCount);
   }
 
   void checkRandom(
@@ -182,7 +182,7 @@ public class ChunkListTest {
         } else {
           assertTrue(list.size() == sizeBefore);
         }
-        removeCount += (sizeBefore - list.size());
+        removeCount += sizeBefore - list.size();
         break;
       case 4:
         // remove at random position
@@ -223,16 +223,18 @@ public class ChunkListTest {
                   public List<Integer> apply() {
                     return new ArrayList<Integer>();
                   }
-                }, new Function0<List<Integer>>() {
+                },
+                new Function0<List<Integer>>() {
                   public List<Integer> apply() {
                     return new LinkedList<Integer>();
                   }
-                }, new Function0<List<Integer>>() {
+                },
+                new Function0<List<Integer>>() {
                   public List<Integer> apply() {
                     return new ChunkList<Integer>();
                   }
-                }
-            ), Arrays.asList("ArrayList", "LinkedList", "ChunkList-64"));
+                }),
+            Arrays.asList("ArrayList", "LinkedList", "ChunkList-64"));
     final List<Pair<Function0<List<Integer>>, String>> factories1 =
         new ArrayList<Pair<Function0<List<Integer>>, String>>();
     for (Pair<Function0<List<Integer>>, String> pair : factories0) {

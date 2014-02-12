@@ -19,8 +19,8 @@ package net.hydromatic.optiq;
 
 import net.hydromatic.linq4j.QueryProvider;
 import net.hydromatic.linq4j.Queryable;
-
 import net.hydromatic.linq4j.expressions.*;
+
 import net.hydromatic.optiq.impl.java.JavaTypeFactory;
 import net.hydromatic.optiq.jdbc.*;
 
@@ -175,6 +175,7 @@ public final class Schemas {
         Expressions.call(schema.getExpression(),
             BuiltinMethod.SCHEMA_GET_SUB_SCHEMA.method,
             Expressions.constant(name));
+    //CHECKSTYLE: IGNORE 2
     //noinspection unchecked
     if (false && type != null && !type.isAssignableFrom(Schema.class)) {
       return unwrap(call, type);

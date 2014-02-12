@@ -31,16 +31,16 @@ public class SqlStringContextVariable extends SqlFunction {
     super(
         name,
         SqlKind.OTHER_FUNCTION,
-        SqlTypeStrategies.rtiVarchar2000,
+        ReturnTypes.VARCHAR_2000,
         null,
-        SqlTypeStrategies.otcNiladic,
-        SqlFunctionCategory.System);
+        OperandTypes.NILADIC,
+        SqlFunctionCategory.SYSTEM);
   }
 
   //~ Methods ----------------------------------------------------------------
 
   public SqlSyntax getSyntax() {
-    return SqlSyntax.FunctionId;
+    return SqlSyntax.FUNCTION_ID;
   }
 
   // All of the string constants are monotonic.

@@ -44,9 +44,9 @@ public class SqlCastFunction extends SqlFunction {
         "CAST",
         SqlKind.CAST,
         null,
-        SqlTypeStrategies.otiFirstKnown,
+        InferTypes.FIRST_KNOWN,
         null,
-        SqlFunctionCategory.System);
+        SqlFunctionCategory.SYSTEM);
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -116,7 +116,7 @@ public class SqlCastFunction extends SqlFunction {
 
   public RelDataType inferReturnType(
       SqlOperatorBinding opBinding) {
-    assert (opBinding.getOperandCount() == 2);
+    assert opBinding.getOperandCount() == 2;
     RelDataType ret = opBinding.getOperandType(1);
     RelDataType firstType = opBinding.getOperandType(0);
     ret =
@@ -194,7 +194,7 @@ public class SqlCastFunction extends SqlFunction {
   }
 
   public SqlSyntax getSyntax() {
-    return SqlSyntax.Special;
+    return SqlSyntax.SPECIAL;
   }
 
   public void unparse(

@@ -252,7 +252,7 @@ public class RexProgramBuilder {
       final RexLocalRef andRef =
           registerInput(
               rexBuilder.makeCall(
-                  SqlStdOperatorTable.andOperator,
+                  SqlStdOperatorTable.AND,
                   conditionRef,
                   ref));
       conditionRef = andRef;
@@ -405,7 +405,8 @@ public class RexProgramBuilder {
   }
 
   private void generateMissingNames() {
-    int i = -1, j = 0;
+    int i = -1;
+    int j = 0;
     for (String projectName : projectNameList) {
       ++i;
       if (projectName == null) {
@@ -682,8 +683,9 @@ public class RexProgramBuilder {
    *             6: ($2 = 6)  // c = 6
    * </pre>
    *
-   * <p>Another example:</blockquote>
+   * <p>Another example:</p>
    *
+   * <blockquote>
    * <pre>SELECT *
    * FROM (
    *   SELECT a + b AS x, c AS y

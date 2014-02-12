@@ -42,10 +42,10 @@ public class SqlSumAggFunction extends SqlAggFunction {
     super(
         "SUM",
         SqlKind.OTHER_FUNCTION,
-        SqlTypeStrategies.rtiFirstArgType,
+        ReturnTypes.ARG0,
         null,
-        SqlTypeStrategies.otcNumeric,
-        SqlFunctionCategory.Numeric);
+        OperandTypes.NUMERIC,
+        SqlFunctionCategory.NUMERIC);
     this.type = type;
   }
 

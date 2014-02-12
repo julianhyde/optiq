@@ -17,12 +17,12 @@
 */
 package org.eigenbase.sql.fun;
 
-import java.util.*;
-
 import org.eigenbase.reltype.*;
 import org.eigenbase.sql.*;
 import org.eigenbase.sql.type.*;
 import org.eigenbase.sql.validate.*;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * SqlOverlapsOperator represents the SQL:1999 standard OVERLAPS function
@@ -31,19 +31,18 @@ import org.eigenbase.sql.validate.*;
 public class SqlOverlapsOperator extends SqlSpecialOperator {
   //~ Static fields/initializers ---------------------------------------------
 
-  private static final SqlWriter.FrameType OverlapsFrameType =
+  private static final SqlWriter.FrameType FRAME_TYPE =
       SqlWriter.FrameTypeEnum.create("OVERLAPS");
 
   //~ Constructors -----------------------------------------------------------
 
   public SqlOverlapsOperator() {
-    super(
-        "OVERLAPS",
+    super("OVERLAPS",
         SqlKind.OVERLAPS,
         30,
         true,
-        SqlTypeStrategies.rtiNullableBoolean,
-        SqlTypeStrategies.otiFirstKnown,
+        ReturnTypes.BOOLEAN_NULLABLE,
+        InferTypes.FIRST_KNOWN,
         null);
   }
 
@@ -55,7 +54,7 @@ public class SqlOverlapsOperator extends SqlSpecialOperator {
       int leftPrec,
       int rightPrec) {
     final SqlWriter.Frame frame =
-        writer.startList(OverlapsFrameType, "(", ")");
+        writer.startList(FRAME_TYPE, "(", ")");
     operands[0].unparse(writer, leftPrec, rightPrec);
     writer.sep(",", true);
     operands[1].unparse(writer, leftPrec, rightPrec);
@@ -81,10 +80,10 @@ public class SqlOverlapsOperator extends SqlSpecialOperator {
     final String d = "DATETIME";
     final String i = "INTERVAL";
     String[] typeNames = {
-        d, d,
-        d, i,
-        i, d,
-        i, i
+      d, d,
+      d, i,
+      i, d,
+      i, i
     };
 
     StringBuilder ret = new StringBuilder();
@@ -92,12 +91,9 @@ public class SqlOverlapsOperator extends SqlSpecialOperator {
       if (y > 0) {
         ret.append(NL);
       }
-      ArrayList<String> list = new ArrayList<String>();
-      list.add(d);
-      list.add(typeNames[y]);
-      list.add(d);
-      list.add(typeNames[y + 1]);
-      ret.append(SqlUtil.getAliasedSignature(this, opName, list));
+      ret.append(
+          SqlUtil.getAliasedSignature(this, opName,
+              ImmutableList.of(d, typeNames[y], d, typeNames[y + 1])));
     }
     return ret.toString();
   }
@@ -108,14 +104,14 @@ public class SqlOverlapsOperator extends SqlSpecialOperator {
     SqlCall call = callBinding.getCall();
     SqlValidator validator = callBinding.getValidator();
     SqlValidatorScope scope = callBinding.getScope();
-    if (!SqlTypeStrategies.otcDatetime.checkSingleOperandType(
+    if (!OperandTypes.DATETIME.checkSingleOperandType(
         callBinding,
         call.operands[0],
         0,
         throwOnFailure)) {
       return false;
     }
-    if (!SqlTypeStrategies.otcDatetime.checkSingleOperandType(
+    if (!OperandTypes.DATETIME.checkSingleOperandType(
         callBinding,
         call.operands[2],
         0,

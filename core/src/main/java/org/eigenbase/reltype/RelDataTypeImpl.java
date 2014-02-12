@@ -25,6 +25,7 @@ import org.eigenbase.sql.*;
 import org.eigenbase.sql.parser.*;
 import org.eigenbase.sql.type.*;
 import org.eigenbase.util.Pair;
+import org.eigenbase.util.Util;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -76,7 +77,7 @@ public abstract class RelDataTypeImpl
   // implement RelDataType
   public RelDataTypeField getField(String fieldName, boolean caseSensitive) {
     for (RelDataTypeField field : fieldList) {
-      if (field.getName().equals(fieldName)) {
+      if (Util.match(caseSensitive, field.getName(), fieldName)) {
         return field;
       }
     }
@@ -158,8 +159,7 @@ public abstract class RelDataTypeImpl
   }
 
   // implement RelDataType
-  public SqlCollation getCollation()
-      throws RuntimeException {
+  public SqlCollation getCollation() {
     return null;
   }
 
@@ -244,8 +244,8 @@ public abstract class RelDataTypeImpl
       public int compareTypePrecedence(
           RelDataType type1,
           RelDataType type2) {
-        assert (containsType(type1));
-        assert (containsType(type2));
+        assert containsType(type1);
+        assert containsType(type2);
         return 0;
       }
     };

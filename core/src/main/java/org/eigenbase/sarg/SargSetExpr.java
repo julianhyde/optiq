@@ -71,9 +71,9 @@ public class SargSetExpr implements SargExpr {
    * @param child child to add
    */
   public void addChild(SargExpr child) {
-    assert (child.getDataType() == dataType);
+    assert child.getDataType() == dataType;
     if (setOp == SargSetOperator.COMPLEMENT) {
-      assert (children.isEmpty());
+      assert children.isEmpty();
     }
     children.add(child);
   }
@@ -104,7 +104,7 @@ public class SargSetExpr implements SargExpr {
   // implement SargExpr
   public SargIntervalSequence evaluate() {
     if (setOp == SargSetOperator.COMPLEMENT) {
-      assert (children.size() == 1);
+      assert children.size() == 1;
       SargExpr child = children.get(0);
       return child.evaluateComplemented();
     }
@@ -145,7 +145,7 @@ public class SargSetExpr implements SargExpr {
     // Toss all entries from each sequence in the list into one big sorted
     // set.
     SortedSet<SargInterval> intervals =
-        new TreeSet<SargInterval>(new IntervalComparator());
+        new TreeSet<SargInterval>(IntervalComparator.INSTANCE);
     for (SargIntervalSequence childSeq : list) {
       intervals.addAll(childSeq.getList());
     }
@@ -170,7 +170,7 @@ public class SargSetExpr implements SargExpr {
     SargInterval accumulator = null;
     for (SargInterval interval : intervals) {
       // Empty intervals should have been previously filtered out.
-      assert (!interval.isEmpty());
+      assert !interval.isEmpty();
 
       if (accumulator == null) {
         // The very first interval:  start accumulating.
@@ -366,7 +366,7 @@ public class SargSetExpr implements SargExpr {
         source = sourceIter.next();
       } else {
         // Source ends after target ends, so advance target.
-        assert (c > 0);
+        assert c > 0;
         if (!targetIter.hasNext()) {
           return;
         }
@@ -416,7 +416,9 @@ public class SargSetExpr implements SargExpr {
    * {lowerBound, upperBound}.
    */
   private static class IntervalComparator implements Comparator<SargInterval> {
-    IntervalComparator() {
+    public static final IntervalComparator INSTANCE = new IntervalComparator();
+
+    private IntervalComparator() {
     }
 
     // implement Comparator
@@ -427,10 +429,6 @@ public class SargSetExpr implements SargExpr {
       }
 
       return i1.getUpperBound().compareTo(i2.getUpperBound());
-    }
-
-    public boolean equals(Object obj) {
-      return (obj instanceof IntervalComparator);
     }
   }
 }

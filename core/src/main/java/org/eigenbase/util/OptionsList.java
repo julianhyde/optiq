@@ -26,11 +26,11 @@ import java.util.*;
  *
  * <table>
  * <tr>
- * <th>Short name</td>
- * <th>Long name</td>
- * <th>Type</td>
- * <th>Default</td>
- * <th>Anonymous</td>
+ * <th>Short name</th>
+ * <th>Long name</th>
+ * <th>Type</th>
+ * <th>Default</th>
+ * <th>Anonymous</th>
  * </tr>
  * <tr>
  * <td>v</td>
@@ -259,7 +259,7 @@ public class OptionsList {
    * of the wrong format. If you do not provide a handler, the value is stored
    * inside the option, and can be retrieved via</p>
    */
-  public static abstract class Option {
+  public abstract static class Option {
     /**
      * Holds the runtime value of this option. Set by the default
      * implementation {@link #set}. If the user has supplied an {@link

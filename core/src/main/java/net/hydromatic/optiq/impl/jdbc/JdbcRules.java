@@ -34,7 +34,7 @@ import org.eigenbase.rex.*;
 import org.eigenbase.sql.*;
 import org.eigenbase.sql.fun.SqlStdOperatorTable;
 import org.eigenbase.sql.parser.SqlParserPos;
-import org.eigenbase.sql.type.SqlTypeStrategies;
+import org.eigenbase.sql.type.*;
 import org.eigenbase.sql.validate.SqlValidatorUtil;
 import org.eigenbase.trace.EigenbaseTrace;
 import org.eigenbase.util.*;
@@ -48,7 +48,10 @@ import java.util.logging.Logger;
  * calling convention.
  */
 public class JdbcRules {
-  protected static final Logger tracer = EigenbaseTrace.getPlannerTracer();
+  private JdbcRules() {
+  }
+
+  protected static final Logger LOGGER = EigenbaseTrace.getPlannerTracer();
 
   private static final SqlParserPos POS = SqlParserPos.ZERO;
 
@@ -73,7 +76,7 @@ public class JdbcRules {
     String name = rowType.getFieldNames().get(selectList.size());
     String alias = SqlValidatorUtil.getAlias(node, -1);
     if (alias == null || !alias.equals(name)) {
-      node = SqlStdOperatorTable.asOperator.createCall(
+      node = SqlStdOperatorTable.AS.createCall(
           POS, node, new SqlIdentifier(name, POS));
     }
     selectList.add(node);
@@ -115,7 +118,8 @@ public class JdbcRules {
     return i == program.getInputRowType().getFieldCount();
   }
 
-  static abstract class JdbcConverterRule extends ConverterRule {
+  /** Abstract base class for rule that converts to JDBC. */
+  abstract static class JdbcConverterRule extends ConverterRule {
     protected final JdbcConvention out;
 
     public JdbcConverterRule(Class<? extends RelNode> clazz, RelTrait in,
@@ -125,6 +129,7 @@ public class JdbcRules {
     }
   }
 
+  /** Rule that converts a join to JDBC. */
   private static class JdbcJoinRule extends JdbcConverterRule {
     private JdbcJoinRule(JdbcConvention out) {
       super(JoinRel.class, Convention.NONE, out, "JdbcJoinRule");
@@ -153,12 +158,13 @@ public class JdbcRules {
             join.getJoinType(),
             join.getVariablesStopped());
       } catch (InvalidRelException e) {
-        tracer.warning(e.toString());
+        LOGGER.warning(e.toString());
         return null;
       }
     }
   }
 
+  /** Join operator implemented in JDBC convention. */
   public static class JdbcJoinRel
       extends JoinRelBase
       implements JdbcRel {
@@ -173,7 +179,7 @@ public class JdbcRules {
         RexNode condition,
         JoinRelType joinType,
         Set<String> variablesStopped)
-        throws InvalidRelException {
+      throws InvalidRelException {
       super(
           cluster, traits, left, right, condition, joinType,
           variablesStopped);
@@ -191,14 +197,11 @@ public class JdbcRules {
     }
 
     @Override
-    public JdbcJoinRel copy(
-        RelTraitSet traitSet,
-        RexNode conditionExpr,
-        RelNode left,
-        RelNode right) {
+    public JdbcJoinRel copy(RelTraitSet traitSet, RexNode conditionExpr,
+        RelNode left, RelNode right, JoinRelType joinType) {
       try {
         return new JdbcJoinRel(getCluster(), traitSet, left, right,
-            conditionExpr, joinType, variablesStopped);
+            conditionExpr, this.joinType, variablesStopped);
       } catch (InvalidRelException e) {
         // Semantic error not possible. Must be a bug. Convert to
         // internal error.
@@ -211,7 +214,7 @@ public class JdbcRules {
       // We always "build" the
       double rowCount = RelMetadataQuery.getRowCount(this);
 
-      return planner.makeCost(rowCount, 0, 0);
+      return planner.getCostFactory().makeCost(rowCount, 0, 0);
     }
 
     @Override
@@ -243,23 +246,23 @@ public class JdbcRules {
           rightResult.qualifiedContext();
       for (Pair<Integer, Integer> pair : Pair.zip(leftKeys, rightKeys)) {
         SqlNode x =
-            SqlStdOperatorTable.equalsOperator.createCall(POS,
+            SqlStdOperatorTable.EQUALS.createCall(POS,
                 leftContext.field(pair.left),
                 rightContext.field(pair.right));
         if (sqlCondition == null) {
           sqlCondition = x;
         } else {
           sqlCondition =
-              SqlStdOperatorTable.andOperator.createCall(POS, sqlCondition, x);
+              SqlStdOperatorTable.AND.createCall(POS, sqlCondition, x);
         }
       }
       SqlNode join =
-          SqlStdOperatorTable.joinOperator.createCall(
+          SqlStdOperatorTable.JOIN.createCall(
               leftResult.asFrom(),
               SqlLiteral.createBoolean(false, POS),
               joinType(joinType).symbol(POS),
               rightResult.asFrom(),
-              SqlJoinOperator.ConditionType.On.symbol(POS),
+              SqlJoinOperator.ConditionType.ON.symbol(POS),
               sqlCondition,
               POS);
       return implementor.result(join, leftResult, rightResult);
@@ -268,13 +271,13 @@ public class JdbcRules {
     private static SqlJoinOperator.JoinType joinType(JoinRelType joinType) {
       switch (joinType) {
       case LEFT:
-        return SqlJoinOperator.JoinType.Left;
+        return SqlJoinOperator.JoinType.LEFT;
       case RIGHT:
-        return SqlJoinOperator.JoinType.Right;
+        return SqlJoinOperator.JoinType.RIGHT;
       case INNER:
-        return SqlJoinOperator.JoinType.Inner;
+        return SqlJoinOperator.JoinType.INNER;
       case FULL:
-        return SqlJoinOperator.JoinType.Full;
+        return SqlJoinOperator.JoinType.FULL;
       default:
         throw new AssertionError(joinType);
       }
@@ -302,10 +305,11 @@ public class JdbcRules {
 
       return new JdbcCalcRel(rel.getCluster(), rel.getTraitSet().replace(out),
           convert(calc.getChild(), calc.getTraitSet().replace(out)),
-          calc.getProgram(), ProjectRelBase.Flags.Boxed);
+          calc.getProgram(), ProjectRelBase.Flags.BOXED);
     }
   }
 
+  /** Calc operator implemented in JDBC convention. */
   public static class JdbcCalcRel extends SingleRel implements JdbcRel {
     private final RexProgram program;
 
@@ -341,7 +345,7 @@ public class JdbcRules {
       double dCpu = RelMetadataQuery.getRowCount(getChild())
           * program.getExprCount();
       double dIo = 0;
-      return planner.makeCost(dRows, dCpu, dIo);
+      return planner.getCostFactory().makeCost(dRows, dCpu, dIo);
     }
 
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
@@ -393,7 +397,7 @@ public class JdbcRules {
               project.getChild().getTraitSet().replace(getOutConvention())),
           project.getProjects(),
           project.getRowType(),
-          ProjectRelBase.Flags.Boxed);
+          ProjectRelBase.Flags.BOXED);
     }
   }
 
@@ -504,12 +508,13 @@ public class JdbcRules {
             convert(agg.getChild(), traitSet), agg.getGroupSet(),
             agg.getAggCallList());
       } catch (InvalidRelException e) {
-        tracer.warning(e.toString());
+        LOGGER.warning(e.toString());
         return null;
       }
     }
   }
 
+  /** Aggregate operator implemented in JDBC convention. */
   public static class JdbcAggregateRel extends AggregateRelBase
       implements JdbcRel {
     public JdbcAggregateRel(
@@ -518,7 +523,7 @@ public class JdbcRules {
         RelNode child,
         BitSet groupSet,
         List<AggregateCall> aggCalls)
-        throws InvalidRelException {
+      throws InvalidRelException {
       super(cluster, traitSet, child, groupSet, aggCalls);
       assert getConvention() instanceof JdbcConvention;
     }
@@ -581,6 +586,7 @@ public class JdbcRules {
     }
   }
 
+  /** Sort operator implemented in JDBC convention. */
   public static class JdbcSortRel
       extends SortRel
       implements JdbcRel {
@@ -624,10 +630,10 @@ public class JdbcRules {
   }
 
   /** MySQL specific function. */
-  private static SqlFunction ISNULL_FUNCTION =
+  private static final SqlFunction ISNULL_FUNCTION =
       new SqlFunction("ISNULL", SqlKind.OTHER_FUNCTION,
-          SqlTypeStrategies.rtiBoolean, SqlTypeStrategies.otiFirstKnown,
-          SqlTypeStrategies.otcAny, SqlFunctionCategory.System);
+          ReturnTypes.BOOLEAN, InferTypes.FIRST_KNOWN,
+          OperandTypes.ANY, SqlFunctionCategory.SYSTEM);
 
   /**
    * Rule to convert an {@link org.eigenbase.rel.UnionRel} to a
@@ -648,6 +654,7 @@ public class JdbcRules {
     }
   }
 
+  /** Union operator implemented in JDBC convention. */
   public static class JdbcUnionRel
       extends UnionRelBase
       implements JdbcRel {
@@ -671,8 +678,8 @@ public class JdbcRules {
 
     public JdbcImplementor.Result implement(JdbcImplementor implementor) {
       final SqlSetOperator operator = all
-          ? SqlStdOperatorTable.unionAllOperator
-          : SqlStdOperatorTable.unionOperator;
+          ? SqlStdOperatorTable.UNION_ALL
+          : SqlStdOperatorTable.UNION;
       return setOpToSql(implementor, operator, this);
     }
   }
@@ -698,6 +705,7 @@ public class JdbcRules {
     }
   }
 
+  /** Intersect operator implemented in JDBC convention. */
   public static class JdbcIntersectRel
       extends IntersectRelBase
       implements JdbcRel {
@@ -718,8 +726,8 @@ public class JdbcRules {
     public JdbcImplementor.Result implement(JdbcImplementor implementor) {
       return setOpToSql(implementor,
           all
-              ? SqlStdOperatorTable.intersectAllOperator
-              : SqlStdOperatorTable.intersectOperator,
+              ? SqlStdOperatorTable.INTERSECT_ALL
+              : SqlStdOperatorTable.INTERSECT,
           this);
     }
   }
@@ -746,6 +754,7 @@ public class JdbcRules {
     }
   }
 
+  /** Minus operator implemented in JDBC convention. */
   public static class JdbcMinusRel
       extends MinusRelBase
       implements JdbcRel {
@@ -766,12 +775,13 @@ public class JdbcRules {
     public JdbcImplementor.Result implement(JdbcImplementor implementor) {
       return setOpToSql(implementor,
           all
-              ? SqlStdOperatorTable.exceptAllOperator
-              : SqlStdOperatorTable.exceptOperator,
+              ? SqlStdOperatorTable.EXCEPT_ALL
+              : SqlStdOperatorTable.EXCEPT,
           this);
     }
   }
 
+  /** Rule that converts a table-modification to JDBC. */
   public static class JdbcTableModificationRule extends JdbcConverterRule {
     private JdbcTableModificationRule(JdbcConvention out) {
       super(
@@ -804,6 +814,7 @@ public class JdbcRules {
     }
   }
 
+  /** Table-modification operator implemented in JDBC convention. */
   public static class JdbcTableModificationRel
       extends TableModificationRelBase
       implements JdbcRel {
@@ -847,6 +858,7 @@ public class JdbcRules {
     }
   }
 
+  /** Rule that converts a values operator to JDBC. */
   public static class JdbcValuesRule extends JdbcConverterRule {
     private JdbcValuesRule(JdbcConvention out) {
       super(
@@ -867,6 +879,7 @@ public class JdbcRules {
     }
   }
 
+  /** Values operator implemented in JDBC convention. */
   public static class JdbcValuesRel
       extends ValuesRelBase
       implements JdbcRel {
@@ -898,13 +911,13 @@ public class JdbcRules {
         final List<SqlNode> selectList = new ArrayList<SqlNode>();
         for (Pair<RexLiteral, String> literal : Pair.zip(tuple, fields)) {
           selectList.add(
-              SqlStdOperatorTable.asOperator.createCall(
+              SqlStdOperatorTable.AS.createCall(
                   POS,
                   context.toSql(null, literal.left),
                   new SqlIdentifier(literal.right, POS)));
         }
         selects.add(
-            SqlStdOperatorTable.selectOperator.createCall(SqlNodeList.Empty,
+            SqlStdOperatorTable.SELECT.createCall(SqlNodeList.EMPTY,
                 new SqlNodeList(selectList, POS), null, null, null,
                 null, null, null, null, null, POS));
       }
@@ -913,7 +926,7 @@ public class JdbcRules {
         if (query == null) {
           query = select;
         } else {
-          query = SqlStdOperatorTable.unionAllOperator.createCall(POS, query,
+          query = SqlStdOperatorTable.UNION_ALL.createCall(POS, query,
               select);
         }
       }

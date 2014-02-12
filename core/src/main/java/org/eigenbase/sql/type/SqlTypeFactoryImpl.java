@@ -38,6 +38,9 @@ public class SqlTypeFactoryImpl extends RelDataTypeFactoryImpl {
 
   // implement RelDataTypeFactory
   public RelDataType createSqlType(SqlTypeName typeName) {
+    if (typeName.allowsPrec()) {
+      return createSqlType(typeName, typeName.getDefaultPrecision());
+    }
     assertBasic(typeName);
     RelDataType newType = new BasicSqlType(typeName);
     return canonize(newType);
@@ -47,6 +50,9 @@ public class SqlTypeFactoryImpl extends RelDataTypeFactoryImpl {
   public RelDataType createSqlType(
       SqlTypeName typeName,
       int precision) {
+    if (typeName.allowsScale()) {
+      return createSqlType(typeName, precision, typeName.getDefaultScale());
+    }
     assertBasic(typeName);
     assert (precision >= 0)
         || (precision == RelDataType.PRECISION_NOT_SPECIFIED);
@@ -72,7 +78,7 @@ public class SqlTypeFactoryImpl extends RelDataTypeFactoryImpl {
   public RelDataType createMultisetType(
       RelDataType type,
       long maxCardinality) {
-    assert (maxCardinality == -1);
+    assert maxCardinality == -1;
     RelDataType newType = new MultisetSqlType(type, false);
     return canonize(newType);
   }
@@ -80,7 +86,7 @@ public class SqlTypeFactoryImpl extends RelDataTypeFactoryImpl {
   public RelDataType createArrayType(
       RelDataType elementType,
       long maxCardinality) {
-    assert (maxCardinality == -1);
+    assert maxCardinality == -1;
     ArraySqlType newType = new ArraySqlType(elementType, false);
     return canonize(newType);
   }
@@ -104,11 +110,9 @@ public class SqlTypeFactoryImpl extends RelDataTypeFactoryImpl {
       RelDataType type,
       Charset charset,
       SqlCollation collation) {
-    Util.pre(
-        SqlTypeUtil.inCharFamily(type),
-        "Not a chartype");
-    Util.pre(charset != null, "charset!=null");
-    Util.pre(collation != null, "collation!=null");
+    assert SqlTypeUtil.inCharFamily(type) : type;
+    assert charset != null;
+    assert collation != null;
     RelDataType newType;
     if (type instanceof BasicSqlType) {
       BasicSqlType sqlType = (BasicSqlType) type;
@@ -194,7 +198,7 @@ public class SqlTypeFactoryImpl extends RelDataTypeFactoryImpl {
   }
 
   private void assertBasic(SqlTypeName typeName) {
-    assert (typeName != null);
+    assert typeName != null;
     assert typeName != SqlTypeName.MULTISET
         : "use createMultisetType() instead";
     assert typeName != SqlTypeName.INTERVAL_DAY_TIME
@@ -352,9 +356,8 @@ public class SqlTypeFactoryImpl extends RelDataTypeFactoryImpl {
                   Math.min(scale, SqlTypeName.MAX_NUMERIC_SCALE);
 
               int precision = dout + scale;
-              assert (precision
-                  <= SqlTypeName.MAX_NUMERIC_PRECISION);
-              assert (precision > 0);
+              assert precision <= SqlTypeName.MAX_NUMERIC_PRECISION;
+              assert precision > 0;
 
               resultType =
                   createSqlType(

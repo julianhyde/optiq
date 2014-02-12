@@ -21,6 +21,7 @@ import net.hydromatic.linq4j.expressions.BlockBuilder;
 import net.hydromatic.linq4j.expressions.BlockStatement;
 import net.hydromatic.linq4j.expressions.Expression;
 import net.hydromatic.linq4j.expressions.Expressions;
+
 import net.hydromatic.optiq.impl.java.JavaTypeFactory;
 import net.hydromatic.optiq.rules.java.*;
 
@@ -41,12 +42,11 @@ import java.util.List;
  */
 public class SparkToEnumerableConverter
     extends ConverterRelImpl
-    implements EnumerableRel
-{
+    implements EnumerableRel {
   protected SparkToEnumerableConverter(RelOptCluster cluster,
       RelTraitSet traits,
       RelNode input) {
-    super(cluster, ConventionTraitDef.instance, traits, input);
+    super(cluster, ConventionTraitDef.INSTANCE, traits, input);
   }
 
   @Override

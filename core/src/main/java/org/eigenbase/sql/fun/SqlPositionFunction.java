@@ -17,10 +17,8 @@
 */
 package org.eigenbase.sql.fun;
 
-import org.eigenbase.reltype.*;
 import org.eigenbase.sql.*;
 import org.eigenbase.sql.type.*;
-import org.eigenbase.sql.validate.*;
 
 /**
  * The <code>POSITION</code> function.
@@ -36,10 +34,10 @@ public class SqlPositionFunction extends SqlFunction {
     super(
         "POSITION",
         SqlKind.OTHER_FUNCTION,
-        SqlTypeStrategies.rtiNullableInteger,
+        ReturnTypes.INTEGER_NULLABLE,
         null,
-        SqlTypeStrategies.otcStringSameX2,
-        SqlFunctionCategory.Numeric);
+        OperandTypes.STRING_SAME_SAME,
+        SqlFunctionCategory.NUMERIC);
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -65,7 +63,7 @@ public class SqlPositionFunction extends SqlFunction {
       SqlCallBinding callBinding,
       boolean throwOnFailure) {
     // check that the two operands are of same type.
-    return SqlTypeStrategies.otcSameX2.checkOperandTypes(
+    return OperandTypes.SAME_SAME.checkOperandTypes(
         callBinding, throwOnFailure)
         && super.checkOperandTypes(callBinding, throwOnFailure);
   }

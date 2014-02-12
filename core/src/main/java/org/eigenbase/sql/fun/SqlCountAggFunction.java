@@ -34,26 +34,22 @@ import com.google.common.collect.ImmutableList;
  * for which that argument (or all) is not <code>null</code>.
  */
 public class SqlCountAggFunction extends SqlAggFunction {
-  //~ Static fields/initializers ---------------------------------------------
-
-  public static final RelDataType type = null; // TODO:
-
   //~ Constructors -----------------------------------------------------------
 
   public SqlCountAggFunction() {
     super(
         "COUNT",
         SqlKind.OTHER_FUNCTION,
-        SqlTypeStrategies.rtiBigint,
+        ReturnTypes.BIGINT,
         null,
-        SqlTypeStrategies.otcAny,
-        SqlFunctionCategory.Numeric);
+        OperandTypes.ANY,
+        SqlFunctionCategory.NUMERIC);
   }
 
   //~ Methods ----------------------------------------------------------------
 
   public List<RelDataType> getParameterTypes(RelDataTypeFactory typeFactory) {
-    return ImmutableList.of(type);
+    return ImmutableList.of(typeFactory.createSqlType(SqlTypeName.ANY));
   }
 
   public RelDataType getReturnType(RelDataTypeFactory typeFactory) {

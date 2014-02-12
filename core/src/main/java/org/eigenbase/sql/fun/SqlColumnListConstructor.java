@@ -30,12 +30,11 @@ public class SqlColumnListConstructor extends SqlSpecialOperator {
   public SqlColumnListConstructor() {
     super(
         "COLUMN_LIST",
-        SqlKind.COLUMN_LIST,
-        MaxPrec,
+        SqlKind.COLUMN_LIST, MDX_PRECEDENCE,
         false,
-        SqlTypeStrategies.rtiColumnList,
+        ReturnTypes.COLUMN_LIST,
         null,
-        SqlTypeStrategies.otcAny);
+        OperandTypes.ANY);
   }
 
   //~ Methods ----------------------------------------------------------------

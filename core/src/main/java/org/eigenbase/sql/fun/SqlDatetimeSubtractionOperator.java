@@ -38,15 +38,15 @@ public class SqlDatetimeSubtractionOperator extends SqlSpecialOperator {
         SqlKind.MINUS,
         40,
         true,
-        SqlTypeStrategies.rtiNullableThirdArgType,
-        SqlTypeStrategies.otiFirstKnown,
-        SqlTypeStrategies.otcMinusDateOperator);
+        ReturnTypes.ARG2_NULLABLE,
+        InferTypes.FIRST_KNOWN,
+        OperandTypes.MINUS_DATE_OPERATOR);
   }
 
   //~ Methods ----------------------------------------------------------------
 
   public SqlSyntax getSyntax() {
-    return SqlSyntax.Special;
+    return SqlSyntax.SPECIAL;
   }
 
   public void unparse(
@@ -65,7 +65,7 @@ public class SqlDatetimeSubtractionOperator extends SqlSpecialOperator {
   public SqlMonotonicity getMonotonicity(
       SqlCall call,
       SqlValidatorScope scope) {
-    return SqlStdOperatorTable.minusOperator.getMonotonicity(call, scope);
+    return SqlStdOperatorTable.MINUS.getMonotonicity(call, scope);
   }
 }
 

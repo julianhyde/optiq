@@ -19,6 +19,7 @@ package net.hydromatic.optiq.impl.splunk.search;
 
 import net.hydromatic.linq4j.Enumerator;
 import net.hydromatic.linq4j.Linq4j;
+
 import net.hydromatic.optiq.impl.splunk.util.HttpUtils;
 import net.hydromatic.optiq.impl.splunk.util.StringUtils;
 
@@ -46,12 +47,13 @@ public class SplunkConnection {
           "<response>\\s*<sessionKey>([0-9a-f]+)</sessionKey>\\s*</response>");
 
   final URL url;
-  final String username, password;
+  final String username;
+  final String password;
   String sessionKey;
   final Map<String, String> requestHeaders = new HashMap<String, String>();
 
   public SplunkConnection(String url, String username, String password)
-      throws MalformedURLException {
+    throws MalformedURLException {
     this(new URL(url), username, password);
   }
 
@@ -176,7 +178,7 @@ public class SplunkConnection {
   }
 
   private static void parseResults(InputStream in, SearchResultListener srl)
-      throws IOException {
+    throws IOException {
     CSVReader csvr = new CSVReader(new InputStreamReader(in));
     try {
       String [] header = csvr.readNext();
@@ -248,20 +250,20 @@ public class SplunkConnection {
 
   public static void printUsage(String errorMsg) {
     String[] strings = {
-        "Usage: java Connection -<arg-name> <arg-value>",
-        "The following <arg-name> are valid",
-        "search        - required, search string to execute",
-        "field_list    - "
+      "Usage: java Connection -<arg-name> <arg-value>",
+      "The following <arg-name> are valid",
+      "search        - required, search string to execute",
+      "field_list    - "
         + "required, list of fields to request, comma delimited",
-        "uri           - "
+      "uri           - "
         + "uri to splunk's mgmt port, default: https://localhost:8089",
-        "username      - "
+      "username      - "
         + "username to use for authentication, default: admin",
-        "password      - "
+      "password      - "
         + "password to use for authentication, default: changeme",
-        "earliest_time - earliest time for the search, default: -24h",
-        "latest_time   - latest time for the search, default: now",
-        "-print        - whether to print results or just the summary"
+      "earliest_time - earliest time for the search, default: -24h",
+      "latest_time   - latest time for the search, default: now",
+      "-print        - whether to print results or just the summary"
     };
     System.err.println(errorMsg);
     for (String s : strings) {
@@ -281,9 +283,8 @@ public class SplunkConnection {
 
     parseArgs(args, argsMap);
 
-
-    String search = argsMap.get("search"),
-        field_list = argsMap.get("field_list");
+    String search = argsMap.get("search");
+    String field_list = argsMap.get("field_list");
 
     if (search == null) {
       printUsage("Missing required argument: search");
@@ -317,7 +318,7 @@ public class SplunkConnection {
     System.out.printf(
         "received %d results in %dms\n",
         dummy.getResultCount(),
-        (System.currentTimeMillis() - start));
+        System.currentTimeMillis() - start);
   }
 
   private static class SplunkResultIterator implements Enumerator {
@@ -345,6 +346,7 @@ public class SplunkConnection {
         if (fieldNames == null
             || fieldNames.length == 0
             || fieldNames.length == 1 && fieldNames[0].isEmpty()) {
+          // do nothing
         } else {
           final List<String> headerList = Arrays.asList(fieldNames);
           if (wantedFields.size() == 1) {
@@ -369,7 +371,6 @@ public class SplunkConnection {
         ignore.printStackTrace(new PrintWriter(sw));
         LOGGER.warning(ignore.getMessage() + "\n"
             + sw);
-      } finally {
       }
     }
 

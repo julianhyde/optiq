@@ -32,12 +32,11 @@ public class SqlCursorConstructor extends SqlSpecialOperator {
   public SqlCursorConstructor() {
     super(
         "CURSOR",
-        SqlKind.CURSOR,
-        MaxPrec,
+        SqlKind.CURSOR, MDX_PRECEDENCE,
         false,
-        SqlTypeStrategies.rtiCursor,
+        ReturnTypes.CURSOR,
         null,
-        SqlTypeStrategies.otcAny);
+        OperandTypes.ANY);
   }
 
   //~ Methods ----------------------------------------------------------------

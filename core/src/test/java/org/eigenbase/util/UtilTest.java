@@ -40,6 +40,7 @@ import com.google.common.collect.ImmutableMultiset;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
 /**
@@ -160,7 +161,7 @@ public class UtilTest {
             new String(bytes1, "EUC-JP"),
             0));
     byte[] bytes2 = {
-        64, 32, 43, -45, -23, 0, 43, 54, 119, -32, -56, -34
+      64, 32, 43, -45, -23, 0, 43, 54, 119, -32, -56, -34
     };
     assertEquals(
         "ID$0$_30c__3617__2117__2d15__7fde__a48f_",
@@ -198,8 +199,8 @@ public class UtilTest {
     final BitString b256 = new BitString("100000000", 9);
 
     // other strings
-    final BitString b0_1 = new BitString("", 1);
-    final BitString b0_12 = new BitString("", 12);
+    final BitString b0x1 = new BitString("", 1);
+    final BitString b0x12 = new BitString("", 12);
 
     // conversion to hex strings
     assertEquals(
@@ -233,11 +234,9 @@ public class UtilTest {
         "100",
         b256.toHexString());
     assertEquals(
-        "0",
-        b0_1.toHexString());
+        "0", b0x1.toHexString());
     assertEquals(
-        "000",
-        b0_12.toHexString());
+        "000", b0x12.toHexString());
 
     // to byte array
     assertByteArray("01", "1", 1);
@@ -369,19 +368,19 @@ public class UtilTest {
    */
   @Test public void testDiffLines() {
     String[] before = {
-        "Get a dose of her in jackboots and kilt",
-        "She's killer-diller when she's dressed to the hilt",
-        "She's the kind of a girl that makes The News of The World",
-        "Yes you could say she was attractively built.",
-        "Yeah yeah yeah."
+      "Get a dose of her in jackboots and kilt",
+      "She's killer-diller when she's dressed to the hilt",
+      "She's the kind of a girl that makes The News of The World",
+      "Yes you could say she was attractively built.",
+      "Yeah yeah yeah."
     };
     String[] after = {
-        "Get a dose of her in jackboots and kilt",
-        "(they call her \"Polythene Pam\")",
-        "She's killer-diller when she's dressed to the hilt",
-        "She's the kind of a girl that makes The Sunday Times",
-        "seem more interesting.",
-        "Yes you could say she was attractively built."
+      "Get a dose of her in jackboots and kilt",
+      "(they call her \"Polythene Pam\")",
+      "She's killer-diller when she's dressed to the hilt",
+      "She's the kind of a girl that makes The Sunday Times",
+      "seem more interesting.",
+      "Yes you could say she was attractively built."
     };
     String diff =
         DiffTestCase.diffLines(
@@ -735,18 +734,18 @@ public class UtilTest {
    */
   @Test public void testParseLocale() {
     Locale[] locales = {
-        Locale.CANADA,
-        Locale.CANADA_FRENCH,
-        Locale.getDefault(),
-        Locale.US,
-        Locale.TRADITIONAL_CHINESE,
+      Locale.CANADA,
+      Locale.CANADA_FRENCH,
+      Locale.getDefault(),
+      Locale.US,
+      Locale.TRADITIONAL_CHINESE,
     };
     for (Locale locale : locales) {
       assertEquals(locale, Util.parseLocale(locale.toString()));
     }
     // Example locale names in Locale.toString() javadoc.
     String[] localeNames = {
-        "en", "de_DE", "_GB", "en_US_WIN", "de__POSIX", "fr__MAC"
+      "en", "de_DE", "_GB", "en_US_WIN", "de__POSIX", "fr__MAC"
     };
     for (String localeName : localeNames) {
       assertEquals(localeName, Util.parseLocale(localeName).toString());
@@ -803,8 +802,8 @@ public class UtilTest {
     chunkCount = StringChunker.countChunks(source.length(), chunkSize);
     assertEquals(12, chunkCount);
     ref = new String[]{
-        "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
-        "A", "B"
+      "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+      "A", "B"
     };
     chunks = StringChunker.slice(source, chunkSize);
     assertTrue(Arrays.equals(ref, chunks));
@@ -1113,7 +1112,7 @@ public class UtilTest {
         equalTo((Set<String>) new HashSet<String>(Arrays.asList(beatles))));
     assertThat(
         ImmutableMultiset.copyOf(map.values()),
-        equalTo((ImmutableMultiset.copyOf(Arrays.asList(4, 4, 6, 5)))));
+        equalTo(ImmutableMultiset.copyOf(Arrays.asList(4, 4, 6, 5))));
   }
 
   /** Tests {@link Util#commaList(java.util.List)}. */
@@ -1154,7 +1153,7 @@ public class UtilTest {
     // Run a much quicker form of the test during regular testing.
     final int limit = Benchmark.enabled() ? 1000000 : 10;
     final int zMax = 100;
-    for (int i = 0; i < 30; i ++) {
+    for (int i = 0; i < 30; i++) {
       final int size = i;
       new Benchmark("isDistinct " + i + " (set)",
           new Function1<Benchmark.Statistician, Void>() {
@@ -1180,6 +1179,37 @@ public class UtilTest {
           },
           5).run();
     }
+  }
+
+  /** Unit test for {@link Util#hashCode(double)}. */
+  @Test public void testHash() {
+    checkHash(0d);
+    checkHash(1d);
+    checkHash(-2.5d);
+    checkHash(10d / 3d);
+    checkHash(Double.NEGATIVE_INFINITY);
+    checkHash(Double.POSITIVE_INFINITY);
+    checkHash(Double.MAX_VALUE);
+    checkHash(Double.MIN_VALUE);
+  }
+
+  public void checkHash(double v) {
+    assertThat(new Double(v).hashCode(), equalTo(Util.hashCode(v)));
+  }
+
+  /** Unit test for {@link Util#startsWith}. */
+  @Test public void testStartsWithList() {
+    assertThat(Util.startsWith(list("x"), list()), is(true));
+    assertThat(Util.startsWith(list("x"), list("x")), is(true));
+    assertThat(Util.startsWith(list("x"), list("y")), is(false));
+    assertThat(Util.startsWith(list("x"), list("x", "y")), is(false));
+    assertThat(Util.startsWith(list("x", "y"), list("x")), is(true));
+    assertThat(Util.startsWith(list(), list()), is(true));
+    assertThat(Util.startsWith(list(), list("x")), is(false));
+  }
+
+  public List<String> list(String... xs) {
+    return Arrays.asList(xs);
   }
 }
 

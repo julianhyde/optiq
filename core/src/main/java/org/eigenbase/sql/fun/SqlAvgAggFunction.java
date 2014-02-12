@@ -51,10 +51,10 @@ public class SqlAvgAggFunction extends SqlAggFunction {
     super(
         subtype.name(),
         SqlKind.OTHER_FUNCTION,
-        SqlTypeStrategies.rtiFirstArgType,
+        ReturnTypes.ARG0,
         null,
-        SqlTypeStrategies.otcNumeric,
-        SqlFunctionCategory.Numeric);
+        OperandTypes.NUMERIC,
+        SqlFunctionCategory.NUMERIC);
     this.type = type;
     this.subtype = subtype;
   }

@@ -33,7 +33,7 @@ import org.junit.Test;
 public class HepPlannerTest extends RelOptTestBase {
   //~ Static fields/initializers ---------------------------------------------
 
-  private static final String unionTree =
+  private static final String UNION_TREE =
       "(select name from dept union select ename from emp)"
       + " union (select ename from bonus)";
 
@@ -72,7 +72,7 @@ public class HepPlannerTest extends RelOptTestBase {
         new HepPlanner(
             programBuilder.build());
 
-    planner.addRule(FilterToCalcRule.instance);
+    planner.addRule(FilterToCalcRule.INSTANCE);
 
     checkPlanning(
         planner,
@@ -85,11 +85,10 @@ public class HepPlannerTest extends RelOptTestBase {
     HepProgramBuilder programBuilder = HepProgram.builder();
     programBuilder.addMatchOrder(HepMatchOrder.TOP_DOWN);
     programBuilder.addMatchLimit(1);
-    programBuilder.addRuleInstance(UnionToDistinctRule.instance);
+    programBuilder.addRuleInstance(UnionToDistinctRule.INSTANCE);
 
     checkPlanning(
-        programBuilder.build(),
-        unionTree);
+        programBuilder.build(), UNION_TREE);
   }
 
   @Test public void testMatchLimitOneBottomUp() throws Exception {
@@ -98,11 +97,10 @@ public class HepPlannerTest extends RelOptTestBase {
     HepProgramBuilder programBuilder = HepProgram.builder();
     programBuilder.addMatchLimit(1);
     programBuilder.addMatchOrder(HepMatchOrder.BOTTOM_UP);
-    programBuilder.addRuleInstance(UnionToDistinctRule.instance);
+    programBuilder.addRuleInstance(UnionToDistinctRule.INSTANCE);
 
     checkPlanning(
-        programBuilder.build(),
-        unionTree);
+        programBuilder.build(), UNION_TREE);
   }
 
   @Test public void testMatchUntilFixpoint() throws Exception {
@@ -110,11 +108,10 @@ public class HepPlannerTest extends RelOptTestBase {
 
     HepProgramBuilder programBuilder = HepProgram.builder();
     programBuilder.addMatchLimit(HepProgram.MATCH_UNTIL_FIXPOINT);
-    programBuilder.addRuleInstance(UnionToDistinctRule.instance);
+    programBuilder.addRuleInstance(UnionToDistinctRule.INSTANCE);
 
     checkPlanning(
-        programBuilder.build(),
-        unionTree);
+        programBuilder.build(), UNION_TREE);
   }
 
   @Test public void testReplaceCommonSubexpression() throws Exception {
@@ -126,7 +123,7 @@ public class HepPlannerTest extends RelOptTestBase {
     // twice by the same parent (the join in this case).
 
     checkPlanning(
-        RemoveTrivialProjectRule.instance,
+        RemoveTrivialProjectRule.INSTANCE,
         "select d1.deptno from (select * from dept) d1,"
         + " (select * from dept) d2");
   }
@@ -139,8 +136,8 @@ public class HepPlannerTest extends RelOptTestBase {
     HepProgramBuilder subprogramBuilder = HepProgram.builder();
     subprogramBuilder.addMatchOrder(HepMatchOrder.TOP_DOWN);
     subprogramBuilder.addMatchLimit(1);
-    subprogramBuilder.addRuleInstance(ProjectToCalcRule.instance);
-    subprogramBuilder.addRuleInstance(MergeCalcRule.instance);
+    subprogramBuilder.addRuleInstance(ProjectToCalcRule.INSTANCE);
+    subprogramBuilder.addRuleInstance(MergeCalcRule.INSTANCE);
 
     HepProgramBuilder programBuilder = HepProgram.builder();
     programBuilder.addSubprogram(subprogramBuilder.build());
@@ -156,9 +153,9 @@ public class HepPlannerTest extends RelOptTestBase {
     // that order doesn't matter within the group.
     HepProgramBuilder programBuilder = HepProgram.builder();
     programBuilder.addGroupBegin();
-    programBuilder.addRuleInstance(MergeCalcRule.instance);
-    programBuilder.addRuleInstance(ProjectToCalcRule.instance);
-    programBuilder.addRuleInstance(FilterToCalcRule.instance);
+    programBuilder.addRuleInstance(MergeCalcRule.INSTANCE);
+    programBuilder.addRuleInstance(ProjectToCalcRule.INSTANCE);
+    programBuilder.addRuleInstance(FilterToCalcRule.INSTANCE);
     programBuilder.addGroupEnd();
 
     checkPlanning(

@@ -31,8 +31,9 @@ public class SqlTypeAssignmentRules {
   //~ Static fields/initializers ---------------------------------------------
 
   private static SqlTypeAssignmentRules instance = null;
-  private static Map<SqlTypeName, Set<SqlTypeName>> rules = null;
-  private static Map<SqlTypeName, Set<SqlTypeName>> coerceRules = null;
+
+  private final Map<SqlTypeName, Set<SqlTypeName>> rules;
+  private final Map<SqlTypeName, Set<SqlTypeName>> coerceRules;
 
   //~ Constructors -----------------------------------------------------------
 
@@ -235,7 +236,7 @@ public class SqlTypeAssignmentRules {
         copy(rule));
 
     // Exact Numerics are castable from intervals
-    for (SqlTypeName exactType : SqlTypeName.exactTypes) {
+    for (SqlTypeName exactType : SqlTypeName.EXACT_TYPES) {
       rule = coerceRules.get(exactType);
       rule.add(SqlTypeName.INTERVAL_DAY_TIME);
       rule.add(SqlTypeName.INTERVAL_YEAR_MONTH);
@@ -313,7 +314,7 @@ public class SqlTypeAssignmentRules {
 
   //~ Methods ----------------------------------------------------------------
 
-  public synchronized static SqlTypeAssignmentRules instance() {
+  public static synchronized SqlTypeAssignmentRules instance() {
     if (instance == null) {
       instance = new SqlTypeAssignmentRules();
     }
@@ -324,8 +325,8 @@ public class SqlTypeAssignmentRules {
       SqlTypeName to,
       SqlTypeName from,
       boolean coerce) {
-    assert (null != to);
-    assert (null != from);
+    assert to != null;
+    assert from != null;
 
     Map<SqlTypeName, Set<SqlTypeName>> ruleset =
         coerce ? coerceRules : rules;

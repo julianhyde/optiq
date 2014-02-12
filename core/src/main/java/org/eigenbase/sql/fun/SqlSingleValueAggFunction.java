@@ -41,10 +41,10 @@ public class SqlSingleValueAggFunction extends SqlAggFunction {
     super(
         "SINGLE_VALUE",
         SqlKind.OTHER_FUNCTION,
-        SqlTypeStrategies.rtiFirstArgType,
+        ReturnTypes.ARG0,
         null,
-        SqlTypeStrategies.otcAny,
-        SqlFunctionCategory.System);
+        OperandTypes.ANY,
+        SqlFunctionCategory.SYSTEM);
     this.type = type;
   }
 

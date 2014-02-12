@@ -29,11 +29,13 @@ import javax.net.ssl.*;
  * Utilities for connecting to Splunk via HTTP.
  */
 public class HttpUtils {
+  private HttpUtils() {}
+
   private static final Logger LOGGER =
       StringUtils.getClassTracer(HttpUtils.class);
 
   public static HttpURLConnection getURLConnection(String url)
-      throws IOException {
+    throws IOException {
     URLConnection conn = new URL(url).openConnection();
     final HttpURLConnection httpConn = (HttpURLConnection) conn;
 

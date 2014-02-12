@@ -18,13 +18,12 @@
 package org.eigenbase.sql.type;
 
 import org.eigenbase.sql.*;
-import org.eigenbase.sql.validate.*;
 
 /**
  * Strategy interface to check for allowed operand types of an operator call.
  *
  * <p>This interface is an example of the {@link
- * org.eigenbase.util.Glossary#StrategyPattern strategy pattern}.</p>
+ * org.eigenbase.util.Glossary#STRATEGY_PATTERN strategy pattern}.</p>
  */
 public interface SqlOperandTypeChecker {
   //~ Methods ----------------------------------------------------------------
@@ -37,14 +36,14 @@ public interface SqlOperandTypeChecker {
    *                       (otherwise returns false in that case)
    * @return whether check succeeded
    */
-  public boolean checkOperandTypes(
+  boolean checkOperandTypes(
       SqlCallBinding callBinding,
       boolean throwOnFailure);
 
   /**
    * @return range of operand counts allowed in a call
    */
-  public SqlOperandCountRange getOperandCountRange();
+  SqlOperandCountRange getOperandCountRange();
 
   /**
    * Returns a string describing the allowed formal signatures of a call, e.g.
@@ -54,7 +53,7 @@ public interface SqlOperandTypeChecker {
    * @param opName name to use for the operator in case of aliasing
    * @return generated string
    */
-  public String getAllowedSignatures(SqlOperator op, String opName);
+  String getAllowedSignatures(SqlOperator op, String opName);
 }
 
 // End SqlOperandTypeChecker.java

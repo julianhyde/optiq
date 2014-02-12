@@ -58,7 +58,7 @@ public abstract class SqlOperator {
   /**
    * Maximum precedence.
    */
-  protected static final int MaxPrec = 200;
+  protected static final int MDX_PRECEDENCE = 200;
 
   //~ Instance fields --------------------------------------------------------
 
@@ -619,7 +619,7 @@ public abstract class SqlOperator {
    * @return whether this operator is an aggregator
    */
   public boolean isAggregator() {
-    return (this instanceof SqlAggFunction);
+    return this instanceof SqlAggFunction;
   }
 
   /**

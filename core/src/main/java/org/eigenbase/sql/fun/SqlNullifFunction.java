@@ -37,10 +37,10 @@ public class SqlNullifFunction extends SqlFunction {
     super(
         "NULLIF",
         SqlKind.OTHER_FUNCTION,
-        SqlTypeStrategies.rtiFirstArgTypeForceNullable,
+        ReturnTypes.ARG0_FORCE_NULLABLE,
         null,
-        SqlTypeStrategies.otcComparableUnorderedX2,
-        SqlFunctionCategory.System);
+        OperandTypes.COMPARABLE_UNORDERED_COMPARABLE_UNORDERED,
+        SqlFunctionCategory.SYSTEM);
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -54,13 +54,13 @@ public class SqlNullifFunction extends SqlFunction {
         validator,
         getOperandTypeChecker(),
         call);
-    assert (operands.length == 2);
+    assert operands.length == 2;
 
     SqlNodeList whenList = new SqlNodeList(pos);
     SqlNodeList thenList = new SqlNodeList(pos);
     whenList.add(operands[1]);
     thenList.add(SqlLiteral.createNull(SqlParserPos.ZERO));
-    return SqlStdOperatorTable.caseOperator.createSwitchedCall(
+    return SqlStdOperatorTable.CASE.createSwitchedCall(
         pos,
         operands[0],
         whenList,

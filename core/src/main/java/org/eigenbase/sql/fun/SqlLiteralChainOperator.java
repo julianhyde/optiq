@@ -48,9 +48,9 @@ public class SqlLiteralChainOperator extends SqlInternalOperator {
         true,
 
         // precedence tighter than the * and || operators
-        SqlTypeStrategies.rtiFirstArgType,
-        SqlTypeStrategies.otiFirstKnown,
-        SqlTypeStrategies.otcVariadic);
+        ReturnTypes.ARG0,
+        InferTypes.FIRST_KNOWN,
+        OperandTypes.VARIADIC);
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -107,7 +107,7 @@ public class SqlLiteralChainOperator extends SqlInternalOperator {
     int size = 0;
     for (RelDataType type : opBinding.collectOperandTypes()) {
       size += type.getPrecision();
-      assert (type.getSqlTypeName().equals(typeName));
+      assert type.getSqlTypeName().equals(typeName);
     }
     return opBinding.getTypeFactory().createSqlType(typeName, size);
   }

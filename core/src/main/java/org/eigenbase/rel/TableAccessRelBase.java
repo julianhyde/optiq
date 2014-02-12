@@ -81,7 +81,7 @@ public abstract class TableAccessRelBase extends AbstractRelNode {
     double dRows = table.getRowCount();
     double dCpu = dRows + 1; // ensure non-zero cost
     double dIo = 0;
-    return planner.makeCost(dRows, dCpu, dIo);
+    return planner.getCostFactory().makeCost(dRows, dCpu, dIo);
   }
 
   public RelDataType deriveRowType() {
@@ -147,7 +147,7 @@ public abstract class TableAccessRelBase extends AbstractRelNode {
         this,
         exprList,
         nameList,
-        ProjectRel.Flags.Boxed);
+        ProjectRel.Flags.BOXED);
   }
 
   @Override

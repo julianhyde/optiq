@@ -102,7 +102,7 @@ public final class CorrelatorRel extends JoinRelBase {
   public CorrelatorRel(RelInput input) {
     this(
         input.getCluster(), input.getInputs().get(0),
-        input.getInputs().get((1)), getCorrelations(input),
+        input.getInputs().get(1), getCorrelations(input),
         input.getEnum("joinType", JoinRelType.class));
   }
 
@@ -123,18 +123,15 @@ public final class CorrelatorRel extends JoinRelBase {
   //~ Methods ----------------------------------------------------------------
 
   @Override
-  public CorrelatorRel copy(
-      RelTraitSet traitSet,
-      RexNode conditionExpr,
-      RelNode left,
-      RelNode right) {
+  public CorrelatorRel copy(RelTraitSet traitSet, RexNode conditionExpr,
+      RelNode left, RelNode right, JoinRelType joinType) {
     assert traitSet.containsIfApplicable(Convention.NONE);
     return new CorrelatorRel(
         getCluster(),
         left,
         right,
         correlations,
-        joinType);
+        this.joinType);
   }
 
   public RelWriter explainTerms(RelWriter pw) {
@@ -196,7 +193,7 @@ public final class CorrelatorRel extends JoinRelBase {
     }
 
     public int compareTo(Correlation other) {
-      return (id - other.id);
+      return id - other.id;
     }
   }
 }
