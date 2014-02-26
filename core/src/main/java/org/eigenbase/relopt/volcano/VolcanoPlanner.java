@@ -1680,6 +1680,14 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     pop(ruleCallStack, ruleCall);
   }
 
+  public void clear() {
+    this.allOperands.clear();
+    this.allSets.clear();
+    this.mapDigestToRel.clear();
+    this.mapRel2Subset.clear();
+    this.relImportances.clear();
+  }
+
   //~ Inner Classes ----------------------------------------------------------
 
   /**
