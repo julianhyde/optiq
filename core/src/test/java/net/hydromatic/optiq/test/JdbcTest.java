@@ -2881,6 +2881,46 @@ public class JdbcTest {
             });
   }
 
+  /** Tests metadata for the ORACLE lexical scheme overriden like JAVA. */
+  @Test public void testLexOracleAsJava() throws Exception {
+    OptiqAssert.that()
+        .with(ImmutableMap.<String, String>builder()
+            .put("lex", "ORACLE")
+            .put("quoting", "BACK_TICK")
+            .put("unquotedCasing", "UNCHANGED")
+            .put("quotedCasing", "UNCHANGED")
+            .put("caseSensitive", "TRUE")
+            .build())
+        .doWithConnection(
+            new Function1<OptiqConnection, Void>() {
+              public Void apply(OptiqConnection connection) {
+                try {
+                  DatabaseMetaData metaData = connection.getMetaData();
+                  assertThat(metaData.getIdentifierQuoteString(), equalTo("`"));
+                  assertThat(metaData.supportsMixedCaseIdentifiers(),
+                      equalTo(false));
+                  assertThat(metaData.storesMixedCaseIdentifiers(),
+                      equalTo(true));
+                  assertThat(metaData.storesUpperCaseIdentifiers(),
+                      equalTo(false));
+                  assertThat(metaData.storesLowerCaseIdentifiers(),
+                      equalTo(false));
+                  assertThat(metaData.supportsMixedCaseQuotedIdentifiers(),
+                      equalTo(true));
+                  assertThat(metaData.storesMixedCaseQuotedIdentifiers(),
+                      equalTo(false));
+                  assertThat(metaData.storesUpperCaseIdentifiers(),
+                      equalTo(false));
+                  assertThat(metaData.storesLowerCaseQuotedIdentifiers(),
+                      equalTo(false));
+                  return null;
+                } catch (SQLException e) {
+                  throw new RuntimeException(e);
+                }
+              }
+            });
+  }
+
   /** Tests that {@link Hook#PARSE_TREE} works. */
   @Test public void testHook() {
     final int[] callCount = {0};
