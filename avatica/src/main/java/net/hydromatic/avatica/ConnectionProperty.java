@@ -35,20 +35,20 @@ public enum ConnectionProperty {
   /** Lexical policy. */
   LEX("lex", Type.ENUM, "ORACLE"),
 
-  /** How identifiers are quoted. */
-  /** default value is based on lex */
+  /** How identifiers are quoted.
+   *  Default value is based on lex. */
   QUOTING("quoting", Type.ENUM, null),
 
-  /** How identifiers are stored if they are quoted. */
-  /** default value is based on lex */
+  /** How identifiers are stored if they are quoted.
+   *  Default value is based on lex. */
   QUOTED_CASING("quotedCasing", Type.ENUM, null),
 
-  /** How identifiers are stored if they are not quoted. */
-  /** default value is based on lex */
+  /** How identifiers are stored if they are not quoted.
+   *  Default value is based on lex. */
   UNQUOTED_CASING("unquotedCasing", Type.ENUM, null),
 
-  /** Whether identifiers are matched case-sensitively. */
-  /** default value is based on lex */
+  /** Whether identifiers are matched case-sensitively.
+   *  Default value is based on lex. */
   CASE_SENSITIVE("caseSensitive", Type.BOOLEAN, null),
 
   /** Name of initial schema. */
