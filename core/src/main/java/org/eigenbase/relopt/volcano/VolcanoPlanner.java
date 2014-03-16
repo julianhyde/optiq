@@ -981,7 +981,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
               toTrait,
               allowInfiniteCostConverters);
       if (rel != null) {
-        assert rel.getTraitSet().contains(toTrait);
+        assert rel.getTraitSet().getTrait(toTrait.getTraitDef()).
+            subsumes(toTrait);
         rel =
             completeConversion(
                 rel, allowInfiniteCostConverters, toTraits,
