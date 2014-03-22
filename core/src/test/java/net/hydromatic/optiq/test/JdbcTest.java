@@ -2186,12 +2186,14 @@ public class JdbcTest {
   @Test public void testTrim() {
     OptiqAssert.that()
         .withModel(FOODMART_MODEL)
-        .query("select trim(\"lname\") as \"lname\" from \"customer\" where \"lname\" = 'Nowmer'")
+        .query("select trim(\"lname\") as \"lname\" "
+            + "from \"customer\" where \"lname\" = 'Nowmer'")
         .returns("lname=Nowmer\n");
 
     OptiqAssert.that()
         .withModel(FOODMART_MODEL)
-        .query("select trim(leading 'N' from \"lname\") as \"lname\" from \"customer\" where \"lname\" = 'Nowmer'")
+        .query("select trim(leading 'N' from \"lname\") as \"lname\" "
+            + "from \"customer\" where \"lname\" = 'Nowmer'")
         .returns("lname=owmer\n");
   }
 
