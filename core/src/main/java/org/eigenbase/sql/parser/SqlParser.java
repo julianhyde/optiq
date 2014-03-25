@@ -18,9 +18,9 @@
 package org.eigenbase.sql.parser;
 
 import java.io.*;
-import java.util.Arrays;
 
 import org.eigenbase.sql.*;
+import org.eigenbase.sql.parser.SqlAbstractParserImpl.Metadata;
 import org.eigenbase.sql.parser.impl.*;
 import org.eigenbase.util.*;
 
@@ -33,7 +33,7 @@ import net.hydromatic.avatica.Quoting;
 public class SqlParser {
   //~ Instance fields --------------------------------------------------------
 
-  private final SqlParserImpl parser;
+  private final SqlAbstractParserImpl parser;
   private String originalInput;
 
   //~ Constructors -----------------------------------------------------------
@@ -42,7 +42,19 @@ public class SqlParser {
    * Creates a <code>SqlParser</code> that reads input from a string.
    */
   public SqlParser(String s) {
-    this(s, Quoting.DOUBLE_QUOTE, Casing.TO_UPPER, Casing.UNCHANGED);
+    this(SqlStdParserImplFactory.FACTORY, s);
+  }
+
+  /**
+   * Creates a <code>SqlParser</code> that reads input from a string. It gets
+   * the parser implementation from given {@link SqlParserImplFactory}.
+   *
+   * @param parserFactory creates and returns parser implementation.
+   * @param s
+   */
+  public SqlParser(SqlParserImplFactory parserFactory, String s) {
+    this(parserFactory, s, Quoting.DOUBLE_QUOTE, Casing.TO_UPPER,
+      Casing.UNCHANGED);
   }
 
   /**
@@ -50,28 +62,39 @@ public class SqlParser {
    */
   public SqlParser(String s, Quoting quoting, Casing unquotedCasing,
       Casing quotedCasing) {
-    parser = new SqlParserImpl(new StringReader(s));
+     this(SqlStdParserImplFactory.FACTORY, s, quoting, unquotedCasing,
+       quotedCasing);
+  }
+
+  /**
+   * Creates a <code>SqlParser</code> that reads input from a string and
+   * gets the parser implementation from given {@link SqlParserImplFactory}
+   * with given quoting and casing.
+   *
+   * @param parserFactory
+   * @param s
+   * @param quoting
+   * @param unquotedCasing
+   * @param quotedCasing
+   */
+  public SqlParser(SqlParserImplFactory parserFactory, String s,
+      Quoting quoting, Casing unquotedCasing, Casing quotedCasing) {
+    parser = parserFactory.getParser(new StringReader(s));
     parser.setTabSize(1);
-    parser.quotedCasing = quotedCasing;
-    parser.unquotedCasing = unquotedCasing;
+    parser.setQuotedCasing(quotedCasing);
+    parser.setUnquotedCasing(unquotedCasing);
     this.originalInput = s;
     switch (quoting) {
     case DOUBLE_QUOTE:
-      switchTo("DQID");
+      parser.switchTo("DQID");
       break;
     case BACK_TICK:
-      switchTo("BTID");
+      parser.switchTo("BTID");
       break;
     case BRACKET:
-      switchTo("DEFAULT");
+      parser.switchTo("DEFAULT");
       break;
     }
-  }
-
-  public void switchTo(String stateName) {
-    int state = Arrays.asList(SqlParserImplTokenManager.lexStateNames)
-        .indexOf(stateName);
-    parser.token_source.SwitchTo(state);
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -83,7 +106,7 @@ public class SqlParser {
    */
   public SqlNode parseExpression() throws SqlParseException {
     try {
-      return parser.SqlExpressionEof();
+      return parser.parseSqlExpressionEof();
     } catch (Throwable ex) {
       if ((ex instanceof EigenbaseContextException)
           && (originalInput != null)) {
@@ -104,7 +127,7 @@ public class SqlParser {
    */
   public SqlNode parseQuery() throws SqlParseException {
     try {
-      return parser.SqlStmtEof();
+      return parser.parseSqlStmtEof();
     } catch (Throwable ex) {
       if ((ex instanceof EigenbaseContextException)
           && (originalInput != null)) {
@@ -123,7 +146,7 @@ public class SqlParser {
    */
   public SqlNode parseStmt() throws SqlParseException {
     try {
-      return parser.SqlStmtEof();
+      return parser.parseSqlStmtEof();
     } catch (Throwable ex) {
       if ((ex instanceof EigenbaseContextException)
           && (originalInput != null)) {
@@ -135,10 +158,10 @@ public class SqlParser {
   }
 
   /**
-   * Returns the underlying generated parser.
+   * @Return Returns {@link Metadata} of underlying parser implementation.
    */
-  public SqlParserImpl getParserImpl() {
-    return parser;
+  public Metadata getMetadata() {
+    return parser.getMetadata();
   }
 }
 

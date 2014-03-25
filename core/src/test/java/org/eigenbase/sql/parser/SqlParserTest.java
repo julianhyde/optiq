@@ -20,7 +20,6 @@ package org.eigenbase.sql.parser;
 import java.util.*;
 
 import org.eigenbase.sql.*;
-import org.eigenbase.sql.parser.impl.*;
 import org.eigenbase.test.*;
 import org.eigenbase.util.*;
 import org.eigenbase.util14.*;
@@ -90,8 +89,8 @@ public class SqlParserTest {
     return getSqlParser(sql).parseExpression();
   }
 
-  protected SqlParserImpl getParserImpl() {
-    return getSqlParser("").getParserImpl();
+  protected SqlAbstractParserImpl.Metadata getParserMetadata() {
+    return getSqlParser("").getMetadata();
   }
 
   protected void checkExpSame(String sql) {
@@ -5330,7 +5329,7 @@ public class SqlParserTest {
   }
 
   @Test public void testMetadata() {
-    SqlAbstractParserImpl.Metadata metadata = getParserImpl().getMetadata();
+    SqlAbstractParserImpl.Metadata metadata = getParserMetadata();
     assertTrue(metadata.isReservedFunctionName("ABS"));
     assertFalse(metadata.isReservedFunctionName("FOO"));
 
