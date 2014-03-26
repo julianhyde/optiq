@@ -53,19 +53,65 @@ public class JavaTypeFactoryImpl
   syntheticTypes =
       new HashMap<List<Pair<Type, Boolean>>, SyntheticRecordType>();
 
-  public RelDataType createStructType(Class type) {
+  public RelDataType createStructType(final Class type) {
+    return RelDataTypeResolver.withThreadInstance(
+        new Function1<RelDataTypeResolver, RelDataType>() {
+          public RelDataType apply(RelDataTypeResolver resolver) {
+            if (resolver.enter(type)) {
+              try {
+                return createStructType(type, resolver);
+              } finally {
+                resolver.leave(type);
+              }
+            } else {
+              // Type is already active. We have hit a cycle. Return a
+              // placeholder type and it will be resolved later.
+              return resolver.unresolved(type);
+            }
+          }
+        }
+    );
+  }
+
+  /** Creates a struct type, using a {@link RelDataTypeResolver} to ensure
+   * that self-referential types resolve correctly. */
+  RelDataType createStructType(Class type, RelDataTypeResolver resolver) {
+    int resolveCount = resolver.getResolveCount();
     List<RelDataTypeField> list = new ArrayList<RelDataTypeField>();
     for (Field field : type.getFields()) {
       if ((field.getModifiers() & Modifier.STATIC) == 0) {
-        // FIXME: watch out for recursion
         list.add(
             new RelDataTypeFieldImpl(
-                field.getName(),
-                list.size(),
-                createType(field.getType())));
+                field.getName(), list.size(), createType(field.getType())));
       }
     }
-    return canonize(new JavaRecordType(list, type));
+    final JavaRecordType recordType = new JavaRecordType(list, type);
+    resolver.setResolution(type, recordType);
+    if (resolver.getResolveCount() == resolveCount) {
+      return canonize(recordType);
+    }
+    final JavaRecordType resolvedRecordType = resolve(resolver, recordType);
+    return canonize(resolvedRecordType);
+  }
+
+  JavaRecordType resolve(RelDataTypeResolver resolver,
+      JavaRecordType recordType) {
+    int changeCount = 0;
+    final List<RelDataTypeField> newFields = new ArrayList<RelDataTypeField>();
+    for (RelDataTypeField field : recordType.getFieldList()) {
+      final RelDataType fieldType = field.getType();
+      final RelDataType resolvedFieldType = resolver.resolve(fieldType);
+      if (fieldType != resolvedFieldType) {
+        ++changeCount;
+        field = new RelDataTypeFieldImpl(field.getName(), field.getIndex(),
+            resolvedFieldType);
+      }
+      newFields.add(field);
+    }
+    if (changeCount > 0) {
+      return new JavaRecordType(newFields, recordType.clazz); // TODO:
+    }
+    return recordType;
   }
 
   public RelDataType createType(Type type) {
@@ -328,6 +374,7 @@ public class JavaTypeFactoryImpl
       return syntheticType;
     }
   }
+
 }
 
 // End JavaTypeFactoryImpl.java

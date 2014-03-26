@@ -73,7 +73,7 @@ public class IdentityHashSet<E> extends AbstractSet<E> implements Set<E> {
   }
 
   public boolean add(E e) {
-    return map.put(e, PRESENT) != null;
+    return map.put(e, PRESENT) == null;
   }
 
   public boolean remove(Object o) {

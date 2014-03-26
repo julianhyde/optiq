@@ -155,9 +155,9 @@ public class ReflectiveSchemaTest {
         new ReflectiveSchema(rootSchema, "hr", new JdbcTest.HrSchema()));
     ResultSet resultSet = connection.createStatement().executeQuery(
         "select *\n"
-        + "from table(s.StringUnion(\n"
-        + "  GenerateStrings(5),\n"
-        + "  cursor (select name from emps)))\n"
+            + "from table(s.StringUnion(\n"
+            + "  GenerateStrings(5),\n"
+            + "  cursor (select name from emps)))\n"
         + "where char_length(s) > 3");
     assertTrue(resultSet.next());
   }
@@ -185,7 +185,7 @@ public class ReflectiveSchemaTest {
         + "where \"empid\" < 120");
     assertEquals(
         "empid=100; deptno=10; name=Bill; salary=10000.0; commission=1000\n"
-        + "empid=110; deptno=10; name=Theodore; salary=11500.0; commission=250\n",
+            + "empid=110; deptno=10; name=Theodore; salary=11500.0; commission=250\n",
         OptiqAssert.toString(resultSet));
   }
 
@@ -489,6 +489,18 @@ public class ReflectiveSchemaTest {
             + "empid=4; deptno=10; name=Abd; salary=0.0; commission=null\n");
   }
 
+  /** Tests a recursive schema {@link EmployeeWithManager} has a field which is
+   * an {@code EmployeeWithManager}. Types are cyclic but instances are not. */
+  @Test public void testRecursiveSchema() throws Exception {
+    OptiqAssert.that()
+        .with("s", new RecursiveTypeSchema())
+        .query(
+            "select \"name\", \"manager\".\"name\" from \"emps\"")
+//            "select \"name\", \"manager\" from \"emps\"")
+        .returns(
+            "xxx");
+  }
+
   public static class EmployeeWithHireDate extends Employee {
     public final java.sql.Date hireDate;
 
@@ -640,6 +652,35 @@ public class ReflectiveSchemaTest {
             10, 20, "bill", 0f, null,
             new java.sql.Date(100 * DateTimeUtil.MILLIS_PER_DAY)) // 1970-04-11
     };
+  }
+
+  public static class EmployeeWithManager {
+    public final int empid;
+    public final String name;
+    public final EmployeeWithManager manager;
+
+    public EmployeeWithManager(int empid, String name,
+        EmployeeWithManager manager) {
+      this.empid = empid;
+      this.name = name;
+      this.manager = manager;
+    }
+  }
+
+  public static class RecursiveTypeSchema {
+    public RecursiveTypeSchema() {
+      final EmployeeWithManager fred =
+          new EmployeeWithManager(10, "Fred", null);
+      final EmployeeWithManager bill =
+          new EmployeeWithManager(20, "Bill", fred);
+      final EmployeeWithManager sebastian =
+          new EmployeeWithManager(30, "Sebastian", bill);
+      final EmployeeWithManager theodore =
+          new EmployeeWithManager(40, "Theodore", fred);
+      emps = new EmployeeWithManager[] {fred, bill, sebastian, theodore};
+    }
+
+    public final EmployeeWithManager[] emps;
   }
 }
 
