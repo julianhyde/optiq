@@ -29,9 +29,9 @@ import java.io.Reader;
 public interface SqlParserImplFactory {
 
   /**
-   * Get the underlying parser implementation
+   * Get the underlying parser implementation.
    *
-   * @return
+   * @return {@link SqlAbstractParserImpl} object.
    */
   SqlAbstractParserImpl getParser(Reader stream);
 }

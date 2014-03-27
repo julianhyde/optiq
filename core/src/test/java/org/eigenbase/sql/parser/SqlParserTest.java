@@ -20,6 +20,7 @@ package org.eigenbase.sql.parser;
 import java.util.*;
 
 import org.eigenbase.sql.*;
+import org.eigenbase.sql.parser.impl.*;
 import org.eigenbase.test.*;
 import org.eigenbase.util.*;
 import org.eigenbase.util14.*;
@@ -72,7 +73,8 @@ public class SqlParserTest {
   }
 
   private SqlParser getSqlParser(String sql) {
-    return new SqlParser(sql, quoting, unquotedCasing, quotedCasing);
+    return SqlParser.create(SqlParserImpl.FACTORY, sql, quoting,
+        unquotedCasing, quotedCasing);
   }
 
   protected SqlNode parseStmt(String sql) throws SqlParseException {

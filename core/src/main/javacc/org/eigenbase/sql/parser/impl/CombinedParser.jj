@@ -40,6 +40,7 @@ import net.hydromatic.avatica.Casing;
 
 import com.google.common.collect.ImmutableList;
 
+import java.io.Reader;
 import java.math.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,6 +72,16 @@ public class SqlParserImpl extends SqlAbstractParserImpl
 
     private Casing unquotedCasing;
     private Casing quotedCasing;
+
+    /**
+     * {@link SqlParserImplFactory} implementation for creating
+     * Optiq's SQL parser.
+     */
+    public static final SqlParserImplFactory FACTORY = new SqlParserImplFactory() {
+        public SqlAbstractParserImpl getParser(Reader stream) {
+            return new SqlParserImpl(stream);
+        }
+    };
 
     // implement SqlAbstractParserImpl
     public SqlParseException normalizeException(Throwable ex)
@@ -126,13 +137,13 @@ public class SqlParserImpl extends SqlAbstractParserImpl
     // implement SqlAbstractParserImpl
     public SqlNode parseSqlExpressionEof() throws Exception
     {
-      return SqlExpressionEof();
+        return SqlExpressionEof();
     }
 
     // implement SqlAbstractParserImpl
     public SqlNode parseSqlStmtEof() throws Exception
     {
-      return SqlStmtEof();
+        return SqlStmtEof();
     }
 }
 

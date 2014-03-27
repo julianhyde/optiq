@@ -393,7 +393,7 @@ public abstract class SqlAbstractParserImpl {
    * Parses a SQL expression ending with EOF and constructs a
    * parse tree.
    *
-   * @return constructed parse tree
+   * @return constructed parse tree.
    */
   public abstract SqlNode parseSqlExpressionEof() throws Exception;
 
@@ -401,7 +401,7 @@ public abstract class SqlAbstractParserImpl {
    * Parses a SQL statement ending with EOF and constructs a
    * parse tree.
    *
-   * @return constructed parse tree
+   * @return constructed parse tree.
    */
   public abstract SqlNode parseSqlStmtEof() throws Exception;
 
@@ -413,23 +413,23 @@ public abstract class SqlAbstractParserImpl {
   public abstract void setTabSize(int tabSize);
 
   /**
-   * Sets the quoted casing.
+   * Sets the casing policy for quoted identifiers.
    *
-   * @param quotedCasing quoted casing to set
+   * @param quotedCasing Casing to set.
    */
   public abstract void setQuotedCasing(Casing quotedCasing);
 
   /**
-   * Sets the unquoted casing.
+   * Sets the casing policy for unquoted identifiers.
    *
-   * @param unquotedCasing unquoted casing to set
+   * @param unquotedCasing Casing to set.
    */
   public abstract void setUnquotedCasing(Casing unquotedCasing);
 
   /**
    * Change parser state.
    *
-   * @param stateName new state
+   * @param stateName new state.
    */
   public abstract void switchTo(String stateName);
 

@@ -158,8 +158,8 @@ public class PlannerImpl implements Planner {
       ready();
     }
     ensure(State.STATE_2_READY);
-    SqlParser parser = new SqlParser(
-        parserFactory, sql, lex.quoting, lex.unquotedCasing, lex.quotedCasing);
+    SqlParser parser = SqlParser.create(parserFactory, sql,
+        lex.quoting, lex.unquotedCasing, lex.quotedCasing);
     SqlNode sqlNode = parser.parseStmt();
     state = State.STATE_3_PARSED;
     return sqlNode;

@@ -210,7 +210,7 @@ public class MetaImpl implements Meta {
   }
 
   public String getSqlKeywords() {
-    return new SqlParser("").getMetadata().getJdbcKeywords();
+    return SqlParser.create("").getMetadata().getJdbcKeywords();
   }
 
   public String getNumericFunctions() {

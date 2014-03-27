@@ -20,7 +20,6 @@ package org.eigenbase.sql.parser;
 import java.io.*;
 
 import org.eigenbase.sql.*;
-import org.eigenbase.sql.parser.SqlAbstractParserImpl.Metadata;
 import org.eigenbase.sql.parser.impl.*;
 import org.eigenbase.util.*;
 
@@ -37,53 +36,13 @@ public class SqlParser {
   private String originalInput;
 
   //~ Constructors -----------------------------------------------------------
-
-  /**
-   * Creates a <code>SqlParser</code> that reads input from a string.
-   */
-  public SqlParser(String s) {
-    this(SqlStdParserImplFactory.FACTORY, s);
-  }
-
-  /**
-   * Creates a <code>SqlParser</code> that reads input from a string. It gets
-   * the parser implementation from given {@link SqlParserImplFactory}.
-   *
-   * @param parserFactory creates and returns parser implementation.
-   * @param s
-   */
-  public SqlParser(SqlParserImplFactory parserFactory, String s) {
-    this(parserFactory, s, Quoting.DOUBLE_QUOTE, Casing.TO_UPPER,
-      Casing.UNCHANGED);
-  }
-
-  /**
-   * Creates a <code>SqlParser</code> that reads input from a string.
-   */
-  public SqlParser(String s, Quoting quoting, Casing unquotedCasing,
-      Casing quotedCasing) {
-     this(SqlStdParserImplFactory.FACTORY, s, quoting, unquotedCasing,
-       quotedCasing);
-  }
-
-  /**
-   * Creates a <code>SqlParser</code> that reads input from a string and
-   * gets the parser implementation from given {@link SqlParserImplFactory}
-   * with given quoting and casing.
-   *
-   * @param parserFactory
-   * @param s
-   * @param quoting
-   * @param unquotedCasing
-   * @param quotedCasing
-   */
-  public SqlParser(SqlParserImplFactory parserFactory, String s,
+  private SqlParser(String s, SqlAbstractParserImpl parser,
       Quoting quoting, Casing unquotedCasing, Casing quotedCasing) {
-    parser = parserFactory.getParser(new StringReader(s));
+    this.originalInput = s;
+    this.parser = parser;
     parser.setTabSize(1);
     parser.setQuotedCasing(quotedCasing);
     parser.setUnquotedCasing(unquotedCasing);
-    this.originalInput = s;
     switch (quoting) {
     case DOUBLE_QUOTE:
       parser.switchTo("DQID");
@@ -98,6 +57,41 @@ public class SqlParser {
   }
 
   //~ Methods ----------------------------------------------------------------
+
+  /**
+   * Creates a <code>SqlParser</code> to parse the given string using
+   * Optiq's parser implementation.
+   *
+   * @param s An SQL statement or expression to parse.
+   * @return A <code>SqlParser</code> object.
+   */
+  public static SqlParser create(String s) {
+    return create(SqlParserImpl.FACTORY, s, Quoting.DOUBLE_QUOTE,
+        Casing.TO_UPPER, Casing.UNCHANGED);
+  }
+
+  /**
+   * Creates a <code>SqlParser</code> to parse the given string using the
+   * parser implementation created from given {@link SqlParserImplFactory}
+   * with given quoting syntax and casing policies for identifiers.
+   *
+   * @param parserFactory {@link SqlParserImplFactory} to get the parser
+   *     implementation.
+   * @param s An SQL statement or expression to parse.
+   * @param quoting Syntax for quoting identifiers in SQL statements.
+   * @param unquotedCasing Policy for converting case of <i>unquoted</i>
+   *     identifiers.
+   * @param quotedCasing Policy for converting case of <i>quoted</i>
+   *     identifiers.
+   * @return A <code>SqlParser</code> object.
+   */
+  public static SqlParser create(SqlParserImplFactory parserFactory, String s,
+      Quoting quoting, Casing unquotedCasing, Casing quotedCasing) {
+    SqlAbstractParserImpl parser = parserFactory.getParser(
+        new StringReader(s));
+
+    return new SqlParser(s, parser, quoting, unquotedCasing, quotedCasing);
+  }
 
   /**
    * Parses a SQL expression.
@@ -158,9 +152,12 @@ public class SqlParser {
   }
 
   /**
-   * @Return Returns {@link Metadata} of underlying parser implementation.
+   * Get the parser metadata.
+   *
+   * @return {@link SqlAbstractParserImpl.Metadata} implementation of
+   *     underlying parser.
    */
-  public Metadata getMetadata() {
+  public SqlAbstractParserImpl.Metadata getMetadata() {
     return parser.getMetadata();
   }
 }

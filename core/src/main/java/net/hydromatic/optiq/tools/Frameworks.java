@@ -32,7 +32,7 @@ import org.eigenbase.relopt.RelOptSchema;
 import org.eigenbase.relopt.RelTraitDef;
 import org.eigenbase.sql.fun.SqlStdOperatorTable;
 import org.eigenbase.sql.parser.SqlParserImplFactory;
-import org.eigenbase.sql.parser.SqlStdParserImplFactory;
+import org.eigenbase.sql.parser.impl.SqlParserImpl;
 
 import com.google.common.collect.ImmutableList;
 
@@ -72,7 +72,7 @@ public class Frameworks {
       Lex lex,
       Function1<SchemaPlus, Schema> schemaFactory,
       SqlStdOperatorTable operatorTable, RuleSet... ruleSets) {
-    return getPlanner(lex, SqlStdParserImplFactory.FACTORY, schemaFactory,
+    return getPlanner(lex, SqlParserImpl.FACTORY, schemaFactory,
         operatorTable, null, ruleSets);
   }
 
