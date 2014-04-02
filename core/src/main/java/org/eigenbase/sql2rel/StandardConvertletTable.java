@@ -471,6 +471,15 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
     RexNode cast = rexBuilder.makeReinterpretCast(
         resType, exprs.get(1), rexBuilder.makeLiteral(false));
 
+    /* TODO: Handle DateTime types.
+     * Raise exception for now, that we don't extract from DATETIME types
+     */
+    SqlTypeName extractFrom = exprs.get(1).getType().getSqlTypeName();
+    if (SqlTypeFamily.DATETIME.getTypeNames().contains(extractFrom)) {
+      throw new UnsupportedOperationException(
+        "Extract function does not support DATETIME data types");
+    }
+
     SqlIntervalQualifier.TimeUnit unit =
         ((SqlIntervalQualifier) operands.get(0)).getStartUnit();
     long val = unit.multiplier;
