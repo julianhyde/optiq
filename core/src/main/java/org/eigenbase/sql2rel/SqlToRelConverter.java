@@ -128,25 +128,6 @@ public class SqlToRelConverter {
   public final RelOptTable.ViewExpander viewExpander;
 
   //~ Constructors -----------------------------------------------------------
-
-  /**
-   * Creates a converter.
-   *
-   * @param viewExpander  Preparing statement
-   * @param validator     Validator
-   * @param catalogReader Schema
-   * @param planner       Planner
-   * @param rexBuilder    Rex builder
-   */
-  public SqlToRelConverter(
-      RelOptTable.ViewExpander viewExpander,
-      SqlValidator validator,
-      Prepare.CatalogReader catalogReader,
-      RelOptPlanner planner,
-      RexBuilder rexBuilder) {
-      this(viewExpander, validator, catalogReader, planner, rexBuilder,
-        new StandardConvertletTable());
-  }
   /**
    * Creates a converter.
    *

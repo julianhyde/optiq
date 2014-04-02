@@ -74,7 +74,7 @@ public class Frameworks {
       Function1<SchemaPlus, Schema> schemaFactory,
       SqlOperatorTable operatorTable, RuleSet... ruleSets) {
     return getPlanner(lex, SqlParserImpl.FACTORY, schemaFactory,
-        operatorTable, null, ruleSets);
+        operatorTable, null, StandardConvertletTable.INSTANCE, ruleSets);
   }
 
   /**
@@ -114,16 +114,6 @@ public class Frameworks {
       Function1<SchemaPlus, Schema> schemaFactory,
       SqlOperatorTable operatorTable,
       List<RelTraitDef> traitDefs,
-      RuleSet... ruleSets) {
-    return getPlanner(lex, parserFactory, schemaFactory, operatorTable,
-             traitDefs, new StandardConvertletTable(), ruleSets);
-  }
-
-  public static Planner getPlanner(Lex lex,
-      SqlParserImplFactory parserFactory,
-      Function1<SchemaPlus, Schema> schemaFactory,
-      SqlOperatorTable operatorTable,
-      List<RelTraitDef> traitDefs,
       SqlRexConvertletTable convertletTable,
       RuleSet... ruleSets) {
 
@@ -135,7 +125,7 @@ public class Frameworks {
 
 
 
-    /** Piece of code to be run in a context where a planner is available. The
+  /** Piece of code to be run in a context where a planner is available. The
    * planner is accessible from the {@code cluster} parameter, as are several
    * other useful objects. */
   public interface PlannerAction<R> {

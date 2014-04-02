@@ -35,6 +35,11 @@ import com.google.common.collect.ImmutableList;
  * Standard implementation of {@link SqlRexConvertletTable}.
  */
 public class StandardConvertletTable extends ReflectiveConvertletTable {
+
+  // Singleton instance of StandardConvertletTable
+  public static final StandardConvertletTable INSTANCE =
+    new StandardConvertletTable();
+
   //~ Constructors -----------------------------------------------------------
 
   public StandardConvertletTable() {
