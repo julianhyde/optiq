@@ -2726,10 +2726,8 @@ public class JdbcTest {
             });
   }
 
-
-  /** Tests user-defined function. */
-  @Test public void testUserDefinedFunction() throws Exception {
-    final OptiqAssert.AssertThat with = OptiqAssert.that()
+  private OptiqAssert.AssertThat prepareUDFSchema() {
+    return OptiqAssert.that()
         .withModel(
             "{\n"
             + "  version: '1.0',\n"
@@ -2754,6 +2752,12 @@ public class JdbcTest {
             + "'\n"
             + "         },\n"
             + "         {\n"
+            + "           name: 'MY_STR',\n"
+            + "           className: '"
+            + MyToStringFunction.class.getName()
+            + "'\n"
+            + "         },\n"
+            + "         {\n"
             + "           name: 'MY_DOUBLE',\n"
             + "           className: '"
             + MyDoubleFunction.class.getName()
@@ -2763,6 +2767,11 @@ public class JdbcTest {
             + "     }\n"
             + "   ]\n"
             + "}");
+  }
+
+  /** Tests user-defined function. */
+  @Test public void testUserDefinedFunction() throws Exception {
+    final OptiqAssert.AssertThat with = prepareUDFSchema();
     with.query(
         "select \"adhoc\".my_plus(\"deptno\", 100) as p from \"adhoc\".EMPLOYEES")
         .returns(
@@ -2777,6 +2786,52 @@ public class JdbcTest {
             + "P=40\n"
             + "P=20\n"
             + "P=20\n");
+  }
+
+  /**
+   * Tests that IS NULL/IS NOT NULL is properly implemented for non-strict
+   * functions.
+   */
+  @Test
+  public void testNotNullImplementor() {
+    final OptiqAssert.AssertThat with = prepareUDFSchema();
+    with.query(
+        "select upper(\"adhoc\".my_str(\"name\")) as p from \"adhoc\"."
+        + "EMPLOYEES")
+        .returns(
+            "P=<BILL>\n"
+            + "P=<ERIC>\n"
+            + "P=<SEBASTIAN>\n"
+            + "P=<THEODORE>\n");
+    with.query(
+        "select \"name\" as p from \"adhoc\"."
+        + "EMPLOYEES where \"adhoc\".my_str(\"name\") is not null")
+        .returns(
+            "P=Bill\n"
+            + "P=Eric\n"
+            + "P=Sebastian\n"
+            + "P=Theodore\n");
+    with.query(
+        "select \"name\" as p from \"adhoc\"."
+        + "EMPLOYEES where \"adhoc\".my_str(upper(\"name\")) is not null")
+        .returns(
+            "P=Bill\n"
+            + "P=Eric\n"
+            + "P=Sebastian\n"
+            + "P=Theodore\n");
+    with.query(
+        "select \"name\" as p from \"adhoc\"."
+        + "EMPLOYEES where upper(\"adhoc\".my_str(\"name\")) is not null")
+        .returns(
+            "P=Bill\n"
+            + "P=Eric\n"
+            + "P=Sebastian\n"
+            + "P=Theodore\n");
+    with.query(
+        "select \"name\" as p from \"adhoc\"."
+        + "EMPLOYEES where \"adhoc\".my_str(\"name\") is null")
+        .returns(
+            "");
   }
 
   /** Tests user-defined function. */
@@ -3673,6 +3728,16 @@ public class JdbcTest {
   public static class MyPlusFunction {
     public int eval(int x, int y) {
       return x + y;
+    }
+  }
+
+  /** Example of a UDF with a nontatic {@code eval} method. */
+  public static class MyToStringFunction {
+    public static String eval(Object o) {
+      if (o == null) {
+        return "<null>";
+      }
+      return "<" + o.toString() + ">";
     }
   }
 
