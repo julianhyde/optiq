@@ -149,6 +149,8 @@
         <filtering>true</filtering>
       </resource>
       <resource>
+        <!-- Copy freemarker template and fmpp configuration files of
+             Optiq's SQL parser to allow clients to extend parser. -->
         <directory>${basedir}/src/main/codegen</directory>
         <targetPath>codegen</targetPath>
       </resource>

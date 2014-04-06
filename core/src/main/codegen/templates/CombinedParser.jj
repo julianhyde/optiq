@@ -19,8 +19,6 @@
 
 <@pp.changeOutputFile name="javacc/CombinedParser.jj" />
 
-<#include "/@includes/license.ftl" />
-
 options {
     STATIC = false;
     IGNORE_CASE = true;
