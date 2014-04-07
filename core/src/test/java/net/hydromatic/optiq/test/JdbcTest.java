@@ -2834,6 +2834,24 @@ public class JdbcTest {
             "");
   }
 
+  /**
+   * Tests derived return type of user-defined function.
+   */
+  @Test
+  public void testUDFDerivedReturnType() {
+    final OptiqAssert.AssertThat with = prepareUDFSchema();
+    with.query(
+        "select max(\"adhoc\".my_double(\"deptno\")) as p from \"adhoc\"."
+        + "EMPLOYEES")
+        .returns(
+            "P=40\n");
+    with.query(
+        "select max(\"adhoc\".my_str(\"name\")) as p from \"adhoc\"."
+        + "EMPLOYEES where \"adhoc\".my_str(\"name\") is null")
+        .returns(
+            "P=null\n");
+  }
+
   /** Tests user-defined function. */
   @Test public void testUserDefinedFunction2() throws Exception {
     OptiqAssert.that()
