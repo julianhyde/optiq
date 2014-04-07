@@ -18,6 +18,8 @@
 package net.hydromatic.optiq.prepare;
 
 import net.hydromatic.optiq.*;
+import net.hydromatic.optiq.Function;
+import net.hydromatic.optiq.Table;
 import net.hydromatic.optiq.impl.java.JavaTypeFactory;
 import net.hydromatic.optiq.jdbc.OptiqSchema;
 
@@ -28,9 +30,7 @@ import org.eigenbase.sql.type.*;
 import org.eigenbase.sql.validate.*;
 import org.eigenbase.util.Util;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
+import com.google.common.collect.*;
 
 import java.util.*;
 
@@ -166,7 +166,7 @@ class OptiqCatalogReader implements Prepare.CatalogReader, SqlOperatorTable {
         typeFactory, caseSensitive);
   }
 
-  public void lookupOperatorOverloads(SqlIdentifier opName,
+  public void lookupOperatorOverloads(final SqlIdentifier opName,
       SqlFunctionCategory category,
       SqlSyntax syntax,
       List<SqlOperator> operatorList) {
@@ -177,25 +177,18 @@ class OptiqCatalogReader implements Prepare.CatalogReader, SqlOperatorTable {
     if (functions.isEmpty()) {
       return;
     }
-    final String name = Util.last(opName.names);
-    operatorList.addAll(toOps(name, ImmutableList.copyOf(functions)));
+    operatorList.addAll(
+        Collections2.transform(functions,
+            new com.google.common.base.Function<Function,
+                SqlOperator>() {
+              public SqlOperator apply(Function function) {
+                return toOp(opName, function);
+              }
+            })
+    );
   }
 
-  private List<SqlOperator> toOps(
-      final String name,
-      final ImmutableList<Function> functions) {
-    return new AbstractList<SqlOperator>() {
-      public SqlOperator get(int index) {
-        return toOp(name, functions.get(index));
-      }
-
-      public int size() {
-        return functions.size();
-      }
-    };
-  }
-
-  private SqlOperator toOp(String name, Function function) {
+  private SqlOperator toOp(SqlIdentifier name, Function function) {
     List<RelDataType> argTypes = new ArrayList<RelDataType>();
     List<SqlTypeFamily> typeFamilies = new ArrayList<SqlTypeFamily>();
     for (FunctionParameter o : function.getParameters()) {

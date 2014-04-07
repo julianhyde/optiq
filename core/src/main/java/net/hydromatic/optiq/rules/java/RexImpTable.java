@@ -610,7 +610,9 @@ public class RexImpTable {
         }
       }
     }
-    return implementor.implement(translator, call, translatedOperands);
+    Expression result;
+    result = implementor.implement(translator, call, translatedOperands);
+    return nullAs.handle(result);
   }
 
   /** Implements an aggregate function by generating a call to a method that
