@@ -1464,6 +1464,35 @@ public class JdbcTest {
             "hire_date=1994-12-01 00:00:00; end_date=null; birth_date=1961-08-26\n");
   }
 
+  @Test public void testReuseExpressionWhenNullChecking() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            "select upper((case when \"deptno\">\"empid\" then 'Y' else null end)) from \"hr\".\"emps\"")
+        .planContains(
+            "final String t = current1.deptno > current1.empid ? \"Y\" : null;")
+        .planContains(
+            "return t == null ? (String) null : net.hydromatic.optiq.runtime.SqlFunctions.upper(t);");
+  }
+
+  @Test public void testReuseExpressionWhenNullChecking2() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            "select upper((case when \"deptno\">\"empid\" then \"name\" end)) from \"hr\".\"emps\"")
+        .planContains(
+            "return t == null ? (String) null : net.hydromatic.optiq.runtime.SqlFunctions.upper(t);");
+  }
+
+  @Test public void testReuseExpressionWhenNullChecking3() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            "select substring(\"name\", \"deptno\"+case when user <> 'sa' then 1 end) from \"hr\".\"emps\"")
+        .planContains(
+            "return v == null || t == null ? (String) null : net.hydromatic.optiq.runtime.SqlFunctions.substring(v, Integer.valueOf(current2.deptno) + t);");
+  }
+
   @Test public void testValues() {
     OptiqAssert.that()
         .query("values (1), (2)")
