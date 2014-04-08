@@ -82,6 +82,7 @@ import org.eigenbase.util.mapping.Mappings;
 
 import net.hydromatic.linq4j.Ord;
 import net.hydromatic.linq4j.function.Function2;
+
 import net.hydromatic.optiq.util.BitSets;
 
 
