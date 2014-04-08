@@ -17,11 +17,27 @@
 */
 package org.eigenbase.rel.rules;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.eigenbase.rel.*;
-import org.eigenbase.relopt.*;
-import org.eigenbase.rex.*;
+import org.eigenbase.rel.CalcRel;
+import org.eigenbase.rel.FilterRel;
+import org.eigenbase.rel.JoinRel;
+import org.eigenbase.rel.JoinRelBase;
+import org.eigenbase.rel.JoinRelType;
+import org.eigenbase.rel.RelNode;
+import org.eigenbase.relopt.Convention;
+import org.eigenbase.relopt.RelOptRule;
+import org.eigenbase.relopt.RelOptRuleCall;
+import org.eigenbase.relopt.RelOptRuleOperand;
+import org.eigenbase.relopt.RelOptUtil;
+import org.eigenbase.rex.RexBuilder;
+import org.eigenbase.rex.RexNode;
+import org.eigenbase.rex.RexUtil;
+
+import net.hydromatic.linq4j.function.Function2;
+import net.hydromatic.linq4j.function.Functions;
+
 
 import com.google.common.collect.ImmutableList;
 
@@ -30,19 +46,11 @@ import com.google.common.collect.ImmutableList;
  * within a join node into the join node and/or its children nodes.
  */
 public abstract class PushFilterPastJoinRule extends RelOptRule {
+
+  private final Function2<RelNode, RelNode, Void> onCopyHook;
+
   public static final PushFilterPastJoinRule FILTER_ON_JOIN =
-      new PushFilterPastJoinRule(
-          operand(
-              FilterRel.class,
-              operand(JoinRel.class, any())),
-          "PushFilterPastJoinRule:filter") {
-        @Override
-        public void onMatch(RelOptRuleCall call) {
-          FilterRel filter = call.rel(0);
-          JoinRel join = call.rel(1);
-          perform(call, filter, join);
-        }
-      };
+      getFilterOnJoinWithCopy(null);
 
   public static final PushFilterPastJoinRule JOIN =
       new PushFilterPastJoinRule(
@@ -57,18 +65,49 @@ public abstract class PushFilterPastJoinRule extends RelOptRule {
 
   //~ Constructors -----------------------------------------------------------
 
+  private PushFilterPastJoinRule(
+    RelOptRuleOperand operand,
+    String id
+  ) {
+    this(operand, id, null);
+  }
+
+
+  public static PushFilterPastJoinRule getFilterOnJoinWithCopy(
+    Function2<RelNode, RelNode, Void> onCopyHook) {
+    return new PushFilterPastJoinRule(
+        operand(
+            FilterRel.class,
+            operand(JoinRelBase.class, any())),
+        "PushFilterPastJoinRule:filter", onCopyHook) {
+      @Override
+      public void onMatch(RelOptRuleCall call) {
+        FilterRel filter = call.rel(0);
+        JoinRelBase join = call.rel(1);
+        perform(call, filter, join);
+      }
+    };
+  }
   /**
    * Creates a PushFilterPastJoinRule with an explicit root operand.
    */
   private PushFilterPastJoinRule(
       RelOptRuleOperand operand,
-      String id) {
+      String id,
+      Function2<RelNode, RelNode, Void> onCopyHook
+  ) {
     super(operand, "PushFilterRule: " + id);
+    if (onCopyHook == null) {
+      this.onCopyHook = Functions.ignore2();
+    } else {
+      this.onCopyHook = onCopyHook;
+    }
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  protected void perform(RelOptRuleCall call, FilterRel filter, JoinRel join) {
+  protected void perform(RelOptRuleCall call, FilterRel filter,
+      JoinRelBase join) {
     final List<RexNode> joinFilters =
         RelOptUtil.conjunctions(join.getCondition());
 
@@ -168,16 +207,14 @@ public abstract class PushFilterPastJoinRule extends RelOptRule {
       joinFilter =
           RexUtil.composeConjunction(rexBuilder, joinFilters, true);
     }
-    RelNode newJoinRel =
-        new JoinRel(
-            join.getCluster(),
-            leftRel,
-            rightRel,
-            joinFilter,
-            join.getJoinType(),
-            Collections.<String>emptySet(),
-            join.isSemiJoinDone(),
-            join.getSystemFieldList());
+    RelNode newJoinRel = join.copy(
+      join.getCluster().traitSetOf(Convention.NONE),
+      joinFilter,
+      leftRel,
+      rightRel,
+      join.getJoinType()
+    );
+    onCopyHook.apply(join, newJoinRel);
 
     // create a FilterRel on top of the join if needed
     RelNode newRel =

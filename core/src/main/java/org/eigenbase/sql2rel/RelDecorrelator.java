@@ -17,26 +17,73 @@
 */
 package org.eigenbase.sql2rel;
 
-import java.math.*;
-import java.util.*;
-import java.util.logging.*;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.logging.Logger;
 
-import org.eigenbase.rel.*;
-import org.eigenbase.rel.metadata.*;
-import org.eigenbase.relopt.*;
-import org.eigenbase.relopt.hep.*;
-import org.eigenbase.reltype.*;
-import org.eigenbase.rex.*;
-import org.eigenbase.sql.*;
-import org.eigenbase.sql.fun.*;
-import org.eigenbase.trace.*;
-import org.eigenbase.util.*;
+import org.eigenbase.rel.AggregateCall;
+import org.eigenbase.rel.AggregateRel;
+import org.eigenbase.rel.CalcRel;
+import org.eigenbase.rel.CorrelatorRel;
+import org.eigenbase.rel.CorrelatorRel.Correlation;
+import org.eigenbase.rel.FilterRel;
+import org.eigenbase.rel.JoinRel;
+import org.eigenbase.rel.JoinRelType;
+import org.eigenbase.rel.ProjectRel;
+import org.eigenbase.rel.RelCollation;
+import org.eigenbase.rel.RelNode;
+import org.eigenbase.rel.RelVisitor;
+import org.eigenbase.rel.SortRel;
+import org.eigenbase.rel.metadata.RelMdUtil;
+import org.eigenbase.rel.rules.PushFilterPastJoinRule;
+import org.eigenbase.relopt.Convention;
+import org.eigenbase.relopt.RelOptCluster;
+import org.eigenbase.relopt.RelOptCostImpl;
+import org.eigenbase.relopt.RelOptRule;
+import org.eigenbase.relopt.RelOptRuleCall;
+import org.eigenbase.relopt.RelOptUtil;
+import org.eigenbase.relopt.hep.HepPlanner;
+import org.eigenbase.relopt.hep.HepProgram;
+import org.eigenbase.relopt.hep.HepRelVertex;
+import org.eigenbase.reltype.RelDataType;
+import org.eigenbase.reltype.RelDataTypeFactory;
+import org.eigenbase.reltype.RelDataTypeField;
+import org.eigenbase.rex.RexBuilder;
+import org.eigenbase.rex.RexCall;
+import org.eigenbase.rex.RexFieldAccess;
+import org.eigenbase.rex.RexInputRef;
+import org.eigenbase.rex.RexLiteral;
+import org.eigenbase.rex.RexNode;
+import org.eigenbase.rex.RexShuttle;
+import org.eigenbase.rex.RexUtil;
+import org.eigenbase.sql.SqlFunction;
+import org.eigenbase.sql.SqlKind;
+import org.eigenbase.sql.SqlOperator;
+import org.eigenbase.sql.fun.SqlCountAggFunction;
+import org.eigenbase.sql.fun.SqlSingleValueAggFunction;
+import org.eigenbase.sql.fun.SqlStdOperatorTable;
+import org.eigenbase.trace.EigenbaseTrace;
+import org.eigenbase.util.Pair;
+import org.eigenbase.util.ReflectUtil;
+import org.eigenbase.util.ReflectiveVisitDispatcher;
+import org.eigenbase.util.ReflectiveVisitor;
+import org.eigenbase.util.Util;
 import org.eigenbase.util.mapping.Mappings;
 
 import net.hydromatic.linq4j.Ord;
 import net.hydromatic.linq4j.function.Function2;
-
 import net.hydromatic.optiq.util.BitSets;
+
 
 import com.google.common.collect.ImmutableSet;
 
@@ -120,7 +167,6 @@ public class RelDecorrelator implements ReflectiveVisitor {
 
     planner.setRoot(root);
     root = planner.findBestExp();
-
     // Perform decorrelation.
     mapOldToNewRel.clear();
     mapNewRelToMapCorVarToOutputPos.clear();
@@ -137,26 +183,41 @@ public class RelDecorrelator implements ReflectiveVisitor {
     }
   }
 
+  private Function2<RelNode, RelNode, Void> getCopyHook() {
+    return new Function2<RelNode, RelNode, Void>() {
+      public Void apply(RelNode oldNode, RelNode newNode) {
+        if (mapRefRelToCorVar.containsKey(oldNode)) {
+          mapRefRelToCorVar.put(
+              newNode, mapRefRelToCorVar.get(oldNode));
+        }
+        if (oldNode instanceof CorrelatorRel
+            && newNode instanceof CorrelatorRel) {
+
+          CorrelatorRel oldCor = (CorrelatorRel) oldNode;
+          for (Correlation c : oldCor.getCorrelations()) {
+            if (mapCorVarToCorRel.get(c) == oldNode) {
+              mapCorVarToCorRel.put(c, (CorrelatorRel) newNode);
+            }
+          }
+
+          if (generatedCorRels.contains(oldNode)) {
+            generatedCorRels.add((CorrelatorRel) newNode);
+          }
+        }
+
+
+        return null;
+      }
+    };
+  }
+
   private HepPlanner createPlanner(HepProgram program) {
     // Create a planner with a hook to update the mapping tables when a
     // node is copied when it is registered.
     return new HepPlanner(
         program,
         true,
-        new Function2<RelNode, RelNode, Void>() {
-          public Void apply(RelNode oldNode, RelNode newNode) {
-            if (mapRefRelToCorVar.containsKey(oldNode)) {
-              mapRefRelToCorVar.put(
-                  newNode, mapRefRelToCorVar.get(oldNode));
-            }
-            if (oldNode instanceof CorrelatorRel
-                && newNode instanceof CorrelatorRel
-                && generatedCorRels.contains(oldNode)) {
-              generatedCorRels.add((CorrelatorRel) newNode);
-            }
-            return null;
-          }
-        },
+        getCopyHook(),
         RelOptCostImpl.FACTORY);
   }
 
@@ -165,6 +226,8 @@ public class RelDecorrelator implements ReflectiveVisitor {
         .addRuleInstance(new RemoveSingleAggregateRule())
         .addRuleInstance(new RemoveCorrelationForScalarProjectRule())
         .addRuleInstance(new RemoveCorrelationForScalarAggregateRule())
+        .addRuleInstance(PushFilterPastJoinRule
+            .getFilterOnJoinWithCopy(getCopyHook()))
         .build();
 
     HepPlanner planner = createPlanner(program);
@@ -293,7 +356,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
     SortRel newRel =
         new SortRel(
             rel.getCluster(),
-            rel.getCluster().traitSetOf(Convention.NONE),
+            rel.getCluster().traitSetOf(Convention.NONE).plus(newCollation),
             newChildRel,
             newCollation);
 

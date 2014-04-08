@@ -331,8 +331,9 @@ public class SqlToRelConverter {
   public RelNode flattenTypes(
       RelNode rootRel,
       boolean restructure) {
+
     RelStructuredTypeFlattener typeFlattener =
-        new RelStructuredTypeFlattener(rexBuilder);
+        new RelStructuredTypeFlattener(rexBuilder, getToRelContext());
     RelNode newRootRel = typeFlattener.rewrite(rootRel, restructure);
 
     // There are three maps constructed during convertQuery which need to to
@@ -2870,21 +2871,24 @@ public class SqlToRelConverter {
         false);
   }
 
-  public RelNode toRel(RelOptTable table) {
-    return table.toRel(
-        new RelOptTable.ToRelContext() {
-          public RelOptCluster getCluster() {
-            return cluster;
-          }
+  private RelOptTable.ToRelContext getToRelContext() {
+    return new RelOptTable.ToRelContext() {
+      public RelOptCluster getCluster() {
+        return cluster;
+      }
 
-          public RelNode expandView(
-              RelDataType rowType,
-              String queryString,
-              List<String> schemaPath) {
-            return viewExpander.expandView(
-                rowType, queryString, schemaPath);
-          }
-        });
+      public RelNode expandView(
+          RelDataType rowType,
+          String queryString,
+          List<String> schemaPath) {
+        return viewExpander.expandView(
+            rowType, queryString, schemaPath);
+      }
+    };
+  }
+
+  public RelNode toRel(RelOptTable table) {
+    return table.toRel(getToRelContext());
   }
 
   protected RelOptTable getTargetTable(SqlNode call) {

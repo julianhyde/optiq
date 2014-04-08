@@ -33,7 +33,16 @@ import net.hydromatic.optiq.test.JdbcTest;
 import org.eigenbase.rel.*;
 import org.eigenbase.rel.convert.ConverterRule;
 import org.eigenbase.rel.rules.MergeFilterRule;
+import org.eigenbase.rel.rules.MergeProjectRule;
+import org.eigenbase.rel.rules.PushFilterPastJoinRule;
+import org.eigenbase.rel.rules.PushFilterPastProjectRule;
+import org.eigenbase.rel.rules.PushJoinThroughJoinRule;
+import org.eigenbase.rel.rules.PushSortPastProjectRule;
+import org.eigenbase.rel.rules.ReduceAggregatesRule;
+import org.eigenbase.rel.rules.RemoveDistinctAggregateRule;
 import org.eigenbase.rel.rules.RemoveSortRule;
+import org.eigenbase.rel.rules.SwapJoinRule;
+import org.eigenbase.rel.rules.TableAccessRule;
 import org.eigenbase.relopt.*;
 import org.eigenbase.reltype.RelDataType;
 import org.eigenbase.reltype.RelDataTypeFactory;
@@ -50,11 +59,14 @@ import org.eigenbase.sql2rel.StandardConvertletTable;
 import org.eigenbase.util.Util;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
@@ -450,6 +462,92 @@ public class PlannerTest {
     public JdbcImplementor.Result implement(JdbcImplementor implementor) {
       return null;
     }
+  }
+
+
+  private static RuleSet[] rules = new RuleSet[]{new RuleSet() {
+    Set<RelOptRule> setOfRules = ImmutableSet.of(
+      JavaRules.ENUMERABLE_JOIN_RULE,
+      JavaRules.ENUMERABLE_PROJECT_RULE,
+      JavaRules.ENUMERABLE_FILTER_RULE,
+      JavaRules.ENUMERABLE_AGGREGATE_RULE,
+      JavaRules.ENUMERABLE_SORT_RULE,
+      JavaRules.ENUMERABLE_LIMIT_RULE,
+      JavaRules.ENUMERABLE_UNION_RULE,
+      JavaRules.ENUMERABLE_INTERSECT_RULE,
+      JavaRules.ENUMERABLE_MINUS_RULE,
+      JavaRules.ENUMERABLE_TABLE_MODIFICATION_RULE,
+      JavaRules.ENUMERABLE_VALUES_RULE,
+      JavaRules.ENUMERABLE_WINDOW_RULE,
+      JavaRules.ENUMERABLE_ONE_ROW_RULE,
+      JavaRules.ENUMERABLE_EMPTY_RULE,
+      TableAccessRule.INSTANCE,
+      MergeProjectRule.INSTANCE,
+      PushFilterPastProjectRule.INSTANCE,
+      PushFilterPastJoinRule.FILTER_ON_JOIN,
+      RemoveDistinctAggregateRule.INSTANCE,
+      ReduceAggregatesRule.INSTANCE,
+      SwapJoinRule.INSTANCE,
+      PushJoinThroughJoinRule.RIGHT,
+      PushJoinThroughJoinRule.LEFT,
+      PushSortPastProjectRule.INSTANCE
+    );
+
+    public Iterator<RelOptRule> iterator() {
+      return setOfRules.iterator();
+    }
+
+  } };
+
+
+
+  /**
+   * Test to determine whether decorrelation correctly remove CorrelatorRel
+   * @throws Exception
+   */
+  @Test public void oldJoinStyleDecor() throws Exception {
+    assertFalse(testTpchQuery("select\n p.`pPartkey`\n"
+        + "from\n"
+        + "  `tpch`.`part` p,\n"
+        + "  `tpch`.`partsupp` ps1\n"
+        + "where\n"
+        + "  p.`pPartkey` = ps1.`psPartkey`\n"
+        + "  and ps1.`psSupplyCost` = (\n"
+        + "    select\n"
+        + "      min(ps.`psSupplyCost`)\n"
+        + "    from\n"
+        + "      `tpch`.`partsupp` ps\n"
+        + "    where\n"
+        + "      p.`pPartkey` = ps.`psPartkey`\n"
+        + "  )\n"
+        + "").contains("CorrelatorRel"));
+  }
+
+
+
+  public String testTpchQuery(String tpchTestQuery) throws Exception {
+
+    System.out.println(tpchTestQuery);
+    final ReflectiveSchema schema = new ReflectiveSchema("tpch",
+        new TpchSchema());
+
+    Function1<SchemaPlus, Schema> schemaFactory =
+      new Function1<SchemaPlus, Schema>() {
+
+        public Schema apply(SchemaPlus root) {
+          root.add("tpch", schema);
+          return schema;
+        }
+
+      };
+    Planner p = Frameworks.getPlanner(Lex.MYSQL, schemaFactory,
+        SqlStdOperatorTable.instance(), rules);
+    SqlNode n = p.parse(tpchTestQuery);
+    n = p.validate(n);
+    RelNode r = p.convert(n);
+    String plan = RelOptUtil.toString(r);
+    p.close();
+    return plan;
   }
 
   /** User-defined aggregate function. */
