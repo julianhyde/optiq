@@ -17,27 +17,14 @@
 */
 package org.eigenbase.rel.rules;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-import org.eigenbase.rel.CalcRel;
-import org.eigenbase.rel.FilterRel;
-import org.eigenbase.rel.JoinRel;
-import org.eigenbase.rel.JoinRelBase;
-import org.eigenbase.rel.JoinRelType;
-import org.eigenbase.rel.RelNode;
-import org.eigenbase.relopt.Convention;
-import org.eigenbase.relopt.RelOptRule;
-import org.eigenbase.relopt.RelOptRuleCall;
-import org.eigenbase.relopt.RelOptRuleOperand;
-import org.eigenbase.relopt.RelOptUtil;
-import org.eigenbase.rex.RexBuilder;
-import org.eigenbase.rex.RexNode;
-import org.eigenbase.rex.RexUtil;
+import org.eigenbase.rel.*;
+import org.eigenbase.relopt.*;
+import org.eigenbase.rex.*;
 
 import net.hydromatic.linq4j.function.Function2;
 import net.hydromatic.linq4j.function.Functions;
-
 
 import com.google.common.collect.ImmutableList;
 
@@ -67,8 +54,7 @@ public abstract class PushFilterPastJoinRule extends RelOptRule {
 
   private PushFilterPastJoinRule(
     RelOptRuleOperand operand,
-    String id
-  ) {
+    String id) {
     this(operand, id, null);
   }
 
@@ -94,8 +80,7 @@ public abstract class PushFilterPastJoinRule extends RelOptRule {
   private PushFilterPastJoinRule(
       RelOptRuleOperand operand,
       String id,
-      Function2<RelNode, RelNode, Void> onCopyHook
-  ) {
+      Function2<RelNode, RelNode, Void> onCopyHook) {
     super(operand, "PushFilterRule: " + id);
     if (onCopyHook == null) {
       this.onCopyHook = Functions.ignore2();

@@ -503,7 +503,6 @@ public class PlannerTest {
 
   /**
    * Test to determine whether decorrelation correctly remove CorrelatorRel
-   * @throws Exception
    */
   @Test public void oldJoinStyleDecor() throws Exception {
     assertFalse(testTpchQuery("select\n p.`pPartkey`\n"
@@ -527,7 +526,6 @@ public class PlannerTest {
 
   public String testTpchQuery(String tpchTestQuery) throws Exception {
 
-    System.out.println(tpchTestQuery);
     final ReflectiveSchema schema = new ReflectiveSchema("tpch",
         new TpchSchema());
 
