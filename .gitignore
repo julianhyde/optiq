@@ -5,4 +5,8 @@ target
 settings.xml
 .classpath.txt
 .fullclasspath.txt
-
+.project
+.buildpath
+.classpath
+.settings
+*Test.log.xml
