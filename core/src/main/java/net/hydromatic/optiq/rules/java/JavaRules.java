@@ -2039,20 +2039,22 @@ public class JavaRules {
                       source_,
                       BuiltinMethod.INTO.method,
                       Expressions.new_(ArrayList.class)),
-                  List.class));
+                  List.class),
+              false); // forbid sharing of temp list
           iterator_ = builder.append(
               "iterator",
               Expressions.call(
                   null,
                   BuiltinMethod.SORTED_MULTI_MAP_SINGLETON.method,
                   comparator_,
-                  tempList_));
-
+                  tempList_),
+              false); // forbid sharing of tempList.iterator()
           collectionExpr = tempList_;
         } else {
           Expression multiMap_ =
               builder.append(
-                  "multiMap", Expressions.new_(SortedMultiMap.class));
+                  "multiMap", Expressions.new_(SortedMultiMap.class),
+                  false); // forbid to reuse multimap
           final BlockBuilder builder2 = new BlockBuilder();
           final ParameterExpression v_ =
               Expressions.parameter(inputPhysType.getJavaRowType(),
@@ -2090,7 +2092,8 @@ public class JavaRules {
               Expressions.call(
                   multiMap_,
                   BuiltinMethod.SORTED_MULTI_MAP_ARRAYS.method,
-                  comparator_));
+                  comparator_),
+              false); // forbid to reuse sortedMap.iterator()
 
           collectionExpr = multiMap_;
         }

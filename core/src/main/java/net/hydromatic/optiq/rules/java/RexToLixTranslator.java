@@ -132,6 +132,25 @@ public class RexToLixTranslator {
   Expression translate(RexNode expr, RexImpTable.NullAs nullAs) {
     Expression expression = translate0(expr, nullAs);
     assert expression != null;
+    if (expression instanceof BinaryExpression && (
+        nullAs == RexImpTable.NullAs.IS_NULL
+        || nullAs == RexImpTable.NullAs.IS_NOT_NULL)) {
+      // When translating resulted in expr != null expression,
+      // add expr as standalone one.
+      // This eliminates multiple calls to expr
+      // v1 = expr!=null ->  v0 = expr; v1 = v0!=null
+      BinaryExpression binaryExpression = (BinaryExpression) expression;
+      Expression expr0 = binaryExpression.expression0;
+      if (binaryExpression.expression1 == RexImpTable.NULL_EXPR
+          && !(expr0 instanceof ConstantExpression
+               || expr0 instanceof DefaultExpression)
+          && (binaryExpression.getNodeType() == ExpressionType.Equal
+          || binaryExpression.getNodeType() == ExpressionType.NotEqual)) {
+        Expression v0 = list.append("t", binaryExpression.expression0);
+        expression = Expressions.makeBinary(binaryExpression.getNodeType(),
+            v0, RexImpTable.NULL_EXPR);
+      }
+    }
     return list.append("v", expression);
   }
 

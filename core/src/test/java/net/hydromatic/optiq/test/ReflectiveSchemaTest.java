@@ -349,7 +349,9 @@ public class ReflectiveSchemaTest {
         "select \"wrapperLong\" / \"primitiveLong\" as c\n"
         + " from \"s\".\"everyTypes\" where \"primitiveLong\" <> 0")
         .planContains(
-            "return current13.wrapperLong == null ? (Long) null : Long.valueOf(current13.wrapperLong.longValue() / current13.primitiveLong);")
+            "final Long v = current13.wrapperLong;")
+        .planContains(
+            "return v == null ? (Long) null : Long.valueOf(v.longValue() / current13.primitiveLong);")
         .returns("C=null\n");
     with.query(
         "select \"wrapperLong\" / \"wrapperLong\" as c\n"
