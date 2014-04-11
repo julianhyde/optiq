@@ -59,22 +59,79 @@ import static org.junit.Assert.*;
  * Unit tests for {@link Planner}.
  */
 public class PlannerTest {
-  @Test public void testParseAndConvert() throws Exception {
+  private void testParseAndConvertHelper(String query,
+    String queryFromParseTree, String expectedRelExpr) throws Exception {
     Planner planner = getPlanner(null);
-    SqlNode parse =
-        planner.parse("select * from \"emps\" where \"name\" like '%e%'");
-    assertThat(Util.toLinux(parse.toString()), equalTo(
-        "SELECT *\n"
-        + "FROM `emps`\n"
-        + "WHERE `name` LIKE '%e%'"));
+    SqlNode parse = planner.parse(query);
+    assertThat(Util.toLinux(parse.toString()), equalTo(queryFromParseTree));
 
     SqlNode validate = planner.validate(parse);
     RelNode rel = planner.convert(validate);
-    assertThat(toString(rel),
-        equalTo(
-            "ProjectRel(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
-            + "  FilterRel(condition=[LIKE($2, '%e%')])\n"
-            + "    EnumerableTableAccessRel(table=[[hr, emps]])\n"));
+    assertThat(toString(rel), equalTo(expectedRelExpr));
+  }
+
+  @Test public void testParseAndConvert() throws Exception {
+    testParseAndConvertHelper(
+        "select * from \"emps\" where \"name\" like '%e%'",
+
+        "SELECT *\n"
+        + "FROM `emps`\n"
+        + "WHERE `name` LIKE '%e%'",
+
+        "ProjectRel(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
+        + "  FilterRel(condition=[LIKE($2, '%e%')])\n"
+        + "    EnumerableTableAccessRel(table=[[hr, emps]])\n");
+  }
+
+  /** Unit test that parses, validates and converts the query
+   * using order by and limit */
+  @Test public void testParseAndConvertWithOrderByAndLimit()
+    throws Exception {
+    testParseAndConvertHelper(
+      "select * from \"emps\" "
+      + "order by \"emps\".\"deptno\" limit 1",
+
+      "SELECT *\n"
+      + "FROM `emps`\n"
+      + "ORDER BY `emps`.`deptno`\n"
+      + "FETCH NEXT 1 ROWS ONLY",
+
+      "SortRel(sort0=[$1], dir0=[ASC], fetch=[1])\n"
+      + "  ProjectRel(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
+      + "    EnumerableTableAccessRel(table=[[hr, emps]])\n");
+  }
+
+  /** Unit test that parses, validates and converts the query using
+   * order by and offset */
+  @Test public void testParseAndConvertWithOrderByAndOffset()
+    throws Exception {
+    testParseAndConvertHelper(
+      "select * from \"emps\" "
+      + "order by \"emps\".\"deptno\" offset 10",
+
+      "SELECT *\n"
+      + "FROM `emps`\n"
+      + "ORDER BY `emps`.`deptno`\n"
+      + "OFFSET 10 ROWS",
+
+      "SortRel(sort0=[$1], dir0=[ASC], offset=[10])\n"
+      + "  ProjectRel(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
+      + "    EnumerableTableAccessRel(table=[[hr, emps]])\n");
+  }
+
+  /** Unit test that parses, validates and converts the query using limit */
+  @Test public void testParseAndConvertWithLimit()
+    throws Exception {
+    testParseAndConvertHelper(
+      "select * from \"emps\" limit 10",
+
+      "SELECT *\n"
+      + "FROM `emps`\n"
+      + "FETCH NEXT 10 ROWS ONLY",
+
+      "SortRel(fetch=[10])\n"
+      + "  ProjectRel(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
+      + "    EnumerableTableAccessRel(table=[[hr, emps]])\n");
   }
 
   private String toString(RelNode rel) {
