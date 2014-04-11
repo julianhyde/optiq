@@ -36,13 +36,11 @@ import org.eigenbase.reltype.RelDataTypeFactory;
 import org.eigenbase.sql.*;
 import org.eigenbase.sql.fun.SqlStdOperatorTable;
 import org.eigenbase.sql.parser.SqlParseException;
-import org.eigenbase.sql.parser.impl.SqlParserImpl;
 import org.eigenbase.sql.type.*;
 import org.eigenbase.sql.util.ChainedSqlOperatorTable;
 import org.eigenbase.sql.util.ListSqlOperatorTable;
 import org.eigenbase.sql.validate.SqlValidator;
 import org.eigenbase.sql.validate.SqlValidatorScope;
-import org.eigenbase.sql2rel.StandardConvertletTable;
 import org.eigenbase.util.Util;
 
 import com.google.common.collect.ImmutableList;
@@ -143,8 +141,10 @@ public class PlannerTest {
         ImmutableList.of(stdOpTab,
             new ListSqlOperatorTable(
                 ImmutableList.<SqlOperator>of(new MyCountAggFunction()))));
-    Planner planner = Frameworks.getPlanner(Lex.ORACLE, SqlParserImpl.FACTORY,
-        createHrSchema(), opTab, null, StandardConvertletTable.INSTANCE);
+    Planner planner = Frameworks.getPlanner(StdFrameworkConfig.newBuilder() //
+        .defaultSchema(createHrSchema()) //
+        .operatorTable(opTab) //
+        .build());
     SqlNode parse =
         planner.parse("select \"deptno\", my_count(\"empid\") from \"emps\"\n"
             + "group by \"deptno\"");
@@ -179,9 +179,12 @@ public class PlannerTest {
   }
 
   private Planner getPlanner(List<RelTraitDef> traitDefs, RuleSet... ruleSets) {
-    return Frameworks.getPlanner(Lex.ORACLE, SqlParserImpl.FACTORY,
-        createHrSchema(), SqlStdOperatorTable.instance(), traitDefs,
-        StandardConvertletTable.INSTANCE, ruleSets);
+    return Frameworks.getPlanner(StdFrameworkConfig.newBuilder() //
+        .lex(Lex.ORACLE) //
+        .defaultSchema(createHrSchema()) //
+        .traitDefs(traitDefs) //
+        .ruleSets(ruleSets) //
+        .build());
   }
 
   /** Tests that planner throws an error if you pass to
@@ -531,8 +534,11 @@ public class PlannerTest {
         Frameworks.createRootSchema().add("tpch",
             new ReflectiveSchema(new TpchSchema()));
 
-    Planner p = Frameworks.getPlanner(Lex.MYSQL, schema,
-        SqlStdOperatorTable.instance(), RULE_SETS);
+    Planner p = Frameworks.getPlanner(StdFrameworkConfig.newBuilder() //
+        .lex(Lex.MYSQL) //
+        .defaultSchema(schema) //
+        .ruleSets(RULE_SETS) //
+        .build());
     SqlNode n = p.parse(tpchTestQuery);
     n = p.validate(n);
     RelNode r = p.convert(n);

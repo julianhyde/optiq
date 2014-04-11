@@ -18,7 +18,6 @@
 package net.hydromatic.optiq.tools;
 
 import net.hydromatic.optiq.SchemaPlus;
-import net.hydromatic.optiq.config.Lex;
 import net.hydromatic.optiq.jdbc.OptiqConnection;
 import net.hydromatic.optiq.jdbc.OptiqSchema;
 import net.hydromatic.optiq.prepare.OptiqPrepareImpl;
@@ -27,18 +26,9 @@ import net.hydromatic.optiq.server.OptiqServerStatement;
 
 import org.eigenbase.relopt.RelOptCluster;
 import org.eigenbase.relopt.RelOptSchema;
-import org.eigenbase.relopt.RelTraitDef;
-import org.eigenbase.sql.SqlOperatorTable;
-import org.eigenbase.sql.parser.SqlParserImplFactory;
-import org.eigenbase.sql.parser.impl.SqlParserImpl;
-import org.eigenbase.sql2rel.SqlRexConvertletTable;
-import org.eigenbase.sql2rel.StandardConvertletTable;
-
-import com.google.common.collect.ImmutableList;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.util.List;
 
 /**
  * Tools for invoking Optiq functionality without initializing a container /
@@ -48,70 +38,14 @@ public class Frameworks {
   private Frameworks() {
   }
 
-  /**
-   * Creates an instance of {@code Planner}.
-   *
-   * @param lex The type of lexing the SqlParser should do.  Controls case rules
-   *     and quoted identifier syntax.
-   * @param defaultSchema Default schema. Must not be null.
-   * @param operatorTable The instance of SqlOperatorTable that be should to
-   *     resolve Optiq operators.
-   * @param ruleSets An array of one or more rule sets used during the course of
-   *     query evaluation. The common use case is when there is a single rule
-   *     set and {@link net.hydromatic.optiq.tools.Planner#transform}
-   *     will only be called once. However, consumers may also register multiple
-   *     {@link net.hydromatic.optiq.tools.RuleSet}s and do multiple repetitions
-   *     of {@link Planner#transform} planning cycles using different indices.
-   *     The order of rule sets provided here determines the zero-based indices
-   *     of rule sets elsewhere in this class.
-   * @return The Planner object.
-   */
-  public static Planner getPlanner(Lex lex, SchemaPlus defaultSchema,
-      SqlOperatorTable operatorTable, RuleSet... ruleSets) {
-    return getPlanner(lex, SqlParserImpl.FACTORY, defaultSchema,
-        operatorTable, null, StandardConvertletTable.INSTANCE, ruleSets);
-  }
 
   /**
-   * Creates an instance of {@code Planner}.
-   *
-   * <p>If {@code traitDefs} is specified, the planner first de-registers any
-   * existing {@link RelTraitDef}s, then registers the {@code RelTraitDef}s in
-   * this list.</p>
-   *
-   * <p>The order of {@code RelTraitDef}s in {@code traitDefs} matters if the
-   * planner is VolcanoPlanner. The planner calls {@link RelTraitDef#convert} in
-   * the order of this list. The most important trait comes first in the list,
-   * followed by the second most important one, etc.</p>
-   *
-   * @param lex The type of lexing the SqlParser should do.  Controls case rules
-   *     and quoted identifier syntax.
-   * @param parserFactory Parser factory creates and returns the SQL parser.
-   * @param operatorTable The instance of SqlOperatorTable that be should to
-   *     resolve Optiq operators.
-   * @param ruleSets An array of one or more rule sets used during the course of
-   *     query evaluation. The common use case is when there is a single rule
-   *     set and {@link net.hydromatic.optiq.tools.Planner#transform}
-   *     will only be called once. However, consumers may also register multiple
-   *     {@link net.hydromatic.optiq.tools.RuleSet}s and do multiple repetitions
-   *     of {@link Planner#transform} planning cycles using different indices.
-   *     The order of rule sets provided here determines the zero-based indices
-   *     of rule sets elsewhere in this class.
-   *  @param  traitDefs The list of RelTraitDef that would be registered with
-   *     planner, or null.
+   * Creates an instance of {@code Planner}
+   * @param The configuration used to describe the operation of the planner.
    * @return The Planner object.
    */
-  public static Planner getPlanner(Lex lex,
-      SqlParserImplFactory parserFactory,
-      SchemaPlus defaultSchema,
-      SqlOperatorTable operatorTable,
-      List<RelTraitDef> traitDefs,
-      SqlRexConvertletTable convertletTable,
-      RuleSet... ruleSets) {
-    return new PlannerImpl(lex, parserFactory, defaultSchema,
-        operatorTable, ImmutableList.copyOf(ruleSets),
-        traitDefs == null ? null : ImmutableList.copyOf(traitDefs),
-        convertletTable);
+  public static Planner getPlanner(FrameworkConfig config) {
+    return new PlannerImpl(config);
   }
 
   /** Piece of code to be run in a context where a planner is available. The
@@ -127,9 +61,42 @@ public class Frameworks {
    * are several other useful objects. The connection and
    * {@link net.hydromatic.optiq.DataContext} are accessible from the
    * statement. */
-  public interface PrepareAction<R> {
-    R apply(RelOptCluster cluster, RelOptSchema relOptSchema,
+  public abstract static class PrepareAction<R> {
+    private final FrameworkConfig config;
+
+    public PrepareAction() {
+      this.config = StdFrameworkConfig.newBuilder() //
+          .defaultSchema(Frameworks.createRootSchema()).build();
+    }
+
+    public PrepareAction(FrameworkConfig config) {
+      this.config = config;
+    }
+
+    public FrameworkConfig getConfig() {
+      return config;
+    }
+
+    public abstract R apply(RelOptCluster cluster, RelOptSchema relOptSchema,
         SchemaPlus rootSchema, OptiqServerStatement statement);
+  }
+
+  /**
+   * Initializes a container then calls user-specified code with a planner.
+   *
+   * @param action Callback containing user-specified code
+   * @param config FrameworkConfig to use for planner action.
+   * @return Return value from action
+   */
+  public static <R> R withPlanner(final PlannerAction<R> action, //
+      FrameworkConfig config) {
+    return withPrepare(
+        new Frameworks.PrepareAction<R>(config) {
+          public R apply(RelOptCluster cluster, RelOptSchema relOptSchema,
+              SchemaPlus rootSchema, OptiqServerStatement statement) {
+            return action.apply(cluster, relOptSchema, rootSchema);
+          }
+        });
   }
 
   /**
@@ -139,13 +106,9 @@ public class Frameworks {
    * @return Return value from action
    */
   public static <R> R withPlanner(final PlannerAction<R> action) {
-    return withPrepare(
-        new Frameworks.PrepareAction<R>() {
-          public R apply(RelOptCluster cluster, RelOptSchema relOptSchema,
-              SchemaPlus rootSchema, OptiqServerStatement statement) {
-            return action.apply(cluster, relOptSchema, rootSchema);
-          }
-        });
+    FrameworkConfig config = StdFrameworkConfig.newBuilder() //
+        .defaultSchema(Frameworks.createRootSchema()).build();
+    return withPlanner(action, config);
   }
 
   /**

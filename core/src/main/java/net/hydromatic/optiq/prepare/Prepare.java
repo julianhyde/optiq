@@ -146,7 +146,7 @@ public abstract class Prepare {
         .addRuleInstance(MergeProjectOntoCalcRule.INSTANCE)
         .build();
     final HepPlanner planner3 =
-        new HepPlanner(program, true,
+        new HepPlanner(program, null, true,
             Functions.<RelNode, RelNode, Void>ignore2(),
             RelOptCostImpl.FACTORY);
     List<RelMetadataProvider> list = Lists.newArrayList();

@@ -35,6 +35,7 @@ import org.eigenbase.util.*;
 import net.hydromatic.linq4j.expressions.Expressions;
 
 import net.hydromatic.optiq.runtime.Spaces;
+import net.hydromatic.optiq.tools.FrameworkContext;
 import net.hydromatic.optiq.util.graph.*;
 
 import com.google.common.collect.ImmutableList;
@@ -196,15 +197,26 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
    * calling conventions.
    */
   public VolcanoPlanner() {
-    this(VolcanoCost.FACTORY);
+    this(null, null);
+  }
+
+  /**
+   * Creates a uninitialized <code>VolcanoPlanner</code>. To fully initialize
+   * it, the caller must register the desired set of relations, rules, and
+   * calling conventions.
+   */
+  public VolcanoPlanner(FrameworkContext frameworkContext) {
+    this(null, frameworkContext);
   }
 
   /**
    * Creates a {@code VolcanoPlanner} with a given cost factory.
    */
-  protected VolcanoPlanner(RelOptCostFactory costFactory) {
-    super(costFactory);
-    this.zeroCost = costFactory.makeZeroCost();
+  public VolcanoPlanner(RelOptCostFactory costFactory, //
+      FrameworkContext frameworkContext) {
+    super(costFactory == null ? VolcanoCost.FACTORY : costFactory, //
+        frameworkContext);
+    this.zeroCost = this.costFactory.makeZeroCost();
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -303,7 +315,8 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
             .addRuleInstance(MergeProjectRule.INSTANCE)
             .build();
 
-    final HepPlanner hepPlanner = new HepPlanner(program);
+    final HepPlanner hepPlanner = new HepPlanner(program, //
+        getFrameworkContext());
     hepPlanner.setRoot(target);
     target = hepPlanner.findBestExp();
 

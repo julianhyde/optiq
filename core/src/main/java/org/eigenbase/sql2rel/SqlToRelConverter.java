@@ -2729,7 +2729,8 @@ public class SqlToRelConverter {
             rexBuilder,
             mapRefRelToCorVar,
             mapCorVarToCorRel,
-            mapFieldAccessToCorVar);
+            mapFieldAccessToCorVar,
+            cluster.getPlanner().getFrameworkContext());
     boolean dumpPlan = SQL2REL_LOGGER.isLoggable(Level.FINE);
 
     RelNode newRootRel = decorrelator.removeCorrelationViaRule(rootRel);

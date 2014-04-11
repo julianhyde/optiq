@@ -28,6 +28,8 @@ import org.eigenbase.rex.RexNode;
 import org.eigenbase.trace.*;
 import org.eigenbase.util.*;
 
+import net.hydromatic.optiq.tools.FrameworkContext;
+
 /**
  * A <code>RelOptPlanner</code> is a query optimizer: it transforms a relational
  * expression into a semantically equivalent relational expression, according to
@@ -97,6 +99,12 @@ public interface RelOptPlanner {
    * java.util.Collection#remove(Object)}
    */
   boolean removeRule(RelOptRule rule);
+
+  /**
+   * Provides the FrameworkContext created when this planner was constructed.
+   * @return Either null or an externally defined Framework context.
+   */
+  FrameworkContext getFrameworkContext();
 
   /**
    * Sets the exclusion filter to use for this planner. Rules which match the

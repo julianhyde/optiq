@@ -38,6 +38,7 @@ import org.eigenbase.util.mapping.Mappings;
 import net.hydromatic.linq4j.Ord;
 import net.hydromatic.linq4j.function.Function2;
 
+import net.hydromatic.optiq.tools.FrameworkContext;
 import net.hydromatic.optiq.util.BitSets;
 
 import com.google.common.collect.ImmutableSet;
@@ -73,6 +74,8 @@ public class RelDecorrelator implements ReflectiveVisitor {
   // The rel which is being visited
   private RelNode currentRel;
 
+  private final FrameworkContext frameworkContext;
+
   // maps built during decorrelation
   private final Map<RelNode, RelNode> mapOldToNewRel;
 
@@ -94,11 +97,13 @@ public class RelDecorrelator implements ReflectiveVisitor {
       RexBuilder rexBuilder,
       Map<RelNode, SortedSet<CorrelatorRel.Correlation>> mapRefRelToCorVar,
       SortedMap<CorrelatorRel.Correlation, CorrelatorRel> mapCorVarToCorRel,
-      Map<RexFieldAccess, CorrelatorRel.Correlation> mapFieldAccessToCorVar) {
+      Map<RexFieldAccess, CorrelatorRel.Correlation> mapFieldAccessToCorVar,
+      FrameworkContext frameworkContext) {
     this.rexBuilder = rexBuilder;
     this.mapRefRelToCorVar = mapRefRelToCorVar;
     this.mapCorVarToCorRel = mapCorVarToCorRel;
     this.mapFieldAccessToCorVar = mapFieldAccessToCorVar;
+    this.frameworkContext = frameworkContext;
 
     decorrelateVisitor = new DecorrelateRelVisitor();
     mapOldToNewRel = new HashMap<RelNode, RelNode>();
@@ -169,6 +174,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
     // node is copied when it is registered.
     return new HepPlanner(
         program,
+        frameworkContext,
         true,
         createCopyHook(),
         RelOptCostImpl.FACTORY);
