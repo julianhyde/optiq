@@ -63,8 +63,6 @@ public interface PhysType {
    */
   Expression fieldReference(Expression expression, int field);
 
-  Expression fieldReferenceBoxed(Expression expression, int field);
-
   /** Generates an accessor function for a given list of fields.  The resulting
    * object is a {@link List} (implementing {@link Object#hashCode()} and
    * {@link Object#equals(Object)} per that interface) and also implements
@@ -135,6 +133,10 @@ public interface PhysType {
   JavaRowFormat getFormat();
 
   List<Expression> accessors(Expression parameter, List<Integer> argList);
+
+  /** Returns a copy of this type that allows nulls if {@code nullable} is
+   * true. */
+  PhysType makeNullable(boolean nullable);
 }
 
 // End PhysType.java
