@@ -264,7 +264,13 @@ public class JavaRules {
                           physType,
                           ImmutableList.of(
                               leftResult.physType, rightResult.physType)))
-                      .appendIfNotNull(keyPhysType.comparer()))).toBlock());
+                      .append(
+                          Util.first(keyPhysType.comparer(),
+                              Expressions.constant(null)))
+                      .append(Expressions.constant(
+                          joinType.generatesNullsOnLeft()))
+                      .append(Expressions.constant(
+                          joinType.generatesNullsOnRight())))).toBlock());
     }
 
     Expression generateSelector(PhysType physType,
@@ -284,10 +290,22 @@ public class JavaRules {
         parameters.add(parameter);
         int fieldCount = inputPhysType.e.getRowType().getFieldCount();
         for (int i = 0; i < fieldCount; i++) {
-          expressions.add(
-              Types.castIfNecessary(
-                  inputPhysType.e.fieldClass(i),
-                  inputPhysType.e.fieldReference(parameter, i)));
+          if (joinType.generatesNullsOn(inputPhysType.i)) {
+            expressions.add(
+                Types.castIfNecessary(
+                    Primitive.box(
+                        inputPhysType.e.fieldClass(i)),
+                    Expressions.condition(
+                        Expressions.equal(parameter,
+                            Expressions.constant(null)),
+                        Expressions.constant(null),
+                        inputPhysType.e.fieldReferenceBoxed(parameter, i))));
+          } else {
+            expressions.add(
+                Types.castIfNecessary(
+                    inputPhysType.e.fieldClass(i),
+                    inputPhysType.e.fieldReference(parameter, i)));
+          }
         }
       }
       return Expressions.lambda(

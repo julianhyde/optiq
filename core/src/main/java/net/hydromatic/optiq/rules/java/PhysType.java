@@ -63,6 +63,8 @@ public interface PhysType {
    */
   Expression fieldReference(Expression expression, int field);
 
+  Expression fieldReferenceBoxed(Expression expression, int field);
+
   /** Generates an accessor function for a given list of fields.  The resulting
    * object is a {@link List} (implementing {@link Object#hashCode()} and
    * {@link Object#equals(Object)} per that interface) and also implements

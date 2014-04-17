@@ -508,6 +508,10 @@ public class PhysTypeImpl implements PhysType {
       Expression expression, int field) {
     return format.field(expression, field, fieldClass(field));
   }
+
+  public Expression fieldReferenceBoxed(Expression expression, int field) {
+    return format.field(expression, field, Primitive.box(fieldClass(field)));
+  }
 }
 
 // End PhysTypeImpl.java

@@ -2316,7 +2316,8 @@ public class JdbcTest {
             + "from \"hr\".\"emps\" as e")
         .returnsUnordered("empid=100; deptno=10; DNAME=Sales",
             "empid=110; deptno=10; DNAME=Sales",
-            "empid=150; deptno=10; DNAME=Sales");
+            "empid=150; deptno=10; DNAME=Sales",
+            "empid=200; deptno=20; DNAME=null");
   }
 
   @Test public void testLeftJoin() {
