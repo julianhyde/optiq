@@ -2316,7 +2316,8 @@ public class JdbcTest {
             + "from \"hr\".\"emps\" as e")
         .returnsUnordered("empid=100; deptno=10; DNAME=Sales",
             "empid=110; deptno=10; DNAME=Sales",
-            "empid=150; deptno=10; DNAME=Sales");
+            "empid=150; deptno=10; DNAME=Sales",
+            "empid=200; deptno=20; DNAME=null");
   }
 
   @Test public void testLeftJoin() {
@@ -2329,7 +2330,8 @@ public class JdbcTest {
         .returnsUnordered(
             "deptno=10; deptno=10",
             "deptno=10; deptno=10",
-            "deptno=10; deptno=10");
+            "deptno=10; deptno=10",
+            "deptno=20; deptno=null");
   }
 
   @Test public void testFullJoin() {
@@ -2342,7 +2344,10 @@ public class JdbcTest {
         .returnsUnordered(
             "deptno=10; deptno=10",
             "deptno=10; deptno=10",
-            "deptno=10; deptno=10");
+            "deptno=10; deptno=10",
+            "deptno=20; deptno=null",
+            "deptno=null; deptno=30",
+            "deptno=null; deptno=40");
   }
 
   @Test public void testRightJoin() {
@@ -2355,7 +2360,9 @@ public class JdbcTest {
         .returnsUnordered(
             "deptno=10; deptno=10",
             "deptno=10; deptno=10",
-            "deptno=10; deptno=10");
+            "deptno=10; deptno=10",
+            "deptno=null; deptno=30",
+            "deptno=null; deptno=40");
   }
 
   @Test public void testScalarSubQueryUncorrelated() {
@@ -2370,6 +2377,41 @@ public class JdbcTest {
             "empid=110; deptno=10; DNAME=Marketing",
             "empid=150; deptno=10; DNAME=Marketing",
             "empid=200; deptno=20; DNAME=Marketing");
+  }
+
+  @Test public void testScalarSubQueryInCase() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            "select e.\"name\",\n"
+            + " (CASE e.\"deptno\"\n"
+            + "  WHEN (Select \"deptno\" from \"hr\".\"depts\" d\n"
+            + "        where d.\"deptno\" = e.\"deptno\")\n"
+            + "  THEN (Select d.\"name\" from \"hr\".\"depts\" d\n"
+            + "        where d.\"deptno\" = e.\"deptno\")\n"
+            + "  ELSE 'DepartmentNotFound'  END ) AS DEPTNAME\n"
+            + "from \"hr\".\"emps\" e")
+        .returnsUnordered("name=Bill; DEPTNAME=Sales",
+            "name=Eric; DEPTNAME=DepartmentNotFound",
+            "name=Sebastian; DEPTNAME=Sales",
+            "name=Theodore; DEPTNAME=Sales");
+  }
+
+  @Test public void testScalarSubQueryInCase2() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            "select e.\"name\",\n"
+            + " (CASE WHEN e.\"deptno\" = (\n"
+            + "    Select \"deptno\" from \"hr\".\"depts\" d\n"
+            + "    where d.\"name\" = 'Sales')\n"
+            + "  THEN 'Sales'\n"
+            + "  ELSE 'Not Matched'  END ) AS DEPTNAME\n"
+            + "from \"hr\".\"emps\" e")
+        .returnsUnordered("name=Bill; DEPTNAME=Sales      ",
+            "name=Eric; DEPTNAME=Not Matched",
+            "name=Sebastian; DEPTNAME=Sales      ",
+            "name=Theodore; DEPTNAME=Sales      ");
   }
 
   /** Tests the TABLES table in the information schema. */
