@@ -109,7 +109,7 @@ public class FrameworksTest {
   /** Unit test to test create root schema which has no "metadata" schema. */
   @Test public void testCreateRootSchemaWithNoMetadataSchema() {
     SchemaPlus rootSchema = Frameworks.createRootSchema(false);
-    assertTrue(rootSchema.getSubSchemaNames().size() == 0);
+    assertThat(rootSchema.getSubSchemaNames().size(), equalTo(0));
   }
 }
 

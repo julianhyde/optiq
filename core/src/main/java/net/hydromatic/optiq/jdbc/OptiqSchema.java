@@ -103,9 +103,9 @@ public class OptiqSchema {
         };
   }
 
-  /** Creates a root schema. When {@paramref addMetadataSchema} is true a
-   * "metadata" schema containing definitions of tables, columns etc. is added
-   * to root schema. */
+  /** Creates a root schema. When <code>addMetadataSchema</code> argument is
+   * true a "metadata" schema containing definitions of tables, columns etc. is
+   * added to root schema. */
   public static OptiqRootSchema createRootSchema(boolean addMetadataSchema) {
     OptiqRootSchema rootSchema =
         new OptiqRootSchema(new OptiqConnectionImpl.RootSchema());
