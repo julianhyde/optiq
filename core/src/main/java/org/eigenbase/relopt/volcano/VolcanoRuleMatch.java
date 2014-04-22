@@ -97,7 +97,7 @@ class VolcanoRuleMatch extends VolcanoRuleCall {
    */
   double computeImportance() {
     assert rels[0] != null;
-    RelSubset subset = volcanoPlanner.getSubset(rels[0]);
+    RelSubset subset = volcanoPlanner.getSubset(rels[0]).getSubset();
     double importance = 0;
     if (subset != null) {
       importance = volcanoPlanner.ruleQueue.getImportance(subset);

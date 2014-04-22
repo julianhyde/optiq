@@ -23,6 +23,8 @@ import java.util.logging.*;
 import org.eigenbase.rel.*;
 import org.eigenbase.relopt.*;
 import org.eigenbase.trace.*;
+import org.eigenbase.util.Pair;
+import org.eigenbase.util.mapping.Surjection;
 
 import com.google.common.collect.ImmutableList;
 
@@ -41,7 +43,8 @@ class RelSet {
 
   //~ Instance fields --------------------------------------------------------
 
-  final List<RelNode> rels = new ArrayList<RelNode>();
+  final List<RelSetEntry> rels = new ArrayList<RelSetEntry>();
+
   /**
    * Relational expressions that have a subset in this set as a child. This
    * is a multi-set. If multiple relational expressions in this set have the
@@ -107,7 +110,7 @@ class RelSet {
    * (does not include the subset objects themselves)
    */
   public List<RelNode> getRelsFromAllSubsets() {
-    return rels;
+    return Pair.left(rels);
   }
 
   public RelSubset getSubset(RelTraitSet traits) {
@@ -131,15 +134,21 @@ class RelSet {
    * Adds a relational expression to a set, with its results available under a
    * particular calling convention. An expression may be in the set several
    * times with different calling conventions (and hence different costs).
+   *
+   * @param rel Relational expression
+   * @param sources Mapping that will make {@code rel}'s output columns match
+   *                the result columns of {@code} set. Or {@code null} to use
+   *                the identity mapping (if the columns are already in the
+   *                right order).
    */
-  public RelSubset add(RelNode rel) {
+  public RelUse add(RelNode rel, Surjection sources) {
     assert equivalentSet == null : "adding to a dead set";
     RelSubset subset =
         getOrCreateSubset(
             rel.getCluster(),
             rel.getTraitSet());
-    subset.add(rel);
-    return subset;
+    subset.add(rel, sources);
+    return RelPerm.of(subset, sources);
   }
 
   RelSubset getOrCreateSubset(
@@ -195,16 +204,42 @@ class RelSet {
     planner.listener.relEquivalenceFound(event);
   }
 
+  boolean contains(RelNode rel) {
+    for (RelSetEntry entry : rels) {
+      if (entry.left == rel) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  boolean remove(RelNode rel) {
+    for (Iterator<RelSetEntry> iterator = rels.iterator();
+         iterator.hasNext();) {
+      RelSetEntry entry = iterator.next();
+      if (entry.left == rel) {
+        iterator.remove();
+        return true;
+      }
+    }
+    return false;
+  }
+
   /**
    * Adds an expression <code>rel</code> to this set, without creating a
    * {@link org.eigenbase.relopt.volcano.RelSubset}. (Called only from
-   * {@link org.eigenbase.relopt.volcano.RelSubset#add}.
+   * {@link org.eigenbase.relopt.volcano.RelSubset#add}.)
    *
    * @param rel Relational expression
+   * @param sources Mapping that will make {@code rel}'s output columns match
+   *                the result columns of {@code} set. Or {@code null} to use
+   *                the identity mapping (if the columns are already in the
+   *                right order).
    */
-  void addInternal(RelNode rel) {
-    if (!rels.contains(rel)) {
-      rels.add(rel);
+  void addInternal(RelNode rel, Surjection sources) {
+    assert !(rel instanceof RelUse);
+    if (!contains(rel)) {
+      rels.add(new RelSetEntry(rel, sources));
 
       VolcanoPlanner planner =
           (VolcanoPlanner) rel.getCluster().getPlanner();
@@ -295,8 +330,8 @@ class RelSet {
     // Make sure the cost changes as a result of merging are propagated.
     Set<RelSubset> activeSet = new HashSet<RelSubset>();
     for (RelNode parentRel : getParentRels()) {
-      final RelSubset parentSubset = planner.getSubset(parentRel);
-      parentSubset.propagateCostImprovements(
+      final RelUse parentSubset = planner.getSubset(parentRel);
+      parentSubset.getSubset().propagateCostImprovements(
           planner,
           parentRel,
           activeSet);
@@ -308,9 +343,9 @@ class RelSet {
     // potentially new rules can fire. Check for rule matches, just as if
     // it were newly registered.  (This may cause rules which have fired
     // once to fire again.)
-    for (RelNode rel : rels) {
-      assert planner.getSet(rel) == this;
-      planner.fireRules(rel, true);
+    for (RelSetEntry entry : rels) {
+      assert planner.getSet(entry.left) == this;
+      planner.fireRules(entry.left, true);
     }
   }
 }

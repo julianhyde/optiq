@@ -40,6 +40,29 @@ package org.eigenbase.util.mapping;
  * <p>Once you know what type of mapping you want, call {@link
  * Mappings#create(MappingType, int, int)} to create an efficient implementation
  * of that mapping.
+ *
+ * <p>Exmple #1: Projection - an inverse surjection</p>
+ *
+ * <p>Suppose we allow projections that output some or all of their input
+ * columns, in any order. For example,
+ *   'SELECT b AS x, a AS y, d AS z FROM t (a, b, c, d)'.
+ * Each target has a source: source[x] = b, source[y] = a, source[z] = d.
+ * Each source has at most one target: targets[a] = {y}, targets[b] = {x},
+ * targets[c] = {}, targets[d] = {z}.</p>
+ *
+ * <p>The source mapping is a surjection.</p>
+ * <p>The target mapping is an inverse surjection.</p>
+ *
+ * <p>Example #2: Duplicating projection - an inverse function</p>
+ *
+ * <p>Let's allow a more general projection. For example,
+ *    'SELECT b AS x, a AS y, b AS z FROM t (a, b, c, d)'.
+ * Each target has a source: source[x] = b, source[y] = a, source[z] = b.
+ * Each source has any number of targets: targets[a] = {z}, targets[b] = {x, z},
+ * targets[c] = {}, targets[d] = {}.</p>
+ *
+ * <p>The source mapping is a function.</p>
+ * <p>The target mapping is an inverse function.</p>
  */
 public enum MappingType {
   //            ordinal source target function inverse

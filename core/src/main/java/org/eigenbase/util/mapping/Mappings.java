@@ -92,6 +92,13 @@ public abstract class Mappings {
   }
 
   /**
+   * Creates an immutable surjection.
+   */
+  public static Surjection createSurjection(int[] sources, int sourceCount) {
+    return new ImmutableSurjection(sources, sourceCount);
+  }
+
+  /**
    * Divides one mapping by another.
    *
    * <p>{@code divide(A, B)} returns a mapping C such that B . C (the mapping
@@ -489,6 +496,26 @@ public abstract class Mappings {
         mapping.getTargetCount() + offset);
   }
 
+  /** Returns the composition of two mappings.
+   *
+   * <p>Left, right and return value may each be null; null means the identity
+   * mapping</p>
+   *
+   * <p>For all x, compose(m1, m2)(x) = m1(m2(x)).</p>
+   * @param left Left mapping (mapping applied second)
+   * @param right Right mapping (mapping applied first)
+   * @return Composition
+   */
+  public static Surjection compose(Surjection left, Surjection right) {
+    if (left == null) {
+      return right;
+    }
+    if (right == null) {
+      return left;
+    }
+    throw new UnsupportedOperationException(); // TODO:
+  }
+
   //~ Inner Interfaces -------------------------------------------------------
 
   /**
@@ -600,7 +627,11 @@ public abstract class Mappings {
 
   public abstract static class AbstractMapping implements Mapping {
     public void set(int source, int target) {
-      throw new UnsupportedOperationException();
+      throw new UnsupportedOperationException("Mapping is read-only");
+    }
+
+    public void clear() {
+      throw new UnsupportedOperationException("Mapping is read-only");
     }
 
     public int getTargetOpt(int source) {
@@ -1067,7 +1098,7 @@ public abstract class Mappings {
   }
 
   public static class IdentityMapping extends AbstractMapping
-      implements FunctionMapping, TargetMapping, SourceMapping {
+      implements FunctionMapping, TargetMapping, SourceMapping, Surjection {
     private final int size;
 
     /**
@@ -1077,10 +1108,6 @@ public abstract class Mappings {
      */
     public IdentityMapping(int size) {
       this.size = size;
-    }
-
-    public void clear() {
-      throw new UnsupportedOperationException("Mapping is read-only");
     }
 
     public int size() {
@@ -1162,10 +1189,6 @@ public abstract class Mappings {
       this.target = target;
     }
 
-    public void clear() {
-      throw new UnsupportedOperationException("Mapping is read-only");
-    }
-
     public int size() {
       return parent.getSourceOpt(target) >= 0
           ? parent.size()
@@ -1217,10 +1240,6 @@ public abstract class Mappings {
       this.parent = parent;
       this.target = target;
       this.source = source;
-    }
-
-    public void clear() {
-      throw new UnsupportedOperationException("Mapping is read-only");
     }
 
     public int size() {
@@ -1466,6 +1485,50 @@ public abstract class Mappings {
 
     public void set(int source, int target) {
       parent.set(target, source);
+    }
+  }
+
+  private static class ImmutableSurjection
+      extends FiniteAbstractMapping
+      implements Surjection {
+    private final int[] sources;
+    private final int sourceCount;
+
+    private ImmutableSurjection(int[] sources, int sourceCount) {
+      for (int source : sources) {
+        assert source >= 0 && source < sourceCount;
+      }
+      this.sources = sources;
+      this.sourceCount = sourceCount;
+    }
+
+    public MappingType getMappingType() {
+      return MappingType.SURJECTION;
+    }
+
+    public int size() {
+      // Every target has a source, therefore the size is the target count
+      return sources.length;
+    }
+
+    @Override public int getTargetCount() {
+      return sources.length;
+    }
+
+    @Override public int getSourceCount() {
+      return sourceCount;
+    }
+
+    public Mapping inverse() {
+      return new InverseMapping(this);
+    }
+
+    @Override public int getSource(int target) {
+      return sources[target];
+    }
+
+    @Override public final int getSourceOpt(int target) {
+      return getSource(target);
     }
   }
 }

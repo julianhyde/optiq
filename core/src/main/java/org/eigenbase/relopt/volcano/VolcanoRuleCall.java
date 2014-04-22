@@ -162,7 +162,7 @@ public class VolcanoRuleCall extends RelOptRuleCall {
 
       for (int i = 0; i < rels.length; i++) {
         RelNode rel = rels[i];
-        RelSubset subset = volcanoPlanner.getSubset(rel);
+        RelUse subset = volcanoPlanner.getSubset(rel);
 
         if (subset == null) {
           if (LOGGER.isLoggable(Level.FINE)) {
@@ -174,7 +174,7 @@ public class VolcanoRuleCall extends RelOptRuleCall {
           return;
         }
 
-        if (subset.set.equivalentSet != null) {
+        if (subset.getSet().equivalentSet != null) {
           if (LOGGER.isLoggable(Level.FINE)) {
             LOGGER.fine(
                 "Rule [" + getRule() + "] not fired because"
@@ -287,16 +287,15 @@ public class VolcanoRuleCall extends RelOptRuleCall {
       if (ascending) {
         assert previousOperand.getParent() == operand;
         final RelNode childRel = rels[previousOperandOrdinal];
-        RelSubset subset = volcanoPlanner.getSubset(childRel);
-        successors = subset.getParentRels();
+        RelUse subset = volcanoPlanner.getSubset(childRel);
+        successors = subset.getSubset().getParentRels();
       } else {
         int parentOrdinal = operand.getParent().ordinalInRule;
         RelNode parentRel = rels[parentOrdinal];
         List<RelNode> inputs = parentRel.getInputs();
         if (operand.ordinalInParent < inputs.size()) {
-          RelSubset subset =
-              (RelSubset) inputs.get(operand.ordinalInParent);
-          successors = subset.getRelList();
+          RelUse subset = (RelUse) inputs.get(operand.ordinalInParent);
+          successors = subset.getSubset().getRelList();
         } else {
           // The operand expects parentRel to have a certain number
           // of inputs and it does not.

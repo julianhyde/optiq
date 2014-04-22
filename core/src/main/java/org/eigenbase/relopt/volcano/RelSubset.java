@@ -27,8 +27,10 @@ import org.eigenbase.relopt.*;
 import org.eigenbase.reltype.*;
 import org.eigenbase.trace.*;
 import org.eigenbase.util.*;
+import org.eigenbase.util.mapping.Surjection;
 
 import net.hydromatic.linq4j.Linq4j;
+import net.hydromatic.linq4j.function.Function1;
 import net.hydromatic.linq4j.function.Predicate1;
 
 /**
@@ -36,7 +38,7 @@ import net.hydromatic.linq4j.function.Predicate1;
  * calling convention. An expression may be in more than one sub-set of a set;
  * the same expression is used.
  */
-public class RelSubset extends AbstractRelNode {
+public class RelSubset extends RelUse {
   //~ Static fields/initializers ---------------------------------------------
 
   private static final Logger LOGGER = EigenbaseTrace.getPlannerTracer();
@@ -163,8 +165,8 @@ public class RelSubset extends AbstractRelNode {
 
   // implement RelNode
   public boolean isDistinct() {
-    for (RelNode rel : set.rels) {
-      if (rel.isDistinct()) {
+    for (RelSetEntry entry : set.rels) {
+      if (entry.left.isDistinct()) {
         return true;
       }
     }
@@ -173,8 +175,8 @@ public class RelSubset extends AbstractRelNode {
 
   @Override
   public boolean isKey(BitSet columns) {
-    for (RelNode rel : set.rels) {
-      if (rel.isKey(columns)) {
+    for (RelSetEntry entry : set.rels) {
+      if (entry.left.isKey(columns)) {
         return true;
       }
     }
@@ -188,8 +190,8 @@ public class RelSubset extends AbstractRelNode {
   Set<RelNode> getParents() {
     final Set<RelNode> list = new LinkedHashSet<RelNode>();
     for (RelNode parent : set.getParentRels()) {
-      for (RelSubset rel : inputSubsets(parent)) {
-        if (rel.set == set && rel.getTraitSet().equals(traitSet)) {
+      for (RelUse rel : inputSubsets(parent)) {
+        if (rel.getSet() == set && rel.getTraitSet().equals(traitSet)) {
           list.add(parent);
         }
       }
@@ -204,18 +206,18 @@ public class RelSubset extends AbstractRelNode {
   Set<RelSubset> getParentSubsets(VolcanoPlanner planner) {
     final Set<RelSubset> list = new LinkedHashSet<RelSubset>();
     for (RelNode parent : set.getParentRels()) {
-      for (RelSubset rel : inputSubsets(parent)) {
-        if (rel.set == set && rel.getTraitSet().equals(traitSet)) {
-          list.add(planner.getSubset(parent));
+      for (RelUse rel : inputSubsets(parent)) {
+        if (rel.getSet() == set && rel.getTraitSet().equals(traitSet)) {
+          list.add(planner.getSubset(parent).getSubset());
         }
       }
     }
     return list;
   }
 
-  private static List<RelSubset> inputSubsets(RelNode parent) {
+  private static List<RelUse> inputSubsets(RelNode parent) {
     //noinspection unchecked
-    return (List<RelSubset>) (List) parent.getInputs();
+    return (List<RelUse>) (List) parent.getInputs();
   }
 
   /**
@@ -226,8 +228,8 @@ public class RelSubset extends AbstractRelNode {
     final Set<RelNode> list = new LinkedHashSet<RelNode>();
   parentLoop:
     for (RelNode parent : set.getParentRels()) {
-      for (RelSubset rel : inputSubsets(parent)) {
-        if (rel.set == set && rel.getTraitSet().equals(traitSet)) {
+      for (RelUse rel : inputSubsets(parent)) {
+        if (rel.getSet() == set && rel.getTraitSet().equals(traitSet)) {
           list.add(parent);
           continue parentLoop;
         }
@@ -240,11 +242,15 @@ public class RelSubset extends AbstractRelNode {
     return set;
   }
 
+  public Surjection mapping() {
+    return null; // means identity mapping
+  }
+
   /**
    * Adds expression <code>rel</code> to this subset.
    */
-  void add(RelNode rel) {
-    if (set.rels.contains(rel)) {
+  void add(RelNode rel, Surjection sources) {
+    if (set.contains(rel)) {
       return;
     }
 
@@ -267,7 +273,7 @@ public class RelSubset extends AbstractRelNode {
         throw new AssertionError();
       }
     }
-    set.addInternal(rel);
+    set.addInternal(rel, sources);
     Set<String> variablesSet = RelOptUtil.getVariablesSet(rel);
     Set<String> variablesStopped = rel.getVariablesStopped();
     if (false) {
@@ -345,7 +351,7 @@ public class RelSubset extends AbstractRelNode {
         // too, but we'll get to them later.
         planner.ruleQueue.recompute(this);
         for (RelNode parent : getParents()) {
-          final RelSubset parentSubset = planner.getSubset(parent);
+          final RelSubset parentSubset = planner.getSubset(parent).getSubset();
           parentSubset.propagateCostImprovements(
               planner, parent, activeSet);
         }
@@ -387,9 +393,15 @@ public class RelSubset extends AbstractRelNode {
       public Iterator<RelNode> iterator() {
         return Linq4j.asEnumerable(set.rels)
             .where(
-                new Predicate1<RelNode>() {
-                  public boolean apply(RelNode v1) {
-                    return v1.getTraitSet().subsumes(traitSet);
+                new Predicate1<RelSetEntry>() {
+                  public boolean apply(RelSetEntry entry) {
+                    return entry.left.getTraitSet().subsumes(traitSet);
+                  }
+                })
+            .select(
+                new Function1<RelSetEntry, RelNode>() {
+                  public RelNode apply(RelSetEntry entry) {
+                    return entry.left;
                   }
                 })
             .iterator();
@@ -402,12 +414,20 @@ public class RelSubset extends AbstractRelNode {
    */
   public List<RelNode> getRelList() {
     final List<RelNode> list = new ArrayList<RelNode>();
-    for (RelNode rel : set.rels) {
-      if (rel.getTraitSet().subsumes(traitSet)) {
-        list.add(rel);
+    for (RelSetEntry entry : set.rels) {
+      if (entry.left.getTraitSet().subsumes(traitSet)) {
+        list.add(entry.left);
       }
     }
     return list;
+  }
+
+  public RelSubset toRel() {
+    return this;
+  }
+
+  RelSubset getSubset() {
+    return this;
   }
 
   //~ Inner Classes ----------------------------------------------------------

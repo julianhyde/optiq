@@ -78,12 +78,12 @@ public class VolcanoRelMetadataProvider implements RelMetadataProvider {
 
         subset.set.inMetadataQuery = true;
         try {
-          for (RelNode relCandidate : subset.set.rels) {
+          for (RelSetEntry entry : subset.set.rels) {
             final Function<RelNode, Metadata> function =
                 rel.getCluster().getMetadataProvider().apply(
-                    relCandidate.getClass(), metadataClass);
+                    entry.left.getClass(), metadataClass);
             if (function != null) {
-              final Metadata result = function.apply(relCandidate);
+              final Metadata result = function.apply(entry.left);
               if (result != null) {
                 return result;
               }

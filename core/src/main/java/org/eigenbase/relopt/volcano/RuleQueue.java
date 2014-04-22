@@ -339,7 +339,7 @@ class RuleQueue {
       matchList.list.add(match);
 
       matchList.matchMap.put(
-          planner.getSubset(match.rels[0]), match);
+          planner.getSubset(match.rels[0]).getSubset(), match);
     }
   }
 
@@ -546,8 +546,9 @@ class RuleQueue {
    */
   private void checkDuplicateSubsets(List<RelSubset> subsets,
       RelOptRuleOperand operand, RelNode[] rels) {
-    final RelSubset subset = planner.getSubset(rels[operand.ordinalInRule]);
-    if (subsets.contains(subset)) {
+    final RelSubset subset =
+        planner.getSubset(rels[operand.ordinalInRule]).getSubset();
+    if (subsets.contains(subset.getSubset())) {
       throw Util.FoundOne.NULL;
     }
     if (!operand.getChildOperands().isEmpty()) {
