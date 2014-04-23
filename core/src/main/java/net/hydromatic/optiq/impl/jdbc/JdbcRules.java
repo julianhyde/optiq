@@ -38,6 +38,9 @@ import org.eigenbase.sql.type.*;
 import org.eigenbase.sql.validate.SqlValidatorUtil;
 import org.eigenbase.trace.EigenbaseTrace;
 import org.eigenbase.util.*;
+import org.eigenbase.util.mapping.Mapping;
+
+import com.google.common.collect.ImmutableSet;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -156,6 +159,7 @@ public class JdbcRules {
             newInputs.get(1),
             join.getCondition(),
             join.getJoinType(),
+            join.mapping,
             join.getVariablesStopped());
       } catch (InvalidRelException e) {
         LOGGER.fine(e.toString());
@@ -178,10 +182,10 @@ public class JdbcRules {
         RelNode right,
         RexNode condition,
         JoinRelType joinType,
-        Set<String> variablesStopped)
+        Mapping mapping,
+        ImmutableSet<String> variablesStopped)
       throws InvalidRelException {
-      super(
-          cluster, traits, left, right, condition, joinType,
+      super(cluster, traits, left, right, condition, joinType, mapping,
           variablesStopped);
       final List<Integer> leftKeys = new ArrayList<Integer>();
       final List<Integer> rightKeys = new ArrayList<Integer>();
@@ -201,7 +205,7 @@ public class JdbcRules {
         RelNode left, RelNode right, JoinRelType joinType) {
       try {
         return new JdbcJoinRel(getCluster(), traitSet, left, right,
-            conditionExpr, this.joinType, variablesStopped);
+            conditionExpr, joinType, mapping, variablesStopped);
       } catch (InvalidRelException e) {
         // Semantic error not possible. Must be a bug. Convert to
         // internal error.
@@ -891,12 +895,9 @@ public class JdbcRules {
       super(cluster, rowType, tuples, traitSet);
     }
 
-    @Override
-    public RelNode copy(
-        RelTraitSet traitSet, List<RelNode> inputs) {
-      assert inputs.isEmpty();
-      return new JdbcValuesRel(
-          getCluster(), rowType, tuples, traitSet);
+    @Override public JdbcValuesRel copy(RelTraitSet traitSet,
+        RelDataType rowType, List<List<RexLiteral>> tuples) {
+      return new JdbcValuesRel(getCluster(), rowType, tuples, traitSet);
     }
 
     public JdbcImplementor.Result implement(JdbcImplementor implementor) {

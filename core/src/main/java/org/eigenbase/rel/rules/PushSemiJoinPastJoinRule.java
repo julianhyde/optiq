@@ -24,6 +24,8 @@ import org.eigenbase.relopt.*;
 import org.eigenbase.reltype.*;
 import org.eigenbase.rex.*;
 
+import com.google.common.collect.ImmutableSet;
+
 /**
  * PushSemiJoinPastJoinRule implements the rule for pushing semijoins down in a
  * tree past a join in order to trigger other rules that will convert semijoins.
@@ -153,7 +155,8 @@ public class PushSemiJoinPastJoinRule extends RelOptRule {
             semiJoin.getRight(),
             newSemiJoinFilter,
             newLeftKeys,
-            rightKeys);
+            rightKeys,
+            joinRel.mapping);
 
     RelNode leftJoinRel;
     RelNode rightJoinRel;
@@ -172,7 +175,8 @@ public class PushSemiJoinPastJoinRule extends RelOptRule {
             rightJoinRel,
             joinRel.getCondition(),
             joinRel.getJoinType(),
-            Collections.<String>emptySet(),
+            joinRel.mapping,
+            ImmutableSet.<String>of(),
             joinRel.isSemiJoinDone(),
             joinRel.getSystemFieldList());
 

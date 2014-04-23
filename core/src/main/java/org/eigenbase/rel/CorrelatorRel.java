@@ -21,6 +21,7 @@ import java.util.*;
 
 import org.eigenbase.relopt.*;
 import org.eigenbase.rex.*;
+import org.eigenbase.util.mapping.Mapping;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -46,27 +47,23 @@ public final class CorrelatorRel extends JoinRelBase {
    * @param cluster      cluster this relational expression belongs to
    * @param left         left input relational expression
    * @param right        right input relational expression
-   * @param joinCond     join condition
+   * @param condition    join condition
+   * @param joinType     join type
+   * @param mapping      Output field mapping
    * @param correlations set of expressions to set as variables each time a
    *                     row arrives from the left input
-   * @param joinType     join type
    */
   public CorrelatorRel(
       RelOptCluster cluster,
       RelNode left,
       RelNode right,
-      RexNode joinCond,
-      List<Correlation> correlations,
-      JoinRelType joinType) {
-    super(
-        cluster,
-        cluster.traitSetOf(Convention.NONE),
-        left,
-        right,
-        joinCond,
-        joinType,
-        ImmutableSet.<String>of());
-    this.correlations = ImmutableList.copyOf(correlations);
+      RexNode condition,
+      JoinRelType joinType,
+      Mapping mapping,
+      ImmutableList<Correlation> correlations) {
+    super(cluster, cluster.traitSetOf(Convention.NONE), left, right, condition,
+        joinType, mapping, ImmutableSet.<String>of());
+    this.correlations = correlations;
     assert (joinType == JoinRelType.LEFT)
         || (joinType == JoinRelType.INNER);
   }
@@ -77,37 +74,33 @@ public final class CorrelatorRel extends JoinRelBase {
    * @param cluster      cluster this relational expression belongs to
    * @param left         left input relational expression
    * @param right        right input relational expression
+   * @param joinType     join type
+   * @param mapping      Output field mapping
    * @param correlations set of expressions to set as variables each time a
    *                     row arrives from the left input
-   * @param joinType     join type
    */
   public CorrelatorRel(
       RelOptCluster cluster,
       RelNode left,
       RelNode right,
-      List<Correlation> correlations,
-      JoinRelType joinType) {
-    this(
-        cluster,
-        left,
-        right,
-        cluster.getRexBuilder().makeLiteral(true),
-        correlations,
-        joinType);
+      JoinRelType joinType,
+      Mapping mapping,
+      ImmutableList<Correlation> correlations) {
+    this(cluster, left, right, cluster.getRexBuilder().makeLiteral(true),
+        joinType, mapping, correlations);
   }
 
   /**
    * Creates a CorrelatorRel by parsing serialized output.
    */
   public CorrelatorRel(RelInput input) {
-    this(
-        input.getCluster(), input.getInputs().get(0),
-        input.getInputs().get(1), getCorrelations(input),
-        input.getEnum("joinType", JoinRelType.class));
+    this(input.getCluster(), input.getInputs().get(0),
+        input.getInputs().get(1), input.getEnum("joinType", JoinRelType.class),
+        input.getMapping(), getCorrelations(input));
   }
 
-  private static List<Correlation> getCorrelations(RelInput input) {
-    final List<Correlation> list = new ArrayList<Correlation>();
+  private static ImmutableList<Correlation> getCorrelations(RelInput input) {
+    final ImmutableList.Builder<Correlation> list = ImmutableList.builder();
     //noinspection unchecked
     final List<Map<String, Object>> correlations1 =
         (List<Map<String, Object>>) input.get("correlations");
@@ -117,7 +110,7 @@ public final class CorrelatorRel extends JoinRelBase {
               (Integer) correlation.get("correlation"),
               (Integer) correlation.get("offset")));
     }
-    return list;
+    return list.build();
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -126,12 +119,8 @@ public final class CorrelatorRel extends JoinRelBase {
   public CorrelatorRel copy(RelTraitSet traitSet, RexNode conditionExpr,
       RelNode left, RelNode right, JoinRelType joinType) {
     assert traitSet.containsIfApplicable(Convention.NONE);
-    return new CorrelatorRel(
-        getCluster(),
-        left,
-        right,
-        correlations,
-        this.joinType);
+    return new CorrelatorRel(getCluster(), left, right, joinType, mapping,
+        correlations);
   }
 
   public RelWriter explainTerms(RelWriter pw) {
@@ -144,14 +133,14 @@ public final class CorrelatorRel extends JoinRelBase {
    *
    * @return correlating expressions
    */
-  public List<Correlation> getCorrelations() {
+  public ImmutableList<Correlation> getCorrelations() {
     return correlations;
   }
 
   //~ Inner Classes ----------------------------------------------------------
 
   /**
-   * Describes the neccessary parameters for an implementation in order to
+   * Describes the necessary parameters for an implementation in order to
    * identify and set dynamic variables
    */
   public static class Correlation

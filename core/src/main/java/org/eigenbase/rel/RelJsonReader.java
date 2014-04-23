@@ -27,6 +27,7 @@ import org.eigenbase.reltype.*;
 import org.eigenbase.rex.*;
 import org.eigenbase.util.Pair;
 import org.eigenbase.util.Util;
+import org.eigenbase.util.mapping.Mapping;
 
 import net.hydromatic.optiq.Schema;
 import net.hydromatic.optiq.util.BitSets;
@@ -191,6 +192,10 @@ public class RelJsonReader {
 
       public RelCollation getCollation() {
         return relJson.toCollation((List) get("collation"));
+      }
+
+      public Mapping getMapping() {
+        return relJson.toMapping(get("mapping"));
       }
 
       public List<List<RexLiteral>> getTuples(String tag) {

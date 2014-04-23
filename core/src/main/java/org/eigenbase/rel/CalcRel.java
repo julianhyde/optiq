@@ -163,8 +163,7 @@ public final class CalcRel extends CalcRelBase {
                   : SqlValidatorUtil.uniquify(
                       fieldNames, SqlValidatorUtil.F_SUGGESTER));
       if (optimize
-          && RemoveTrivialProjectRule.isIdentity(exprs, rowType,
-              child.getRowType())) {
+          && RelOptUtil.isIdentity(exprs, rowType, child.getRowType())) {
         return child;
       }
       return

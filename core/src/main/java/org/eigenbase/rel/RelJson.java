@@ -31,6 +31,7 @@ import org.eigenbase.sql.fun.SqlStdOperatorTable;
 import org.eigenbase.sql.type.SqlTypeName;
 import org.eigenbase.util.JsonBuilder;
 import org.eigenbase.util.Util;
+import org.eigenbase.util.mapping.Mapping;
 
 import net.hydromatic.optiq.util.BitSets;
 
@@ -443,6 +444,10 @@ public class RelJson {
   private String toJson(SqlOperator operator) {
     // User-defined operators are not yet handled.
     return operator.getName();
+  }
+
+  public Mapping toMapping(Object o) {
+    throw new UnsupportedOperationException(); // TODO:
   }
 }
 

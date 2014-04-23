@@ -184,6 +184,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
                     join.getRight(),
                     expList.get(0),
                     join.getJoinType(),
+                    join.mapping,
                     join.getVariablesStopped()));
 
             // New plan is absolutely better than old plan.

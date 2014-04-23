@@ -25,6 +25,7 @@ import org.eigenbase.relopt.*;
 import org.eigenbase.reltype.*;
 import org.eigenbase.rex.*;
 import org.eigenbase.util.*;
+import org.eigenbase.util.mapping.Mapping;
 
 import com.google.common.collect.ImmutableList;
 
@@ -92,13 +93,8 @@ public class SwapJoinRule extends RelOptRule {
     JoinRelBase newJoin =
         join.copy(join.getTraitSet(), condition, join.getRight(),
             join.getLeft(), joinType.swap());
-    final List<RexNode> exps =
-        RelOptUtil.createSwappedJoinExprs(newJoin, join, true);
-    return CalcRel.createProject(
-        newJoin,
-        exps,
-        join.getRowType().getFieldNames(),
-        true);
+    final Mapping mapping = RelOptUtil.createJoinMapping(newJoin, join, true);
+    return newJoin.permute(mapping);
   }
 
   public void onMatch(final RelOptRuleCall call) {
@@ -120,7 +116,6 @@ public class SwapJoinRule extends RelOptRule {
         swapped instanceof JoinRelBase
             ? (JoinRelBase) swapped
             : (JoinRelBase) swapped.getInput(0);
-
     call.transformTo(swapped);
 
     // We have converted join='a join b' into swapped='select
@@ -128,11 +123,8 @@ public class SwapJoinRule extends RelOptRule {
     // b0,b1,a0,a1,a2 from (select a0,a1,a2,b0,b1 from b join a)' is the
     // same as 'b join a'. If we didn't do this, the swap join rule
     // would fire on the new join, ad infinitum.
-    final List<RexNode> exps =
-        RelOptUtil.createSwappedJoinExprs(newJoin, join, false);
-    RelNode project =
-        projectFactory.createProject(swapped, exps,
-            newJoin.getRowType().getFieldNames());
+    final Mapping mapping = RelOptUtil.createJoinMapping(newJoin, join, false);
+    RelNode project = swapped.permute(mapping);
 
     RelNode rel = call.getPlanner().ensureRegistered(project, newJoin);
     Util.discard(rel);

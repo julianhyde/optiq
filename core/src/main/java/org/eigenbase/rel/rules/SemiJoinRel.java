@@ -25,6 +25,7 @@ import org.eigenbase.relopt.*;
 import org.eigenbase.reltype.*;
 import org.eigenbase.rex.*;
 import org.eigenbase.util.ImmutableIntList;
+import org.eigenbase.util.mapping.Mapping;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -42,12 +43,14 @@ public final class SemiJoinRel extends JoinRelBase {
   //~ Constructors -----------------------------------------------------------
 
   /**
+   * Creates a semi-join.
+   *
    * @param cluster   cluster that join belongs to
    * @param left      left join input
    * @param right     right join input
    * @param condition join condition
-   * @param leftKeys  left keys of the semijoin
-   * @param rightKeys right keys of the semijoin
+   * @param leftKeys  left keys of the semi-join
+   * @param rightKeys right keys of the semi-join
    */
   public SemiJoinRel(
       RelOptCluster cluster,
@@ -55,7 +58,8 @@ public final class SemiJoinRel extends JoinRelBase {
       RelNode right,
       RexNode condition,
       List<Integer> leftKeys,
-      List<Integer> rightKeys) {
+      List<Integer> rightKeys,
+      Mapping mapping) {
     super(
         cluster,
         cluster.traitSetOf(Convention.NONE),
@@ -63,6 +67,7 @@ public final class SemiJoinRel extends JoinRelBase {
         right,
         condition,
         JoinRelType.INNER,
+        mapping,
         ImmutableSet.<String>of());
     this.leftKeys = ImmutableIntList.copyOf(leftKeys);
     this.rightKeys = ImmutableIntList.copyOf(rightKeys);
@@ -80,7 +85,8 @@ public final class SemiJoinRel extends JoinRelBase {
         right,
         conditionExpr,
         getLeftKeys(),
-        getRightKeys());
+        getRightKeys(),
+        mapping);
   }
 
   // implement RelNode
@@ -97,16 +103,19 @@ public final class SemiJoinRel extends JoinRelBase {
   }
 
   /**
-   * @return returns rowtype representing only the left join input
+   * {@inheritDoc}
+   *
+   * @return returns row type representing only the left join input
    */
-  public RelDataType deriveRowType() {
+  @Override protected RelDataType deriveRowType() {
     return deriveJoinRowType(
         left.getRowType(),
         null,
         JoinRelType.INNER,
         getCluster().getTypeFactory(),
         null,
-        Collections.<RelDataTypeField>emptyList());
+        Collections.<RelDataTypeField>emptyList(),
+        mapping);
   }
 
   public List<Integer> getLeftKeys() {

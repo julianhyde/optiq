@@ -24,6 +24,8 @@ import org.eigenbase.relopt.*;
 import org.eigenbase.reltype.*;
 import org.eigenbase.rex.*;
 
+import com.google.common.collect.ImmutableSet;
+
 /**
  * PushProjectPastJoinRule implements the rule for pushing a projection past a
  * join by splitting the projection into a projection on top of each child of
@@ -118,7 +120,8 @@ public class PushProjectPastJoinRule extends RelOptRule {
             rightProjRel,
             newJoinFilter,
             joinRel.getJoinType(),
-            Collections.<String>emptySet(),
+            joinRel.mapping,
+            ImmutableSet.<String>of(),
             joinRel.isSemiJoinDone(),
             joinRel.getSystemFieldList());
 

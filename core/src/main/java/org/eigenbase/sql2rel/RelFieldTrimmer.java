@@ -21,7 +21,6 @@ import java.math.BigDecimal;
 import java.util.*;
 
 import org.eigenbase.rel.*;
-import org.eigenbase.rel.rules.RemoveTrivialProjectRule;
 import org.eigenbase.relopt.*;
 import org.eigenbase.reltype.*;
 import org.eigenbase.rex.*;
@@ -276,6 +275,8 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
 
     // Some parts of the system can't handle rows with zero fields, so
     // pretend that one field is used.
+    final RelOptCluster cluster = project.getCluster();
+    final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
     if (fieldsUsed.cardinality() == 0) {
       final Mapping mapping =
           Mappings.create(
@@ -283,15 +284,12 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
               fieldCount,
               1);
       final RexLiteral expr =
-          project.getCluster().getRexBuilder().makeExactLiteral(
-              BigDecimal.ZERO);
+          cluster.getRexBuilder().makeExactLiteral(BigDecimal.ZERO);
       RelDataType newRowType =
-          project.getCluster().getTypeFactory().createStructType(
-              Collections.singletonList(expr.getType()),
-              Collections.singletonList("DUMMY"));
+          typeFactory.builder().add("DUMMY", expr.getType()).build();
       ProjectRel newProject = new ProjectRel(
-          project.getCluster(),
-          project.getCluster().traitSetOf(RelCollationImpl.EMPTY),
+          cluster,
+          cluster.traitSetOf(RelCollationImpl.EMPTY),
           newInput,
           Collections.<RexNode>singletonList(expr),
           newRowType,
@@ -306,8 +304,7 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
         new RexPermuteInputsShuttle(
             inputMapping, newInput);
     final Mapping mapping =
-        Mappings.create(
-            MappingType.INVERSE_SURJECTION,
+        Mappings.create(MappingType.INVERSE_SURJECTION,
             fieldCount,
             fieldsUsed.cardinality());
     for (Ord<RexNode> ord : Ord.zip(project.getProjects())) {
@@ -317,27 +314,20 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
         newProjectExprList.add(newProjectExpr);
       }
     }
-
-    final RelDataType newRowType =
-        project.getCluster().getTypeFactory().createStructType(
-            Mappings.apply3(mapping, rowType.getFieldList()));
-
+    final RelDataType newRowType = typeFactory.permute(rowType, mapping);
     final List<RelCollation> newCollations =
         RexUtil.apply(inputMapping, project.getCollationList());
 
     final RelNode newProject;
-    if (RemoveTrivialProjectRule.isIdentity(
-        newProjectExprList,
-        newRowType,
+    if (RelOptUtil.isIdentity(newProjectExprList, newRowType,
         newInput.getRowType())) {
       // The new project would be the identity. It is equivalent to return
       // its child.
       newProject = newInput;
     } else {
       newProject = new ProjectRel(
-          project.getCluster(),
-          project.getCluster().traitSetOf(
-              newCollations.isEmpty()
+          cluster,
+          cluster.traitSetOf(newCollations.isEmpty()
                   ? RelCollationImpl.EMPTY
                   : newCollations.get(0)),
           newInput,
@@ -872,21 +862,8 @@ public class RelFieldTrimmer implements ReflectiveVisitor {
       return new TrimResult(values, mapping);
     }
 
-    List<List<RexLiteral>> newTuples = new ArrayList<List<RexLiteral>>();
-    for (List<RexLiteral> tuple : values.getTuples()) {
-      List<RexLiteral> newTuple = new ArrayList<RexLiteral>();
-      for (int field : BitSets.toIter(fieldsUsed)) {
-        newTuple.add(tuple.get(field));
-      }
-      newTuples.add(newTuple);
-    }
-
     final Mapping mapping = createMapping(fieldsUsed, fieldCount);
-    RelDataType newRowType =
-        values.getCluster().getTypeFactory().createStructType(
-            Mappings.apply3(mapping, rowType.getFieldList()));
-    final ValuesRel newValues =
-        new ValuesRel(values.getCluster(), newRowType, newTuples);
+    final ValuesRel newValues = (ValuesRel) values.permute(mapping);
     return new TrimResult(newValues, mapping);
   }
 

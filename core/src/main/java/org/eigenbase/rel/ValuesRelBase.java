@@ -26,6 +26,8 @@ import org.eigenbase.rex.*;
 import org.eigenbase.sql.*;
 import org.eigenbase.sql.type.*;
 import org.eigenbase.util.Pair;
+import org.eigenbase.util.mapping.Mapping;
+import org.eigenbase.util.mapping.Mappings;
 
 import net.hydromatic.linq4j.function.Function1;
 import net.hydromatic.linq4j.function.Functions;
@@ -139,6 +141,30 @@ public abstract class ValuesRelBase extends AbstractRelNode {
   // implement RelNode
   public double getRows() {
     return tuples.size();
+  }
+
+  public final RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+    assert inputs.isEmpty();
+    return copy(traitSet, rowType, tuples);
+  }
+
+  public abstract ValuesRelBase copy(RelTraitSet traitSet, RelDataType rowType,
+      List<List<RexLiteral>> tuples);
+
+  @Override public boolean canPermute() {
+    return true;
+  }
+
+  @Override public ValuesRelBase permute(final Mapping mapping) {
+    final RelOptCluster cluster = getCluster();
+    RelDataType newRowType = cluster.getTypeFactory().permute(rowType, mapping);
+    final List<List<RexLiteral>> newTuples = Functions.adapt(tuples,
+        new Function1<List<RexLiteral>, List<RexLiteral>>() {
+          public List<RexLiteral> apply(List<RexLiteral> tuple) {
+            return Mappings.apply3(mapping, tuple);
+          }
+        });
+    return copy(traitSet, newRowType, newTuples);
   }
 
   // implement RelNode

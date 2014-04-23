@@ -31,6 +31,8 @@ import org.eigenbase.util.mapping.Mappings;
 
 import net.hydromatic.linq4j.function.Function1;
 
+import com.google.common.collect.ImmutableList;
+
 // TODO jvs 10-Feb-2005:  factor out generic rewrite helper, with the
 // ability to map between old and new rels and field ordinals.  Also,
 // for now need to prohibit queries which return UDT instances.
@@ -370,13 +372,14 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
             getNewForOldRel(rel.getRight()),
             flattenFieldAccesses(rel.getCondition()),
             rel.getJoinType(),
+            rel.mapping,
             rel.getVariablesStopped());
     setNewForOldRel(rel, newRel);
   }
 
   public void rewriteRel(CorrelatorRel rel) {
-    final List<CorrelatorRel.Correlation> newCorrelations =
-        new ArrayList<CorrelatorRel.Correlation>();
+    final ImmutableList.Builder<CorrelatorRel.Correlation> newCorrelations =
+        ImmutableList.builder();
     for (CorrelatorRel.Correlation c : rel.getCorrelations()) {
       RelDataType corrFieldType =
           rel.getLeft().getRowType().getFieldList().get(c.getOffset())
@@ -395,8 +398,9 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
             getNewForOldRel(rel.getLeft()),
             getNewForOldRel(rel.getRight()),
             rel.getCondition(),
-            newCorrelations,
-            rel.getJoinType());
+            rel.getJoinType(),
+            rel.mapping,
+            newCorrelations.build());
     setNewForOldRel(rel, newRel);
   }
 

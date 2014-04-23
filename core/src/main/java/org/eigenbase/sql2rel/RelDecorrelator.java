@@ -692,7 +692,8 @@ public class RelDecorrelator implements ReflectiveVisitor {
                   distinctRel,
                   cluster.getRexBuilder().makeLiteral(true),
                   JoinRelType.INNER,
-                  Collections.<String>emptySet());
+                  null,
+                  ImmutableSet.<String>of());
         }
       }
     }
@@ -767,7 +768,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             leftChildOutputCount,
             mapCorVarToOutputPos);
 
-    final Set<String> variablesStopped = Collections.emptySet();
+    final ImmutableSet<String> variablesStopped = ImmutableSet.of();
     RelNode joinRel =
         new JoinRel(
             rel.getCluster(),
@@ -775,6 +776,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             valueGenRel,
             rexBuilder.makeLiteral(true),
             JoinRelType.INNER,
+            null,
             variablesStopped);
 
     mapOldToNewRel.put(oldChildRel, joinRel);
@@ -979,7 +981,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
           rightChildMapOldToNewOutputPos.get(i) + newLeftFieldCount);
     }
 
-    final Set<String> variablesStopped = Collections.emptySet();
+    final ImmutableSet<String> variablesStopped = ImmutableSet.of();
     RelNode newRel =
         new JoinRel(
             rel.getCluster(),
@@ -987,6 +989,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             newRightRel,
             condition,
             rel.getJoinType(),
+            rel.mapping,
             variablesStopped);
 
     mapOldToNewRel.put(rel, newRel);
@@ -1032,7 +1035,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
     SortedMap<CorrelatorRel.Correlation, Integer> mapCorVarToOutputPos =
         new TreeMap<CorrelatorRel.Correlation, Integer>();
 
-    final Set<String> variablesStopped = Collections.emptySet();
+    final ImmutableSet<String> variablesStopped = ImmutableSet.of();
     RelNode newRel =
         new JoinRel(
             rel.getCluster(),
@@ -1040,6 +1043,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             newRightRel,
             decorrelateExpr(rel.getCondition()),
             rel.getJoinType(),
+            rel.mapping,
             variablesStopped);
 
     // Create the mapping between the output of the old correlation rel
@@ -1930,6 +1934,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
               rightInputRel,
               joinCond,
               joinType,
+              corRel.mapping,
               ImmutableSet.<String>of());
 
       RelNode newProjRel =
@@ -2227,6 +2232,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
               rightInputRel,
               joinCond,
               joinType,
+              corRel.mapping,
               ImmutableSet.<String>of());
 
       // To the consumer of joinOutputProjRel, nullIndicator is located
@@ -2459,8 +2465,9 @@ public class RelDecorrelator implements ReflectiveVisitor {
               cluster,
               leftInputRel,
               aggRel,
-              corRel.getCorrelations(),
-              corRel.getJoinType());
+              corRel.getJoinType(),
+              corRel.mapping,
+              corRel.getCorrelations());
 
       // remember this rel so we don't fire rule on it again
       // REVIEW jhyde 29-Oct-2007: rules should not save state; rule

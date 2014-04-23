@@ -25,6 +25,8 @@ import java.util.*;
 import org.eigenbase.sql.*;
 import org.eigenbase.sql.type.*;
 import org.eigenbase.util.*;
+import org.eigenbase.util.mapping.Mapping;
+import org.eigenbase.util.mapping.Mappings;
 
 import net.hydromatic.linq4j.expressions.Primitive;
 
@@ -178,6 +180,10 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
             return fieldList.get(index).getValue();
           }
         });
+  }
+
+  public RelDataType permute(RelDataType type, Mapping mapping) {
+    return createStructType(Mappings.apply3(mapping, type.getFieldList()));
   }
 
   // implement RelDataTypeFactory

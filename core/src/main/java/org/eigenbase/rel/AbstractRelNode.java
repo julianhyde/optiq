@@ -28,10 +28,12 @@ import org.eigenbase.rex.*;
 import org.eigenbase.sql.*;
 import org.eigenbase.trace.*;
 import org.eigenbase.util.*;
+import org.eigenbase.util.mapping.Mapping;
 
 import net.hydromatic.optiq.util.BitSets;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 /**
  * Base class for every relational expression ({@link RelNode}).
@@ -125,6 +127,14 @@ public abstract class AbstractRelNode implements RelNode {
   protected static <T> T sole(List<T> collection) {
     assert collection.size() == 1;
     return collection.get(0);
+  }
+
+  public boolean canPermute() {
+    return false;
+  }
+
+  public RelNode permute(Mapping mapping) {
+    return RelOptUtil.project(this, mapping);
   }
 
   public List<RexNode> getChildExps() {
@@ -231,8 +241,8 @@ public abstract class AbstractRelNode implements RelNode {
     return 1.0;
   }
 
-  public Set<String> getVariablesStopped() {
-    return Collections.emptySet();
+  public ImmutableSet<String> getVariablesStopped() {
+    return ImmutableSet.of();
   }
 
   public void collectVariablesUsed(Set<String> variableSet) {

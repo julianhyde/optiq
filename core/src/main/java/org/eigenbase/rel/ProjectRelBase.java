@@ -26,6 +26,8 @@ import org.eigenbase.rex.*;
 import org.eigenbase.sql.*;
 import org.eigenbase.util.Pair;
 import org.eigenbase.util.Util;
+import org.eigenbase.util.mapping.Mapping;
+import org.eigenbase.util.mapping.Mappings;
 
 import net.hydromatic.linq4j.Ord;
 import net.hydromatic.linq4j.function.Function1;
@@ -104,6 +106,15 @@ public abstract class ProjectRelBase extends SingleRel {
    * @see #copy(RelTraitSet, List) */
   public abstract ProjectRelBase copy(RelTraitSet traitSet, RelNode input,
       List<RexNode> exps, RelDataType rowType);
+
+  @Override public boolean canPermute() {
+    return true;
+  }
+
+  @Override public RelNode permute(Mapping mapping) {
+    return copy(traitSet, getChild(), Mappings.apply3(mapping, exps),
+        getCluster().getTypeFactory().permute(rowType, mapping));
+  }
 
   public List<RelCollation> getCollationList() {
     return collationList;

@@ -25,6 +25,8 @@ import org.eigenbase.reltype.*;
 import org.eigenbase.rex.*;
 import org.eigenbase.sql.type.SqlTypeName;
 import org.eigenbase.util.*;
+import org.eigenbase.util.mapping.Mapping;
+import org.eigenbase.util.mapping.Mappings;
 
 import net.hydromatic.optiq.runtime.FlatLists;
 
@@ -48,6 +50,7 @@ public abstract class JoinRelBase extends AbstractRelNode {
    * JoinRelType#RIGHT} is disallowed.
    */
   protected JoinRelType joinType;
+  public final Mapping mapping;
 
   //~ Constructors -----------------------------------------------------------
 
@@ -60,6 +63,7 @@ public abstract class JoinRelBase extends AbstractRelNode {
    * @param right            Right input
    * @param condition        Join condition
    * @param joinType         Join type
+   * @param mapping          Output field mapping
    * @param variablesStopped Set of names of variables which are set by the
    *                         LHS and used by the RHS and are not available to
    *                         nodes above this JoinRel in the tree
@@ -71,15 +75,21 @@ public abstract class JoinRelBase extends AbstractRelNode {
       RelNode right,
       RexNode condition,
       JoinRelType joinType,
-      Set<String> variablesStopped) {
+      Mapping mapping,
+      ImmutableSet<String> variablesStopped) {
     super(cluster, traits);
     this.left = left;
     this.right = right;
     this.condition = condition;
-    this.variablesStopped = ImmutableSet.copyOf(variablesStopped);
+    this.variablesStopped = variablesStopped;
     assert joinType != null;
     assert condition != null;
     this.joinType = joinType;
+    this.mapping = mapping;
+    assert mapping == null
+        || mapping.getSourceCount()
+        == left.getRowType().getFieldCount()
+        + right.getRowType().getFieldCount();
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -173,7 +183,7 @@ public abstract class JoinRelBase extends AbstractRelNode {
     return estimateJoinedRows(this, condition);
   }
 
-  public Set<String> getVariablesStopped() {
+  public ImmutableSet<String> getVariablesStopped() {
     return variablesStopped;
   }
 
@@ -188,6 +198,8 @@ public abstract class JoinRelBase extends AbstractRelNode {
         .input("right", right)
         .item("condition", condition)
         .item("joinType", joinType.name().toLowerCase())
+        .itemIf("mapping", mapping,
+            mapping != null && !Mappings.isIdentity(mapping))
         .itemIf(
             "systemFields",
             getSystemFieldList(),
@@ -209,14 +221,15 @@ public abstract class JoinRelBase extends AbstractRelNode {
     }
   }
 
-  protected RelDataType deriveRowType() {
+  @Override protected RelDataType deriveRowType() {
     return deriveJoinRowType(
         left.getRowType(),
         right.getRowType(),
         joinType,
         getCluster().getTypeFactory(),
         null,
-        getSystemFieldList());
+        getSystemFieldList(),
+        mapping);
   }
 
   /**
@@ -225,8 +238,8 @@ public abstract class JoinRelBase extends AbstractRelNode {
    *
    * @return list of system fields
    */
-  public List<RelDataTypeField> getSystemFieldList() {
-    return Collections.emptyList();
+  public ImmutableList<RelDataTypeField> getSystemFieldList() {
+    return ImmutableList.of();
   }
 
   /**
@@ -249,7 +262,8 @@ public abstract class JoinRelBase extends AbstractRelNode {
       JoinRelType joinType,
       RelDataTypeFactory typeFactory,
       List<String> fieldNameList,
-      List<RelDataTypeField> systemFieldList) {
+      List<RelDataTypeField> systemFieldList,
+      Mapping mapping) {
     assert systemFieldList != null;
     switch (joinType) {
     case LEFT:
@@ -266,7 +280,8 @@ public abstract class JoinRelBase extends AbstractRelNode {
       break;
     }
     return createJoinType(
-        typeFactory, leftType, rightType, fieldNameList, systemFieldList);
+        typeFactory, leftType, rightType, fieldNameList, systemFieldList,
+        mapping);
   }
 
   /**
@@ -286,6 +301,7 @@ public abstract class JoinRelBase extends AbstractRelNode {
    * @param systemFieldList List of system fields that will be prefixed to
    *                        output row type; typically empty but must not be
    *                        null
+   * @param mapping         Output field mapping
    * @return type of row which results when two relations are joined
    */
   public static RelDataType createJoinType(
@@ -293,7 +309,8 @@ public abstract class JoinRelBase extends AbstractRelNode {
       RelDataType leftType,
       RelDataType rightType,
       List<String> fieldNameList,
-      List<RelDataTypeField> systemFieldList) {
+      List<RelDataTypeField> systemFieldList,
+      Mapping mapping) {
     assert (fieldNameList == null)
         || (fieldNameList.size()
         == (systemFieldList.size()
@@ -317,7 +334,13 @@ public abstract class JoinRelBase extends AbstractRelNode {
       assert fieldNameList.size() == nameList.size();
       nameList = fieldNameList;
     }
-    return typeFactory.createStructType(typeList, nameList);
+    if (mapping != null) {
+      return typeFactory.createStructType(
+          Mappings.apply3(mapping, typeList),
+          Mappings.apply3(mapping, nameList));
+    } else {
+      return typeFactory.createStructType(typeList, nameList);
+    }
   }
 
   private static void addFields(

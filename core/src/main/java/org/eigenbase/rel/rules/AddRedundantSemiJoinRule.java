@@ -22,6 +22,8 @@ import java.util.*;
 import org.eigenbase.rel.*;
 import org.eigenbase.relopt.*;
 
+import com.google.common.collect.ImmutableSet;
+
 /**
  * Rule to add a semijoin into a joinrel. Transformation is as follows:
  *
@@ -73,7 +75,8 @@ public class AddRedundantSemiJoinRule extends RelOptRule {
             origJoinRel.getRight(),
             origJoinRel.getCondition(),
             leftKeys,
-            rightKeys);
+            rightKeys,
+            null);
 
     RelNode newJoinRel =
         new JoinRel(
@@ -82,7 +85,8 @@ public class AddRedundantSemiJoinRule extends RelOptRule {
             origJoinRel.getRight(),
             origJoinRel.getCondition(),
             JoinRelType.INNER,
-            Collections.<String>emptySet(),
+            null,
+            ImmutableSet.<String>of(),
             true,
             origJoinRel.getSystemFieldList());
 

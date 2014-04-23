@@ -101,6 +101,7 @@ public class PushJoinThroughUnionRule extends RelOptRule {
               joinRight,
               joinRel.getCondition(),
               joinRel.getJoinType(),
+              joinRel.mapping,
               ImmutableSet.<String>of()));
     }
     UnionRel newUnionRel = new UnionRel(cluster, newUnionInputs, true);

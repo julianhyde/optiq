@@ -17,11 +17,12 @@
 */
 package org.eigenbase.rel.rules;
 
-import java.util.*;
-
 import org.eigenbase.rel.*;
 import org.eigenbase.relopt.*;
 import org.eigenbase.reltype.RelDataTypeField;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 /**
  * Rule to convert an {@link JoinRel inner join} to a {@link FilterRel filter}
@@ -75,9 +76,10 @@ public final class ExtractJoinFilterRule extends RelOptRule {
             joinRel.getRight(),
             joinRel.getCluster().getRexBuilder().makeLiteral(true),
             joinRel.getJoinType(),
-            Collections.<String>emptySet(),
+            joinRel.mapping,
+            ImmutableSet.<String>of(),
             joinRel.isSemiJoinDone(),
-            Collections.<RelDataTypeField>emptyList());
+            ImmutableList.<RelDataTypeField>of());
 
     RelNode filterRel =
         CalcRel.createFilter(

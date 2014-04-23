@@ -23,6 +23,7 @@ import java.util.*;
 
 import org.eigenbase.sql.*;
 import org.eigenbase.sql.type.*;
+import org.eigenbase.util.mapping.Mapping;
 
 /**
  * RelDataTypeFactory is a factory for datatype descriptors. It defines methods
@@ -181,6 +182,9 @@ public interface RelDataTypeFactory {
    * @return the default {@link Charset} for string types
    */
   Charset getDefaultCharset();
+
+  /** Returns a type permuted according to a given mapping. */
+  RelDataType permute(RelDataType type, Mapping mapping);
 
   /**
    * Returns the most general of a set of types (that is, one type to which

@@ -59,13 +59,10 @@ public class ValuesRel extends ValuesRelBase {
     super(input);
   }
 
-  public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
+  public ValuesRel copy(RelTraitSet traitSet, RelDataType rowType,
+      List<List<RexLiteral>> tuples) {
     assert traitSet.containsIfApplicable(Convention.NONE);
-    assert inputs.isEmpty();
-    return new ValuesRel(
-        getCluster(),
-        rowType,
-        tuples);
+    return new ValuesRel(getCluster(), rowType, tuples);
   }
 
   @Override

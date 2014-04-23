@@ -26,11 +26,16 @@ import org.eigenbase.reltype.*;
 import org.eigenbase.rex.*;
 import org.eigenbase.util.Pair;
 
+import com.google.common.collect.ImmutableList;
+
 /**
- * PullUpProjectsAboveJoinRule implements the rule for pulling {@link
- * ProjectRel}s beneath a {@link JoinRelBase} above the {@link JoinRelBase}. Projections
+ * PullUpProjectsAboveJoinRule implements the rule for pulling
+ * {@link ProjectRel}s beneath a {@link JoinRelBase} above the
+ * {@link JoinRelBase}.
+ *
+ * <p>Projections
  * are pulled up if the {@link ProjectRel} doesn't originate from a null
- * generating input in an outer join.
+ * generating input in an outer join.</p>
  */
 public class PullUpProjectsAboveJoinRule extends RelOptRule {
   //~ Static fields/initializers ---------------------------------------------
@@ -122,7 +127,8 @@ public class PullUpProjectsAboveJoinRule extends RelOptRule {
             JoinRelType.INNER,
             joinRel.getCluster().getTypeFactory(),
             null,
-            Collections.<RelDataTypeField>emptyList());
+            ImmutableList.<RelDataTypeField>of(),
+            joinRel.mapping);
 
     // Create projection expressions, combining the projection expressions
     // from the projects that feed into the join.  For the RHS projection

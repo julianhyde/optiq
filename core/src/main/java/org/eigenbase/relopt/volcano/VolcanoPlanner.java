@@ -31,6 +31,7 @@ import org.eigenbase.relopt.hep.*;
 import org.eigenbase.reltype.RelDataType;
 import org.eigenbase.sql.SqlExplainLevel;
 import org.eigenbase.util.*;
+import org.eigenbase.util.mapping.Mapping;
 
 import net.hydromatic.linq4j.expressions.Expressions;
 
@@ -1265,7 +1266,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     }
 
     // Add the relational expression into the correct set and subset.
-    RelSubset subset2 = asd(rel, set);
+    RelSubset subset2 = addToSet(rel, set);
   }
 
   /**
@@ -1412,6 +1413,21 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
           + " used.");
     }
 
+    // If rel is a project, and its child is capable of permuting its output
+    // columns, replace with the permuted child. This reduces the number of
+    // projects in the planner space.
+    final Pair<RelNode, Mapping> pair = RelOptUtil.splitProject(rel);
+    if (pair != null) {
+      if (pair.right == null) {
+        rel = pair.left;
+        if (rel instanceof RelSubset) {
+          return registerSubset(set, (RelSubset) rel);
+        }
+      } else if (pair.left.canPermute()) {
+        rel = pair.left.permute(pair.right);
+      }
+    }
+
     // Now is a good time to ensure that the relational expression
     // implements the interface required by its calling convention.
     final RelTraitSet traits = rel.getTraitSet();
@@ -1532,7 +1548,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
       set = set.equivalentSet;
     }
     registerCount++;
-    RelSubset subset = asd(rel, set);
+    RelSubset subset = addToSet(rel, set);
 
     final RelNode xx = mapDigestToRel.put(key, rel);
     assert xx == null || xx == rel : rel.getDigest();
@@ -1584,7 +1600,13 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     return subset;
   }
 
-  private RelSubset asd(RelNode rel, RelSet set) {
+  private RelSubset addToSet(RelNode rel, RelSet set) {
+    if (RelOptUtil.splitProject(rel) != null) {
+      Pair<RelNode, Mapping> pair = RelOptUtil.splitProject(rel);
+      if (pair.left.canPermute()) {
+        throw new AssertionError();
+      }
+    }
     RelSubset subset = set.add(rel);
     mapRel2Subset.put(rel, subset);
 

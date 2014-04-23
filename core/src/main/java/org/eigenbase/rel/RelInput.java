@@ -24,6 +24,7 @@ import org.eigenbase.relopt.*;
 import org.eigenbase.reltype.RelDataType;
 import org.eigenbase.rex.RexLiteral;
 import org.eigenbase.rex.RexNode;
+import org.eigenbase.util.mapping.Mapping;
 
 /**
  * Context from which a relational expression can initialize itself,
@@ -81,6 +82,8 @@ public interface RelInput {
   List<List<RexLiteral>> getTuples(String tag);
 
   boolean getBoolean(String tag);
+
+  Mapping getMapping();
 }
 
 // End RelInput.java

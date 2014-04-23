@@ -23,6 +23,9 @@ import org.eigenbase.rel.metadata.*;
 import org.eigenbase.relopt.*;
 import org.eigenbase.reltype.*;
 import org.eigenbase.rex.*;
+import org.eigenbase.util.mapping.Mapping;
+
+import com.google.common.collect.ImmutableSet;
 
 /**
  * A <code>RelNode</code> is a relational expression.
@@ -169,7 +172,7 @@ public interface RelNode extends RelOptNode, Cloneable {
    * <p>By default, returns the empty set. Derived classes may override this
    * method.</p>
    */
-  Set<String> getVariablesStopped();
+  ImmutableSet<String> getVariablesStopped();
 
   /**
    * Collects variables known to be used by this expression or its
@@ -309,6 +312,37 @@ public interface RelNode extends RelOptNode, Cloneable {
   RelNode copy(
       RelTraitSet traitSet,
       List<RelNode> inputs);
+
+  /**
+   * Returns whether the {@link #permute(Mapping)} method does something useful
+   * for this kind of relational expression.
+   */
+  boolean canPermute();
+
+  /**
+   * Returns a version of this relational expression that permutes the order
+   * of its output columns.
+   *
+   * <p>For example, given</p>
+   *
+   * <ul>
+   *   <li>p: ProjectRel(R, [x, y, x + y AS z])</li>
+   *   <li>mapping: [source(0) = 2, source(1) = 0]</li>
+   * </ul>
+   *
+   * <p>then {@code permute(p, mapping)} returns</p>
+   *
+   * <blockquote>ProjectRel(R, [x + y AS z, x])</blockquote>
+   *
+   * <p>The default implementation of this method is to return a
+   * {@code ProjectRel} on top of this relational expression. However, that is
+   * undesirable, because the projects increase the size of the search space,
+   * and also require explicit rules to match them.
+   *
+   * <p>Sub-classes that override the default implementation must also override
+   * {@link #canPermute()} to return true.</p>
+   */
+  RelNode permute(Mapping mapping);
 
   /**
    * Registers any special rules specific to this kind of relational

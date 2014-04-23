@@ -137,12 +137,9 @@ public abstract class SparkRules {
       super(cluster, rowType, tuples, traitSet);
     }
 
-    @Override
-    public RelNode copy(
-        RelTraitSet traitSet, List<RelNode> inputs) {
-      assert inputs.isEmpty();
-      return new SparkValuesRel(
-          getCluster(), rowType, tuples, traitSet);
+    @Override public SparkValuesRel copy(RelTraitSet traitSet,
+        RelDataType rowType, List<List<RexLiteral>> tuples) {
+      return new SparkValuesRel(getCluster(), rowType, tuples, traitSet);
     }
 
     public Result implementSpark(Implementor implementor) {

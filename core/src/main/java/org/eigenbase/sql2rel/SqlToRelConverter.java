@@ -1857,7 +1857,7 @@ public class SqlToRelConverter {
     }
 
     if (correlatedVariables.size() > 0) {
-      List<CorrelatorRel.Correlation> correlations =
+      final List<CorrelatorRel.Correlation> correlations =
           new ArrayList<CorrelatorRel.Correlation>();
 
       for (String correlName : correlatedVariables) {
@@ -1955,8 +1955,9 @@ public class SqlToRelConverter {
                 leftRel,
                 rightRel,
                 joinCond,
-                correlations,
-                joinType);
+                joinType,
+                null,
+                ImmutableList.copyOf(correlations));
         for (CorrelatorRel.Correlation correlation : correlations) {
           mapCorVarToCorRel.put(correlation, rel);
         }
@@ -3399,13 +3400,14 @@ public class SqlToRelConverter {
       RelNode right,
       RexNode condition,
       JoinRelType joinType,
-      Set<String> variablesStopped) {
+      ImmutableSet<String> variablesStopped) {
     return new JoinRel(
         cluster,
         left,
         right,
         condition,
         joinType,
+        null,
         variablesStopped);
   }
 

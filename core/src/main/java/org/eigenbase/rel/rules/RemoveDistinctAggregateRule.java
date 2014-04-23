@@ -369,6 +369,7 @@ public final class RemoveDistinctAggregateRule extends RelOptRule {
             distinctAgg,
             condition,
             JoinRelType.INNER,
+            null,
             ImmutableSet.<String>of());
   }
 
@@ -440,7 +441,7 @@ public final class RemoveDistinctAggregateRule extends RelOptRule {
    * column; in this case sourceOf.get(0) = 0, and sourceOf.get(1) = 2.</p>
    *
    * @param aggregate Aggregate relational expression
-   * @param argList   Ordinals of columns to distinctify
+   * @param argList   Ordinals of columns to make distinct
    * @param sourceOf  Out parameter, is populated with a map of where each
    *                  output field came from
    * @return Aggregate relational expression which projects the required

@@ -77,7 +77,8 @@ public class PushSemiJoinPastProjectRule extends RelOptRule {
             semiJoin.getRight(),
             newCondition,
             newLeftKeys,
-            semiJoin.getRightKeys());
+            semiJoin.getRightKeys(),
+            semiJoin.mapping);
 
     // Create the new projection.  Note that the projection expressions
     // are the same as the original because they only reference the LHS

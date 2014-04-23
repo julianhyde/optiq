@@ -215,8 +215,7 @@ public class PlannerTest {
         .replace(EnumerableConvention.INSTANCE);
     RelNode transform = planner.transform(0, traitSet, convert);
     assertThat(toString(transform), equalTo(
-        "EnumerableProjectRel(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
-        + "  EnumerableTableAccessRel(table=[[hr, emps]])\n"));
+        "EnumerableTableAccessRel(table=[[hr, emps]])\n"));
   }
 
   /** Unit test that parses, validates, converts and
@@ -238,8 +237,7 @@ public class PlannerTest {
     RelNode transform = planner.transform(0, traitSet, convert);
     assertThat(toString(transform), equalTo(
         "EnumerableSortRel(sort0=[$1], dir0=[ASC])\n"
-        + "  EnumerableProjectRel(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
-        + "    EnumerableTableAccessRel(table=[[hr, emps]])\n"));
+        + "  EnumerableTableAccessRel(table=[[hr, emps]])\n"));
   }
 
   /** Unit test that parses, validates, converts and
@@ -267,8 +265,7 @@ public class PlannerTest {
         "EnumerableProjectRel(empid=[$0])\n"
         + "  EnumerableProjectRel(empid=[$0], deptno=[$1])\n"
         + "    EnumerableSortRel(sort0=[$1], dir0=[ASC])\n"
-        + "      EnumerableProjectRel(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
-        + "        EnumerableTableAccessRel(table=[[hr, emps]])\n"));
+        + "      EnumerableTableAccessRel(table=[[hr, emps]])\n"));
   }
 
   /** Unit test that parses, validates, converts and
@@ -295,8 +292,7 @@ public class PlannerTest {
         + "  EnumerableSortRel(sort0=[$1], dir0=[ASC])\n"
         + "    EnumerableProjectRel(empid=[$0], deptno=[$1])\n"
         + "      EnumerableSortRel(sort0=[$1], dir0=[ASC])\n"
-        + "        EnumerableProjectRel(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
-        + "          EnumerableTableAccessRel(table=[[hr, emps]])\n"));
+        + "        EnumerableTableAccessRel(table=[[hr, emps]])\n"));
   }
 
   /** Unit test that parses, validates, converts and plans. Planner is
@@ -320,8 +316,7 @@ public class PlannerTest {
         .replace(EnumerableConvention.INSTANCE);
     RelNode transform = planner.transform(0, traitSet, convert);
     assertThat(toString(transform), equalTo(
-        "EnumerableProjectRel(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
-        + "  EnumerableTableAccessRel(table=[[hr, emps]])\n"));
+        "EnumerableTableAccessRel(table=[[hr, emps]])\n"));
   }
 
   /** Unit test that calls {@link Planner#transform} twice. */
@@ -340,8 +335,7 @@ public class PlannerTest {
     RelNode transform = planner.transform(0, traitSet, convert);
     RelNode transform2 = planner.transform(0, traitSet, transform);
     assertThat(toString(transform2), equalTo(
-        "EnumerableProjectRel(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
-        + "  EnumerableTableAccessRel(table=[[hr, emps]])\n"));
+        "EnumerableTableAccessRel(table=[[hr, emps]])\n"));
   }
 
   /** Tests that Hive dialect does not generate "AS". */

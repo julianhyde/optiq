@@ -55,7 +55,8 @@ public class PushSemiJoinPastFilterRule extends RelOptRule {
             semiJoin.getRight(),
             semiJoin.getCondition(),
             semiJoin.getLeftKeys(),
-            semiJoin.getRightKeys());
+            semiJoin.getRightKeys(),
+            semiJoin.mapping);
 
     RelNode newFilter =
         CalcRel.createFilter(

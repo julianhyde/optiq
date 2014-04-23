@@ -38,8 +38,10 @@ import org.eigenbase.sql.SqlWindow;
 import org.eigenbase.sql.fun.SqlStdOperatorTable;
 import org.eigenbase.trace.EigenbaseTrace;
 import org.eigenbase.util.*;
+import org.eigenbase.util.mapping.Mapping;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import java.lang.reflect.*;
 import java.math.BigDecimal;
@@ -100,6 +102,7 @@ public class JavaRules {
             newInputs.get(1),
             join.getCondition(),
             join.getJoinType(),
+            join.mapping,
             join.getVariablesStopped());
       } catch (InvalidRelException e) {
         LOGGER.fine(e.toString());
@@ -123,15 +126,10 @@ public class JavaRules {
         RelNode right,
         RexNode condition,
         JoinRelType joinType,
-        Set<String> variablesStopped)
+        Mapping mapping,
+        ImmutableSet<String> variablesStopped)
       throws InvalidRelException {
-      super(
-          cluster,
-          traits,
-          left,
-          right,
-          condition,
-          joinType,
+      super(cluster, traits, left, right, condition, joinType, mapping,
           variablesStopped);
       final List<Integer> leftKeys = new ArrayList<Integer>();
       final List<Integer> rightKeys = new ArrayList<Integer>();
@@ -155,7 +153,7 @@ public class JavaRules {
         RelNode left, RelNode right, JoinRelType joinType) {
       try {
         return new EnumerableJoinRel(getCluster(), traitSet, left, right,
-            conditionExpr, joinType, variablesStopped);
+            conditionExpr, joinType, mapping, variablesStopped);
       } catch (InvalidRelException e) {
         // Semantic error not possible. Must be a bug. Convert to
         // internal error.
@@ -1881,12 +1879,9 @@ public class JavaRules {
       super(cluster, rowType, tuples, traitSet);
     }
 
-    @Override
-    public RelNode copy(
-        RelTraitSet traitSet, List<RelNode> inputs) {
-      assert inputs.isEmpty();
-      return new EnumerableValuesRel(
-          getCluster(), rowType, tuples, traitSet);
+    @Override public EnumerableValuesRel copy(RelTraitSet traitSet,
+        RelDataType rowType, List<List<RexLiteral>> tuples) {
+      return new EnumerableValuesRel(getCluster(), rowType, tuples, traitSet);
     }
 
     public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
