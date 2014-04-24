@@ -23,6 +23,9 @@ import org.eigenbase.rel.*;
 import org.eigenbase.rel.RelFactories.ProjectFactory;
 import org.eigenbase.relopt.*;
 import org.eigenbase.rex.*;
+import org.eigenbase.util.Pair;
+import org.eigenbase.util.mapping.Mapping;
+import org.eigenbase.util.mapping.Mappings;
 
 /**
  * MergeProjectRule merges a {@link ProjectRelBase} into another {@link ProjectRelBase},
@@ -78,6 +81,23 @@ public class MergeProjectRule extends RelOptRule {
     // RemoveTrivialProjectRule replace the projects
     if (!force) {
       if (RelOptUtil.checkProjAndChildInputs(topProject, false)) {
+        return;
+      }
+    }
+
+    final Pair<RelNode, Mapping> topPair = RelOptUtil.splitProject(topProject);
+    if (topPair != null) {
+      final Pair<RelNode, Mapping> bottomPair =
+          RelOptUtil.splitProject(bottomProject);
+      if (bottomPair != null) {
+        Mapping mapping = Mappings.compose(topPair.right, bottomPair.right);
+        if (mapping == null || mapping.isIdentity()) {
+          // Composed mapping is the identity.
+          call.transformTo(bottomProject.getChild());
+        } else {
+          call.transformTo(RelOptUtil.project(bottomProject.getChild(),
+              mapping));
+        }
         return;
       }
     }

@@ -210,6 +210,14 @@ public enum MappingType {
   }
 
   /**
+   * Constraint that every target has exactly one source.
+   */
+  public boolean isExactlyOneSource() {
+    return (ordinal() & (MULTIPLE_SOURCE | OPTIONAL_SOURCE))
+        == (MULTIPLE_SOURCE | OPTIONAL_SOURCE);
+  }
+
+  /**
    * Allow less than one source for a given target.
    */
   private static final int OPTIONAL_SOURCE = 1;

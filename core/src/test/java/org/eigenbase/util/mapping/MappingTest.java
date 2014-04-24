@@ -19,8 +19,11 @@ package org.eigenbase.util.mapping;
 
 import com.google.common.collect.ImmutableMap;
 
+import net.hydromatic.linq4j.function.Function1;
+
 import org.junit.Test;
 
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
@@ -31,6 +34,27 @@ import static org.junit.Assert.assertEquals;
  * @see Mappings
  */
 public class MappingTest {
+  public static final Function1<Integer, Integer> DOUBLE =
+      new Function1<Integer, Integer>() {
+        public Integer apply(Integer integer) {
+          return integer * 2;
+        }
+      };
+
+  public static final Function1<Integer, Integer> PLUS_ONE =
+      new Function1<Integer, Integer>() {
+        public Integer apply(Integer integer) {
+          return integer + 1;
+        }
+      };
+
+  public static final Function1<Integer, Integer> MINUS_ONE =
+      new Function1<Integer, Integer>() {
+        public Integer apply(Integer integer) {
+          return integer - 1;
+        }
+      };
+
   public MappingTest() {
   }
 
@@ -123,6 +147,50 @@ public class MappingTest {
       fail("expected exception, got " + mapping3);
     } catch (IllegalArgumentException e) {
       // ok
+    }
+  }
+
+  /** Unit test for {@link Mappings#compose}. */
+  @Test public void testMappingsCompose() {
+    final Mapping mapping1 = Mappings.target(DOUBLE, 4, 8).inverse();
+    final Mapping mapping2 = Mappings.target(PLUS_ONE, 8, 9).inverse();
+    final Mapping mapping3 = Mappings.compose(mapping2, mapping1);
+    assertThat(mapping3.toString(),
+        equalTo(
+            "[size=4, sourceCount=9, targetCount=4, elements=[1:0, 3:1, 5:2, 7:3]]"));
+    assertThat(mapping3.isIdentity(), equalTo(false));
+
+    final Mapping mapping4 = Mappings.target(PLUS_ONE, 4, 5).inverse();
+    final Mapping mapping5 = Mappings.target(MINUS_ONE, 5, 4).inverse();
+    final Mapping mapping6 = Mappings.compose(mapping5, mapping4);
+    assertThat(mapping6.toString(),
+        equalTo(
+            "[size=4, sourceCount=4, targetCount=4, elements=[0:0, 1:1, 2:2, 3:3]]"));
+    assertThat(mapping6.isIdentity(), equalTo(true));
+
+    // anything compose empty --> empty
+    final Mapping mapping7 =
+        (Mapping) Mappings.target(ImmutableMap.<Integer, Integer>of(), 6, 5);
+    final Mapping mapping8 = Mappings.compose(mapping7, mapping4);
+    assertThat(mapping8.toString(),
+        equalTo("[size=0, sourceCount=6, targetCount=4, elements=[]]"));
+    assertThat(mapping8.isIdentity(), equalTo(false));
+
+    // empty compose anything --> empty
+    final Mapping mapping9 =
+        Mappings.target(ImmutableMap.<Integer, Integer>of(), 10, 4).inverse();
+    final Mapping mapping10 = Mappings.compose(mapping4, mapping9);
+    assertThat(mapping10.toString(),
+        equalTo("[size=0, sourceCount=5, targetCount=10, elements=[]]"));
+    assertThat(mapping10.isIdentity(), equalTo(false));
+
+    // target count must match source count
+    try {
+      final Mapping mapping11 = Mappings.compose(mapping4, mapping1);
+      fail("expected error, got " + mapping11);
+    } catch (Exception e) {
+      assertThat(e.getMessage(),
+          equalTo("compose requires left.targetCount = right.sourceCount"));
     }
   }
 }

@@ -70,8 +70,10 @@ public abstract class Mappings {
           mappingType);
     case INVERSE_FUNCTION:
     case INVERSE_PARTIAL_FUNCTION:
-      return new InverseMapping(
-          create(mappingType.inverse(), targetCount, sourceCount));
+      return new InversePartialFunctionImpl(
+          sourceCount,
+          targetCount,
+          mappingType);
     default:
       throw Util.needToImplement(
           "no known implementation for mapping type " + mappingType);
@@ -261,6 +263,7 @@ public abstract class Mappings {
 
   /**
    * Converts a {@link Map} of integers to a {@link TargetMapping}.
+   * The entries in the map are interpreted as (source, target).
    */
   public static TargetMapping target(
       Map<Integer, Integer> map,
@@ -275,6 +278,9 @@ public abstract class Mappings {
     return mapping;
   }
 
+  /**
+   * Converts a function to a {@link TargetMapping}.
+   */
   public static TargetMapping target(
       Function1<Integer, Integer> function,
       int sourceCount,
@@ -285,6 +291,42 @@ public abstract class Mappings {
     for (int source = 0; source < sourceCount; source++) {
       Integer target = function.apply(source);
       if (target != null) {
+        mapping.set(source, target);
+      }
+    }
+    return mapping;
+  }
+
+  /**
+   * Converts a map to a {@link SourceMapping}.
+   * The entries in the map are interpreted as (target, source).
+   */
+  public static SourceMapping source(
+      Map<Integer, Integer> map,
+      int sourceCount,
+      int targetCount) {
+    final InversePartialFunctionImpl mapping =
+        new InversePartialFunctionImpl(
+            sourceCount, targetCount, MappingType.INVERSE_PARTIAL_FUNCTION);
+    for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
+      mapping.set(entry.getValue(), entry.getKey());
+    }
+    return mapping;
+  }
+
+  /**
+   * Converts a function to a {@link SourceMapping}.
+   */
+  public static SourceMapping source(
+      Function1<Integer, Integer> function,
+      int sourceCount,
+      int targetCount) {
+    final InversePartialFunctionImpl mapping =
+        new InversePartialFunctionImpl(
+            sourceCount, targetCount, MappingType.INVERSE_PARTIAL_FUNCTION);
+    for (int target = 0; target < targetCount; target++) {
+      Integer source = function.apply(target);
+      if (source != null) {
         mapping.set(source, target);
       }
     }
@@ -507,14 +549,40 @@ public abstract class Mappings {
    * @param right Right mapping (mapping applied first)
    * @return Composition
    */
-  public static Mapping compose(Mapping left, Mapping right) {
+  public static Mapping compose(final Mapping left, final Mapping right) {
     if (left == null) {
       return right;
     }
     if (right == null) {
       return left;
     }
-    throw new UnsupportedOperationException(); // TODO:
+    if (left.getTargetCount() != right.getSourceCount()) {
+      throw new IllegalArgumentException(
+          "compose requires left.targetCount = right.sourceCount");
+    }
+    if (left.getMappingType().isExactlyOneSource()
+        && right.getMappingType().isExactlyOneSource()) {
+      return new CompleteComposedMapping(right, left);
+    }
+    if (left.getMappingType().isSingleSource()
+        && right.getMappingType().isSingleSource()) {
+      final Mapping mapping = create(MappingType.SURJECTION,
+          left.getSourceCount(), right.getTargetCount());
+      for (IntPair pair : right) {
+        final int source = left.getSource(pair.source);
+        mapping.set(source, pair.target);
+      }
+      return mapping;
+    }
+    final Mapping mapping = create(MappingType.SURJECTION,
+        left.getSourceCount(), right.getTargetCount());
+    for (IntPair pair : left) {
+      final int target = right.getTargetOpt(pair.target);
+      if (target >= 0) {
+        mapping.set(pair.source, target);
+      }
+    }
+    return mapping;
   }
 
   //~ Inner Interfaces -------------------------------------------------------
@@ -1304,7 +1372,16 @@ public abstract class Mappings {
         int sourceCount,
         int targetCount,
         MappingType mappingType) {
-      super();
+      this(sourceCount, targetCount, mappingType, new int[sourceCount]);
+      Arrays.fill(this.targets, -1);
+    }
+
+    // private because does not copy targets
+    private PartialFunctionImpl(
+        int sourceCount,
+        int targetCount,
+        MappingType mappingType,
+        int[] targets) {
       if (sourceCount < 0) {
         throw new IllegalArgumentException("Sources must be finite");
       }
@@ -1315,8 +1392,7 @@ public abstract class Mappings {
         throw new IllegalArgumentException(
             "Must have at most one target");
       }
-      this.targets = new int[sourceCount];
-      Arrays.fill(targets, -1);
+      this.targets = targets;
     }
 
     public int getSourceCount() {
@@ -1382,8 +1458,9 @@ public abstract class Mappings {
     }
 
     public Mapping inverse() {
-      // todo: implement
-      throw new UnsupportedOperationException();
+      // returns a copy -- not a view
+      return new InversePartialFunctionImpl(targetCount, sourceCount,
+          mappingType.inverse(), targets.clone());
     }
 
     public void set(int source, int target) {
@@ -1405,6 +1482,137 @@ public abstract class Mappings {
 
     public int getTargetOpt(int source) {
       return targets[source];
+    }
+  }
+  /**
+   * Implementation of {@link Mapping} where a target can have at most one
+   * source, and a source can have any number of targets. The target count
+   * must be finite, but the source count may be infinite.
+   *
+   * <p>The implementation uses an array for the forward-mapping, but does not
+   * store the backward mapping.
+   */
+  private static class InversePartialFunctionImpl extends AbstractMapping
+      implements SourceMapping {
+    private final int sourceCount;
+    private final int targetCount;
+    private final MappingType mappingType;
+    private final int[] sources;
+
+    public InversePartialFunctionImpl(
+        int sourceCount,
+        int targetCount,
+        MappingType mappingType) {
+      this(sourceCount, targetCount, mappingType, new int[targetCount]);
+      Arrays.fill(this.sources, -1);
+    }
+
+    // private because does not copy sources
+    private InversePartialFunctionImpl(
+        int sourceCount,
+        int targetCount,
+        MappingType mappingType,
+        int[] sources) {
+      if (targetCount < 0) {
+        throw new IllegalArgumentException("Targets must be finite");
+      }
+      this.sourceCount = sourceCount;
+      this.targetCount = targetCount;
+      this.mappingType = mappingType;
+      if (!mappingType.isSingleSource()) {
+        throw new IllegalArgumentException(
+            "Must have at most one source");
+      }
+      this.sources = sources;
+    }
+
+    public int getTargetCount() {
+      return targetCount;
+    }
+
+    public int getSourceCount() {
+      return sourceCount;
+    }
+
+    public void clear() {
+      Arrays.fill(sources, -1);
+    }
+
+    public int size() {
+      int size = 0;
+      for (int i = 0; i < sources.length; i++) {
+        if (sources[i] >= 0) {
+          ++size;
+        }
+      }
+      return size;
+    }
+
+    public Iterator<IntPair> iterator() {
+      return new Iterator<IntPair>() {
+        int i = -1;
+
+        {
+          advance();
+        }
+
+        private void advance() {
+          while (true) {
+            ++i;
+            if (i >= targetCount) {
+              break; // end
+            }
+            if (sources[i] >= 0) {
+              break; // found one
+            }
+          }
+        }
+
+        public boolean hasNext() {
+          return i < targetCount;
+        }
+
+        public IntPair next() {
+          final IntPair pair = new IntPair(sources[i], i);
+          advance();
+          return pair;
+        }
+
+        public void remove() {
+          throw new UnsupportedOperationException();
+        }
+      };
+    }
+
+    public MappingType getMappingType() {
+      return mappingType;
+    }
+
+    public Mapping inverse() {
+      // returns a copy -- not a view
+      return new PartialFunctionImpl(targetCount, sourceCount,
+          mappingType.inverse(), sources.clone());
+    }
+
+    public void set(int target, int source) {
+      if ((source < 0) && mappingType.isMandatoryTarget()) {
+        throw new IllegalArgumentException("Source is required");
+      }
+      if ((source >= sourceCount) && (sourceCount >= 0)) {
+        throw new IllegalArgumentException(
+            "Source must be less than source count, " + sourceCount);
+      }
+      sources[target] = source;
+    }
+
+    public void setAll(Mapping mapping) {
+      for (IntPair pair : mapping) {
+        set(pair.target, pair.source);
+      }
+    }
+
+    public int getSourceOpt(int target) {
+      return sources[target];
     }
   }
 
@@ -1545,6 +1753,59 @@ public abstract class Mappings {
 
     @Override public final int getSourceOpt(int target) {
       return getSource(target);
+    }
+  }
+
+  private static class CompleteComposedMapping extends AbstractMapping {
+    private final Mapping right;
+    private final Mapping left;
+
+    public CompleteComposedMapping(Mapping right, Mapping left) {
+      this.right = right;
+      this.left = left;
+    }
+
+    public Iterator<IntPair> iterator() {
+      return new Iterator<IntPair>() {
+        int target = -1;
+
+        public boolean hasNext() {
+          return target < right.getTargetCount() - 1;
+        }
+
+        public IntPair next() {
+          ++target;
+          return new IntPair(getSource(target), target);
+        }
+
+        public void remove() {
+          throw new UnsupportedOperationException();
+        }
+      };
+    }
+
+    public MappingType getMappingType() {
+      return MappingType.INVERSE_SURJECTION;
+    }
+
+    public int size() {
+      return right.getTargetCount();
+    }
+
+    @Override public int getTargetCount() {
+      return right.getTargetCount();
+    }
+
+    @Override public int getSourceCount() {
+      return left.getSourceCount();
+    }
+
+    public Mapping inverse() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override public int getSourceOpt(int target) {
+      return left.getSource(right.getSource(target));
     }
   }
 }
