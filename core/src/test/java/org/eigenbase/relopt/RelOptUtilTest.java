@@ -17,12 +17,29 @@
 */
 package org.eigenbase.relopt;
 
+import java.util.List;
+
+import org.eigenbase.rel.ProjectRel;
+import org.eigenbase.rel.ProjectRelBase;
+import org.eigenbase.rel.RelNode;
+import org.eigenbase.rel.ValuesRel;
 import org.eigenbase.reltype.*;
+import org.eigenbase.rex.RexBuilder;
+import org.eigenbase.rex.RexLiteral;
+import org.eigenbase.rex.RexNode;
 import org.eigenbase.sql.type.*;
 import org.eigenbase.util.*;
+import org.eigenbase.util.mapping.Mapping;
+
+import net.hydromatic.optiq.SchemaPlus;
+import net.hydromatic.optiq.tools.Frameworks;
+
+import com.google.common.collect.ImmutableList;
 
 import org.junit.Test;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.*;
 
 /**
@@ -82,6 +99,53 @@ public class RelOptUtilTest {
           + "integer, not valid. Supply a description manually.",
           e.getMessage());
     }
+  }
+
+  /** Tests {@link RelOptUtil#splitProject(org.eigenbase.rel.RelNode)}. */
+  @Test public void testSplitProject() {
+    Frameworks.withPlanner(
+        new Frameworks.PlannerAction<Object>() {
+          public Object apply(RelOptCluster cluster, RelOptSchema relOptSchema,
+              SchemaPlus rootSchema) {
+            final RexBuilder rexBuilder = cluster.getRexBuilder();
+            final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
+            final RelDataType rowType = typeFactory.builder()
+                .add("i", SqlTypeName.INTEGER)
+                .add("j", SqlTypeName.BOOLEAN)
+                .add("k", SqlTypeName.DOUBLE)
+                .build();
+            final ValuesRel values =
+                new ValuesRel(cluster, rowType,
+                    ImmutableList.<List<RexLiteral>>of());
+            final ProjectRel project =
+                new ProjectRel(cluster, values,
+                    ImmutableList.<RexNode>of(
+                        rexBuilder.makeInputRef(values, 2),
+                        rexBuilder.makeInputRef(values, 0)),
+                    null, ProjectRelBase.Flags.BOXED);
+            final Pair<RelNode, Mapping> pair =
+                RelOptUtil.splitProject(project);
+            assertThat(pair, notNullValue());
+            assertThat(pair.left, equalTo((RelNode) values));
+            assertThat(pair.right.toString(), equalTo("[2:0,0:1]"));
+
+            // split project-on-project returns a composite mapping
+            final ProjectRel project2 =
+                new ProjectRel(cluster, project,
+                    ImmutableList.<RexNode>of(
+                        rexBuilder.makeInputRef(project, 1),
+                        rexBuilder.makeInputRef(project, 0)),
+                    null, ProjectRelBase.Flags.BOXED);
+            final Pair<RelNode, Mapping> pair2 =
+                RelOptUtil.splitProject(project2);
+            assertThat(pair2, notNullValue());
+            assertThat(pair2.left, equalTo((RelNode) values));
+            assertThat(pair2.right.toString(),
+                equalTo(
+                    "[size=2, sourceCount=3, targetCount=2, elements=[0:0, 2:1]]"));
+            return null;
+          }
+        });
   }
 }
 

@@ -2434,28 +2434,31 @@ public abstract class RelOptUtil {
    * Return is never null; if there is no simple project, returns (node,
    * identity mapping). Mapping is null if the projection is the identity. */
   public static Pair<RelNode, Mapping> splitProject(RelNode node) {
-    // TODO: if there multiple projects, compose their mappings
-    if (!(node instanceof ProjectRelBase)) {
+    Mapping mapping = null;
+    final RelNode node0 = node;
+    while (node instanceof ProjectRelBase) {
+      final ProjectRelBase project = (ProjectRelBase) node;
+      final int fieldCount = project.getRowType().getFieldCount();
+      int[] indexes = new int[fieldCount];
+      int n = 0;
+      for (RexNode e : project.getProjects()) {
+        if (!(e instanceof RexInputRef)) {
+          return null;
+        }
+        indexes[n++] = ((RexInputRef) e).getIndex();
+      }
+      final RelNode child = project.getChild();
+      final int childFieldCount = child.getRowType().getFieldCount();
+      if (!isIdentity(indexes, childFieldCount)) {
+        mapping = Mappings.compose(
+            Mappings.createSurjection(indexes, childFieldCount), mapping);
+      }
+      node = child;
+    }
+    if (node0 == node) {
       return null;
     }
-    final ProjectRelBase project = (ProjectRelBase) node;
-    final int fieldCount = project.getRowType().getFieldCount();
-    int[] indexes = new int[fieldCount];
-    int n = 0;
-    for (RexNode e : project.getProjects()) {
-      if (!(e instanceof RexInputRef)) {
-        return null;
-      }
-      indexes[n++] = ((RexInputRef) e).getIndex();
-    }
-    final RelNode child = project.getChild();
-    final int childFieldCount = child.getRowType().getFieldCount();
-    if (isIdentity(indexes, childFieldCount)) {
-      return Pair.of(child, null);
-    }
-
-    return Pair.of(child,
-        Mappings.createSurjection(indexes, childFieldCount));
+    return Pair.of(node, mapping);
   }
 
   private static boolean isIdentity(int[] a, int sourceCount) {

@@ -17,9 +17,9 @@
 */
 package org.eigenbase.util.mapping;
 
-import com.google.common.collect.ImmutableMap;
-
 import net.hydromatic.linq4j.function.Function1;
+
+import com.google.common.collect.ImmutableMap;
 
 import org.junit.Test;
 
