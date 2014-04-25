@@ -160,7 +160,7 @@ public class SqlDataTypeSpec extends SqlNode {
       SqlTypeName sqlTypeName = SqlTypeName.get(name);
 
       // we have a built-in data type
-      writer.keyword(name);
+      writer.keyword(sqlTypeName.toString());
 
       if (sqlTypeName.allowsPrec() && (precision >= 0)) {
         final SqlWriter.Frame frame =

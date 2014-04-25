@@ -21,7 +21,6 @@ import java.util.*;
 
 import org.eigenbase.sql.parser.*;
 import org.eigenbase.sql.type.*;
-import org.eigenbase.util14.DateTimeUtil;
 
 /**
  * A SQL literal representing a TIMESTAMP value, for example <code>TIMESTAMP
@@ -35,56 +34,17 @@ public class SqlTimestampLiteral extends SqlAbstractDateTimeLiteral {
   public SqlTimestampLiteral(
       Calendar cal,
       int precision,
-      boolean hasTimeZone,
-      SqlParserPos pos) {
-    super(
-        cal,
-        hasTimeZone,
-        SqlTypeName.TIMESTAMP,
-        precision, DateTimeUtil.TIMESTAMP_FORMAT_STRING,
-        pos);
-  }
-
-  public SqlTimestampLiteral(
-      Calendar cal,
-      int precision,
-      boolean hasTimeZone,
+      String timeZone,
       String format,
       SqlParserPos pos) {
-    super(
-        cal, hasTimeZone, SqlTypeName.TIMESTAMP, precision,
-        format, pos);
+    super(cal, timeZone, SqlTypeName.TIMESTAMP, precision, format, pos);
   }
 
   //~ Methods ----------------------------------------------------------------
 
-/*
-  /**
-   * Converts this literal to a {@link java.sql.Timestamp} object.
-   o/
-  public Timestamp getTimestamp() {
-    return new Timestamp(getCal().getTimeInMillis());
-  }
-*/
-
-/*
-  /**
-   * Converts this literal to a {@link java.sql.Time} object.
-   o/
-  public Time getTime() {
-    long millis = getCal().getTimeInMillis();
-    int tzOffset = Calendar.getInstance().getTimeZone().getOffset(millis);
-    return new Time(millis - tzOffset);
-  }
-*/
-
   public SqlNode clone(SqlParserPos pos) {
-    return new SqlTimestampLiteral(
-        (Calendar) value,
-        precision,
-        hasTimeZone,
-        formatString,
-        pos);
+    return new SqlTimestampLiteral((Calendar) value, precision, timeZone,
+        formatString, pos);
   }
 
   public String toString() {
@@ -108,6 +68,9 @@ public class SqlTimestampLiteral extends SqlAbstractDateTimeLiteral {
               digits.length() - 3 + precision);
     } else {
       assert 0 == cal.get(Calendar.MILLISECOND);
+    }
+    if (timeZone != null) {
+      result += " " + timeZone;
     }
     return result;
   }

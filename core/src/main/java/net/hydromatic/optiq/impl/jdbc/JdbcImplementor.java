@@ -142,7 +142,7 @@ public class JdbcImplementor {
               literal.getType().getPrecision(), POS);
         case TIMESTAMP:
           return SqlLiteral.createTimestamp((Calendar) literal.getValue(),
-              literal.getType().getPrecision(), POS);
+              literal.getType().getPrecision(), null, POS);
         case ANY:
           switch (literal.getTypeName()) {
           case NULL:

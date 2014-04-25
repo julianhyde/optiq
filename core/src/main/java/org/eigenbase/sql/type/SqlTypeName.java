@@ -59,6 +59,8 @@ public enum SqlTypeName {
       SqlTypeFamily.TIME),
   TIMESTAMP(PrecScale.NO_NO | PrecScale.YES_NO, false, Types.TIMESTAMP,
       SqlTypeFamily.TIMESTAMP),
+  TIMESTAMP_WITH_TIMEZONE(PrecScale.NO_NO | PrecScale.YES_NO, false,
+      Types.TIMESTAMP_WITH_TIMEZONE, SqlTypeFamily.TIMESTAMP_WITH_TIMEZONE),
   INTERVAL_YEAR_MONTH(PrecScale.NO_NO, false, Types.OTHER,
       SqlTypeFamily.INTERVAL_YEAR_MONTH),
   INTERVAL_DAY_TIME(PrecScale.NO_NO | PrecScale.YES_NO | PrecScale.YES_YES,
@@ -113,7 +115,8 @@ public enum SqlTypeName {
   // SqlTypeFamily.ANY
   public static final List<SqlTypeName> ALL_TYPES =
       ImmutableList.of(
-          BOOLEAN, INTEGER, VARCHAR, DATE, TIME, TIMESTAMP, NULL, DECIMAL,
+          BOOLEAN, INTEGER, VARCHAR, DATE, TIME, TIMESTAMP,
+          TIMESTAMP_WITH_TIMEZONE, NULL, DECIMAL,
           ANY, CHAR, BINARY, VARBINARY, TINYINT, SMALLINT, BIGINT, REAL,
           DOUBLE, SYMBOL, INTERVAL_YEAR_MONTH, INTERVAL_DAY_TIME,
           FLOAT, MULTISET, DISTINCT, STRUCTURED, ROW, CURSOR, COLUMN_LIST);
@@ -213,6 +216,15 @@ public enum SqlTypeName {
     this.special = special;
     this.jdbcOrdinal = jdbcType;
     this.family = family;
+  }
+
+  public String toString() {
+    switch (this) {
+    case TIMESTAMP_WITH_TIMEZONE:
+      return "TIMESTAMP WITH TIME ZONE";
+    default:
+      return super.toString();
+    }
   }
 
   /**
@@ -842,7 +854,7 @@ public enum SqlTypeName {
     case TIME:
       return SqlLiteral.createTime((Calendar) o, 0 /* todo */, pos);
     case TIMESTAMP:
-      return SqlLiteral.createTimestamp((Calendar) o, 0 /* todo */, pos);
+      return SqlLiteral.createTimestamp((Calendar) o, 0 /* todo */, null, pos);
     default:
       throw Util.unexpected(this);
     }

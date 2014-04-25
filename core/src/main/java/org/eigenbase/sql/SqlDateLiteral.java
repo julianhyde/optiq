@@ -34,11 +34,7 @@ public class SqlDateLiteral extends SqlAbstractDateTimeLiteral {
   //~ Constructors -----------------------------------------------------------
 
   SqlDateLiteral(Calendar d, SqlParserPos pos) {
-    super(d, false, SqlTypeName.DATE, 0, DateTimeUtil.DATE_FORMAT_STRING, pos);
-  }
-
-  SqlDateLiteral(Calendar d, String format, SqlParserPos pos) {
-    super(d, false, SqlTypeName.DATE, 0, format, pos);
+    super(d, null, SqlTypeName.DATE, 0, DateTimeUtil.DATE_FORMAT_STRING, pos);
   }
 
   //~ Methods ----------------------------------------------------------------

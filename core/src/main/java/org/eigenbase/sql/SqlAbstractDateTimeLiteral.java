@@ -38,7 +38,8 @@ import org.eigenbase.util14.*;
 abstract class SqlAbstractDateTimeLiteral extends SqlLiteral {
   //~ Instance fields --------------------------------------------------------
 
-  protected final boolean hasTimeZone;
+  /** Time zone identifier, or null. */
+  protected final String timeZone;
   protected final String formatString;
   protected final int precision;
 
@@ -53,13 +54,13 @@ abstract class SqlAbstractDateTimeLiteral extends SqlLiteral {
    */
   protected SqlAbstractDateTimeLiteral(
       Calendar d,
-      boolean tz,
+      String timeZone,
       SqlTypeName typeName,
       int precision,
       String formatString,
       SqlParserPos pos) {
     super(d, typeName, pos);
-    this.hasTimeZone = tz;
+    this.timeZone = timeZone;
     this.precision = precision;
     this.formatString = formatString;
   }
@@ -86,7 +87,8 @@ abstract class SqlAbstractDateTimeLiteral extends SqlLiteral {
    * @return timezone
    */
   public TimeZone getTimeZone() {
-    assert hasTimeZone : "Attempt to get timezone on Literal date: "
+    assert timeZone != null
+        : "Attempt to get timezone on Literal date: "
         + getCal() + ", which has no timezone";
     return getCal().getTimeZone();
   }

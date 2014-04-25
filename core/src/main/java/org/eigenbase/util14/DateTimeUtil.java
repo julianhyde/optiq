@@ -20,6 +20,8 @@ package org.eigenbase.util14;
 import java.text.*;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Utility functions for datetime types: date, time, timestamp. Refactored from
@@ -77,6 +79,8 @@ public class DateTimeUtil {
    * to screw up this object for everyone else.
    */
   public static final Calendar ZERO_CALENDAR;
+
+  private static final Pattern DECIMAL_PATTERN = Pattern.compile("\\.(\\d*).*");
 
   static {
     ZERO_CALENDAR = Calendar.getInstance(DateTimeUtil.GMT_ZONE);
@@ -184,46 +188,47 @@ public class DateTimeUtil {
     // the decimal as milliseconds. That means 12:00:00.9 has 9
     // milliseconds and 12:00:00.9999 has 9999 milliseconds.
     int p = 0;
-    if (pp.getIndex() < s.length()) {
-      // Check to see if rest is decimal portion
-      if (s.charAt(pp.getIndex()) != '.') {
-        return null;
-      }
+    String timeZone = null;
 
-      // Skip decimal sign
-      pp.setIndex(pp.getIndex() + 1);
-
-      // Parse decimal portion
-      if (pp.getIndex() < s.length()) {
-        String secFraction = s.substring(pp.getIndex());
-        if (!secFraction.matches("\\d+")) {
-          return null;
-        }
+    String rest = s.substring(pp.getIndex());
+    final Matcher matcher = DECIMAL_PATTERN.matcher(rest);
+    if (matcher.matches()) {
+      final String secFraction = matcher.group(1);
+      Number num;
+      if (secFraction.isEmpty()) {
+        num = 0;
+        rest = rest.substring(1);
+      } else {
         NumberFormat nf = NumberFormat.getIntegerInstance();
-        Number num = nf.parse(s, pp);
-        if ((num == null) || (pp.getIndex() != s.length())) {
+        pp.setIndex(0);
+        num = nf.parse(secFraction, pp);
+        if (num == null) {
           // Invalid decimal portion
           return null;
         }
-
-        // Determine precision - only support prec 3 or lower
-        // (milliseconds) Higher precisions are quietly rounded away
-        p = Math.min(
-            3,
-            secFraction.length());
-
-        // Calculate milliseconds
-        int ms =
-            (int) Math.round(
-                num.longValue()
-                * Math.pow(10, 3 - secFraction.length()));
-        cal.add(Calendar.MILLISECOND, ms);
+        rest = rest.substring(pp.getIndex() + 1);
       }
+
+      // Determine precision - only support precision 3 or lower (milliseconds).
+      // Higher precisions are quietly rounded away.
+      p = Math.min(
+          3,
+          secFraction.length());
+
+      // Calculate milliseconds
+      int ms =
+          (int) Math.round(
+              num.longValue() * Math.pow(10, 3 - secFraction.length()));
+      cal.add(Calendar.MILLISECOND, ms);
     }
 
-    assert pp.getIndex() == s.length();
-    PrecisionTime ret = new PrecisionTime(cal, p);
-    return ret;
+    if (rest.startsWith(" ")) {
+      timeZone = rest.trim();
+    } else if (!rest.isEmpty()) {
+      // Invalid
+      return null;
+    }
+    return new PrecisionTime(cal, p, timeZone);
   }
 
   /**
@@ -266,10 +271,12 @@ public class DateTimeUtil {
   public static class PrecisionTime {
     private final Calendar cal;
     private final int precision;
+    public final String timeZone;
 
-    public PrecisionTime(Calendar cal, int precision) {
+    public PrecisionTime(Calendar cal, int precision, String timeZone) {
       this.cal = cal;
       this.precision = precision;
+      this.timeZone = timeZone;
     }
 
     public Calendar getCalendar() {

@@ -28,6 +28,7 @@ import org.eigenbase.sql.type.*;
 import org.eigenbase.sql.util.*;
 import org.eigenbase.sql.validate.*;
 import org.eigenbase.util.*;
+import org.eigenbase.util14.DateTimeUtil;
 
 import static org.eigenbase.util.Static.RESOURCE;
 
@@ -238,31 +239,6 @@ public class SqlLiteral extends SqlNode {
   /** Returns the value as a boolean. */
   public boolean booleanValue() {
     return (Boolean) value;
-  }
-
-  /**
-   * Converts extracts the value from a boolean literal.
-   *
-   * @throws ClassCastException if the value is not a boolean literal
-   *
-   * @deprecated Use {@link #booleanValue()}
-   */
-  public static boolean booleanValue(SqlNode node) {
-    Bug.upgrade("remove after 0.6");
-    return (Boolean) ((SqlLiteral) node).value;
-  }
-
-  /**
-   * Extracts the enumerated value from a symbol literal.
-   *
-   * @throws ClassCastException if the value is not a symbol literal
-   * @see #createSymbol(SqlSymbol, SqlParserPos)
-   *
-   * @deprecated Use {@link #symbolValue()}
-   */
-  public static SqlSymbol symbolValue(SqlNode node) {
-    Bug.upgrade("remove after 0.6");
-    return (SqlSymbol) ((SqlLiteral) node).value;
   }
 
   /**
@@ -600,15 +576,18 @@ public class SqlLiteral extends SqlNode {
   public static SqlTimestampLiteral createTimestamp(
       Calendar calendar,
       int precision,
+      String timeZone,
       SqlParserPos pos) {
-    return new SqlTimestampLiteral(calendar, precision, false, pos);
+    return new SqlTimestampLiteral(calendar, precision, timeZone,
+        DateTimeUtil.TIMESTAMP_FORMAT_STRING, pos);
   }
 
   public static SqlTimeLiteral createTime(
       Calendar calendar,
       int precision,
       SqlParserPos pos) {
-    return new SqlTimeLiteral(calendar, precision, false, pos);
+    return new SqlTimeLiteral(calendar, precision, null,
+        DateTimeUtil.TIME_FORMAT_STRING, pos);
   }
 
   /**

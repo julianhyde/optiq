@@ -485,8 +485,17 @@ public class SqlParserTest {
     checkExp("cast(x as date)", "CAST(`X` AS DATE)");
     checkExp("cast(x as time)", "CAST(`X` AS TIME)");
     checkExp("cast(x as timestamp)", "CAST(`X` AS TIMESTAMP)");
+    checkExp("cast(x as timestamp with time zone)",
+        "CAST(`X` AS TIMESTAMP WITH TIME ZONE)");
+    checkExpFails("cast(x as timestamp ^with^ timezone)",
+        "(?s)Encountered \"with timezone\" at line 1, column 21\\.\n.*");
     checkExp("cast(x as time(0))", "CAST(`X` AS TIME(0))");
-    checkExp("cast(x as timestamp(0))", "CAST(`X` AS TIMESTAMP(0))");
+    // precision is ignored currently
+    checkExp("cast(x as timestamp(0))", "CAST(`X` AS TIMESTAMP)");
+    checkExp("cast(x as timestamp(0) with time zone)",
+        "CAST(`X` AS TIMESTAMP WITH TIME ZONE)");
+    checkExpFails("cast(x as timestamp(0) ^with^ timezone)",
+        "(?s)Encountered \"with timezone\" at line 1, column 24\\.\n.*");
     checkExp("cast(x as decimal(1,1))", "CAST(`X` AS DECIMAL(1, 1))");
     checkExp("cast(x as char(1))", "CAST(`X` AS CHAR(1))");
     checkExp("cast(x as binary(1))", "CAST(`X` AS BINARY(1))");
@@ -1262,6 +1271,9 @@ public class SqlParserTest {
     checkExp(
         "TIMESTAMP '2004-06-01 15:55:55.9999'",
         "TIMESTAMP '2004-06-01 15:55:56.000'");
+    checkExpSame("TIMESTAMP '2004-06-01 15:55:55 -8:00'");
+    checkExpSame("TIMESTAMP '2004-06-01 15:55:55.900 z'");
+    checkExpSame("TIMESTAMP '2004-06-01 15:55:55.900 US/Pacific'");
     checkExpSame("NULL");
   }
 
@@ -2328,10 +2340,10 @@ public class SqlParserTest {
     checkExpSame("TIMESTAMP '2004-12-01 12:01:01.1'");
 
     // Failures.
-    checkFails("^DATE '12/21/99'^", "(?s).*Illegal DATE literal.*");
-    checkFails("^TIME '1230:33'^", "(?s).*Illegal TIME literal.*");
-    checkFails("^TIME '12:00:00 PM'^", "(?s).*Illegal TIME literal.*");
-    checkFails(
+    checkExpFails("^DATE '12/21/99'^", "(?s).*Illegal DATE literal.*");
+    checkExpFails("^TIME '1230:33'^", "(?s).*Illegal TIME literal.*");
+    checkExpFails("^TIME '12:00:00PM'^", "(?s).*Illegal TIME literal.*");
+    checkExpFails(
         "^TIMESTAMP '12-21-99, 12:30:00'^",
         "(?s).*Illegal TIMESTAMP literal.*");
   }

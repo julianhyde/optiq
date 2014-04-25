@@ -380,8 +380,8 @@ JAVACODE SqlDateLiteral parseDateLiteral(String s, SqlParserPos pos) {
 JAVACODE SqlTimeLiteral parseTimeLiteral(String s, SqlParserPos pos) {
     String dateStr = SqlParserUtil.parseString(s);
     DateTimeUtil.PrecisionTime pt =
-    DateTimeUtil.parsePrecisionDateTimeLiteral(
-        dateStr, DateTimeUtil.TIME_FORMAT_STRING, DateTimeUtil.GMT_ZONE);
+        DateTimeUtil.parsePrecisionDateTimeLiteral(
+            dateStr, DateTimeUtil.TIME_FORMAT_STRING, DateTimeUtil.GMT_ZONE);
     if (null == pt) {
         throw SqlUtil.newContextException(pos,
             RESOURCE.illegalLiteral("TIME", s,
@@ -400,7 +400,8 @@ JAVACODE SqlTimestampLiteral parseTimestampLiteral(String s, SqlParserPos pos) {
             RESOURCE.illegalLiteral("TIMESTAMP", s,
                 RESOURCE.badFormat(DateTimeUtil.TIMESTAMP_FORMAT_STRING).str()));
     }
-    return SqlLiteral.createTimestamp(pt.getCalendar(), pt.getPrecision(), pos);
+    return SqlLiteral.createTimestamp(pt.getCalendar(), pt.getPrecision(),
+        pt.timeZone, pos);
 }
 
 JAVACODE SqlIntervalLiteral parseIntervalLiteral(
@@ -3506,6 +3507,7 @@ SqlIdentifier TypeName() :
 {
     SqlIdentifier typeName = null;
     SqlParserPos pos = getPos();
+    int precision;
 }
 {
     (
@@ -3541,6 +3543,18 @@ SqlIdentifier TypeName() :
             typeName = new SqlIdentifier(
                 SqlTypeName.TIMESTAMP.name(),pos);
         }
+        [
+            // precision is accepted but ignored
+            <LPAREN>
+            precision = UnsignedIntLiteral()
+            <RPAREN>
+        ]
+        [
+            <WITH> <TIME> <ZONE> {
+                typeName = new SqlIdentifier(
+                    SqlTypeName.TIMESTAMP_WITH_TIMEZONE.name(),pos);
+            }
+        ]
         | (<DECIMAL> | <DEC> | <NUMERIC>)
         {
             typeName = new SqlIdentifier(

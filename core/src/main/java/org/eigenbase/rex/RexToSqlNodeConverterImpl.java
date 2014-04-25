@@ -83,9 +83,7 @@ public class RexToSqlNodeConverterImpl implements RexToSqlNodeConverter {
     if (SqlTypeFamily.TIMESTAMP.getTypeNames().contains(
         literal.getTypeName())) {
       return SqlLiteral.createTimestamp(
-          (Calendar) literal.getValue(),
-          0,
-          SqlParserPos.ZERO);
+          (Calendar) literal.getValue(), 0, null, SqlParserPos.ZERO);
     }
 
     // Date
