@@ -489,9 +489,14 @@ public class SqlParserTest {
         "CAST(`X` AS TIMESTAMP WITH TIME ZONE)");
     checkExpFails("cast(x as timestamp ^with^ timezone)",
         "(?s)Encountered \"with timezone\" at line 1, column 21\\.\n.*");
+    // "timestamp without time zone" is synonym for "timestamp"
+    checkExp("cast(x as timestamp without time zone)",
+        "CAST(`X` AS TIMESTAMP)");
     checkExp("cast(x as time(0))", "CAST(`X` AS TIME(0))");
     // precision is ignored currently
     checkExp("cast(x as timestamp(0))", "CAST(`X` AS TIMESTAMP)");
+    checkExp("cast(x as timestamp(0) without time zone)",
+        "CAST(`X` AS TIMESTAMP)");
     checkExp("cast(x as timestamp(0) with time zone)",
         "CAST(`X` AS TIMESTAMP WITH TIME ZONE)");
     checkExpFails("cast(x as timestamp(0) ^with^ timezone)",

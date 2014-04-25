@@ -3550,6 +3550,9 @@ SqlIdentifier TypeName() :
             <RPAREN>
         ]
         [
+            // TIMESTAMP WITHOUT TIME ZONE is synonym for TIMESTAMP
+            <WITHOUT> <TIME> <ZONE>
+        |
             <WITH> <TIME> <ZONE> {
                 typeName = new SqlIdentifier(
                     SqlTypeName.TIMESTAMP_WITH_TIMEZONE.name(),pos);
