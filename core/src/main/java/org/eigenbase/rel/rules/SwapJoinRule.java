@@ -92,7 +92,7 @@ public class SwapJoinRule extends RelOptRule {
     // that the planner tries the desired order (semijoins after swaps).
     JoinRelBase newJoin =
         join.copy(join.getTraitSet(), condition, join.getRight(),
-            join.getLeft(), joinType.swap());
+            join.getLeft(), joinType.swap(), join.mapping);
     final Mapping mapping = RelOptUtil.createJoinMapping(newJoin, join, true);
     return newJoin.permute(mapping);
   }

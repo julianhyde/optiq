@@ -117,7 +117,7 @@ public final class CorrelatorRel extends JoinRelBase {
 
   @Override
   public CorrelatorRel copy(RelTraitSet traitSet, RexNode conditionExpr,
-      RelNode left, RelNode right, JoinRelType joinType) {
+      RelNode left, RelNode right, JoinRelType joinType, Mapping mapping) {
     assert traitSet.containsIfApplicable(Convention.NONE);
     return new CorrelatorRel(getCluster(), left, right, joinType, mapping,
         correlations);

@@ -76,17 +76,11 @@ public final class SemiJoinRel extends JoinRelBase {
   //~ Methods ----------------------------------------------------------------
 
   @Override
-  public SemiJoinRel copy(RelTraitSet traitSet, RexNode conditionExpr,
-      RelNode left, RelNode right, JoinRelType joinType) {
+  public SemiJoinRel copy(RelTraitSet traitSet, RexNode condition,
+      RelNode left, RelNode right, JoinRelType joinType, Mapping mapping) {
     assert joinType == JoinRelType.INNER;
-    return new SemiJoinRel(
-        getCluster(),
-        left,
-        right,
-        conditionExpr,
-        getLeftKeys(),
-        getRightKeys(),
-        mapping);
+    return new SemiJoinRel(getCluster(), left, right, condition, getLeftKeys(),
+        getRightKeys(), mapping);
   }
 
   // implement RelNode

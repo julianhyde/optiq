@@ -1298,7 +1298,6 @@ public class JdbcTest {
    * <a href="https://github.com/julianhyde/optiq/issues/92">#92</a>, "Project
    * should be optimized away, not converted to EnumerableCalcRel".</p>
    */
-  @Ignore
   @Test public void testNoCalcBetweenJoins() throws IOException {
     final FoodmartTest.FoodMartQuerySet set =
         FoodmartTest.FoodMartQuerySet.instance();

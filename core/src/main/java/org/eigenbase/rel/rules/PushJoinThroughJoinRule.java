@@ -168,7 +168,7 @@ public class PushJoinThroughJoinRule extends RelOptRule {
         RexUtil.composeConjunction(rexBuilder, newBottomList, false);
     final JoinRelBase newBottomJoin =
         bottomJoin.copy(bottomJoin.getTraitSet(), newBottomCondition, relA,
-            relC, bottomJoin.getJoinType());
+            relC, bottomJoin.getJoinType(), bottomJoin.mapping);
 
     // target: | A       | C      | B |
     // source: | A       | B | C      |
@@ -188,7 +188,7 @@ public class PushJoinThroughJoinRule extends RelOptRule {
     @SuppressWarnings("SuspiciousNameCombination")
     final JoinRelBase newTopJoin =
         topJoin.copy(topJoin.getTraitSet(), newTopCondition, newBottomJoin,
-            relB, topJoin.getJoinType());
+            relB, topJoin.getJoinType(), topJoin.mapping);
 
     assert !Mappings.isIdentity(topMapping);
     final RelNode newProject = RelFactories.createProject(projectFactory,
@@ -276,7 +276,7 @@ public class PushJoinThroughJoinRule extends RelOptRule {
         RexUtil.composeConjunction(rexBuilder, newBottomList, false);
     final JoinRelBase newBottomJoin =
         bottomJoin.copy(bottomJoin.getTraitSet(), newBottomCondition, relC,
-            relB, bottomJoin.getJoinType());
+            relB, bottomJoin.getJoinType(), bottomJoin.mapping);
 
     // target: | C      | B | A       |
     // source: | A       | B | C      |
@@ -296,7 +296,7 @@ public class PushJoinThroughJoinRule extends RelOptRule {
     @SuppressWarnings("SuspiciousNameCombination")
     final JoinRelBase newTopJoin =
         topJoin.copy(topJoin.getTraitSet(), newTopCondition, newBottomJoin,
-            relA, topJoin.getJoinType());
+            relA, topJoin.getJoinType(), topJoin.mapping);
 
     final RelNode newProject = RelFactories.createProject(projectFactory,
         newTopJoin, Mappings.asList(topMapping));

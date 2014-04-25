@@ -169,12 +169,9 @@ public abstract class PushFilterPastJoinRule extends RelOptRule {
       joinFilter =
           RexUtil.composeConjunction(rexBuilder, joinFilters, true);
     }
-    RelNode newJoinRel = join.copy(
-      join.getCluster().traitSetOf(Convention.NONE),
-      joinFilter,
-      leftRel,
-      rightRel,
-      join.getJoinType());
+    RelNode newJoinRel =
+        join.copy(join.getCluster().traitSetOf(Convention.NONE), joinFilter,
+            leftRel, rightRel, join.getJoinType(), join.mapping);
     call.getPlanner().onCopy(join, newJoinRel);
 
     // create a FilterRel on top of the join if needed

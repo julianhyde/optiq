@@ -876,7 +876,6 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
     addRule(SwapJoinRule.INSTANCE);
     addRule(RemoveDistinctRule.INSTANCE);
     addRule(UnionToDistinctRule.INSTANCE);
-    addRule(RemoveTrivialProjectRule.INSTANCE);
     addRule(RemoveTrivialCalcRule.INSTANCE);
     addRule(RemoveSortRule.INSTANCE);
 

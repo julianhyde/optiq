@@ -202,7 +202,7 @@ public class JdbcRules {
 
     @Override
     public JdbcJoinRel copy(RelTraitSet traitSet, RexNode conditionExpr,
-        RelNode left, RelNode right, JoinRelType joinType) {
+        RelNode left, RelNode right, JoinRelType joinType, Mapping mapping) {
       try {
         return new JdbcJoinRel(getCluster(), traitSet, left, right,
             conditionExpr, joinType, mapping, variablesStopped);

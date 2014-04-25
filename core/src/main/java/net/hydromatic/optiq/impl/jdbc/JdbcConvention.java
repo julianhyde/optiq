@@ -20,7 +20,6 @@ package net.hydromatic.optiq.impl.jdbc;
 import net.hydromatic.linq4j.expressions.Expression;
 
 import org.eigenbase.rel.rules.PushFilterPastSetOpRule;
-import org.eigenbase.rel.rules.RemoveTrivialProjectRule;
 import org.eigenbase.relopt.Convention;
 import org.eigenbase.relopt.RelOptPlanner;
 import org.eigenbase.relopt.RelOptRule;
@@ -66,7 +65,6 @@ public class JdbcConvention extends Convention.Impl {
       planner.addRule(rule);
     }
     planner.addRule(PushFilterPastSetOpRule.INSTANCE);
-    planner.addRule(RemoveTrivialProjectRule.INSTANCE);
   }
 }
 

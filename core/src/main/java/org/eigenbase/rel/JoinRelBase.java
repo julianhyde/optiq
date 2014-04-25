@@ -371,7 +371,7 @@ public abstract class JoinRelBase extends AbstractRelNode {
   public final JoinRelBase copy(RelTraitSet traitSet, List<RelNode> inputs) {
     assert inputs.size() == 2;
     return copy(traitSet, getCondition(), inputs.get(0), inputs.get(1),
-        joinType);
+        joinType, mapping);
   }
 
   /**
@@ -384,10 +384,23 @@ public abstract class JoinRelBase extends AbstractRelNode {
    * @param left          Left input
    * @param right         Right input
    * @param joinType      Join type
+   * @param mapping       Output field mapping
    * @return Copy of this join
    */
   public abstract JoinRelBase copy(RelTraitSet traitSet, RexNode conditionExpr,
-      RelNode left, RelNode right, JoinRelType joinType);
+      RelNode left, RelNode right, JoinRelType joinType, Mapping mapping);
+
+  @Override public boolean canPermute() {
+    return true;
+  }
+
+  @Override public RelNode permute(Mapping mapping) {
+    final Mapping newMapping = Mappings.compose(this.mapping, mapping);
+    if (newMapping == null || newMapping.isIdentity()) {
+      return this;
+    }
+    return copy(traitSet, condition, left, right, joinType, mapping);
+  }
 }
 
 // End JoinRelBase.java

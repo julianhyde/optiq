@@ -125,18 +125,10 @@ public final class JoinRel extends JoinRelBase {
 
   @Override
   public JoinRel copy(RelTraitSet traitSet, RexNode conditionExpr, RelNode left,
-      RelNode right, JoinRelType joinType) {
+      RelNode right, JoinRelType joinType, Mapping mapping) {
     assert traitSet.containsIfApplicable(Convention.NONE);
-    return new JoinRel(
-        getCluster(),
-        left,
-        right,
-        conditionExpr,
-        this.joinType,
-        this.mapping,
-        this.variablesStopped,
-        this.semiJoinDone,
-        systemFieldList);
+    return new JoinRel(getCluster(), left, right, conditionExpr, joinType,
+        mapping, this.variablesStopped, this.semiJoinDone, systemFieldList);
   }
 
   @Override public RelNode accept(RelShuttle shuttle) {
