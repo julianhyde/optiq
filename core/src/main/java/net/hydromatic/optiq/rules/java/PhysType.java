@@ -42,6 +42,13 @@ public interface PhysType {
    * example, in one row format, always returns {@code Object[].class}. */
   Type getJavaRowType();
 
+  /**
+   * Returns the Java class that is used to store the field with the given
+   * ordinal.
+   * For instance, when the java row type is Object[],
+   * java field type is Object even if the field is not nullable.*/
+  Type getJavaFieldType(int field);
+
   /** Returns the SQL row type. */
   RelDataType getRowType();
 
@@ -62,6 +69,22 @@ public interface PhysType {
    * @return Expression to access the field of the expression
    */
   Expression fieldReference(Expression expression, int field);
+
+  /** Generates a reference to a given field in an expression.
+   * This method optimizes for the target storage type (i.e. avoids casts).
+   *
+   * <p>For example given {@code expression=employee} and {@code field=2},
+   * generates</p>
+   * <pre>{@code employee.deptno}</pre>
+   *
+   *
+   * @param expression Expression
+   * @param field Ordinal of field
+   * @param storageType optional hint for storage class
+   * @return Expression to access the field of the expression
+   */
+  Expression fieldReference(Expression expression, int field,
+      Type storageType);
 
   /** Generates an accessor function for a given list of fields.  The resulting
    * object is a {@link List} (implementing {@link Object#hashCode()} and
