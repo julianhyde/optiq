@@ -90,13 +90,13 @@ public class MergeProjectRule extends RelOptRule {
       final Pair<RelNode, Mapping> bottomPair =
           RelOptUtil.splitProject(bottomProject);
       if (bottomPair != null) {
-        Mapping mapping = Mappings.compose(topPair.right, bottomPair.right);
+        Mapping mapping = Mappings.compose(bottomPair.right, topPair.right);
         if (mapping == null || mapping.isIdentity()) {
           // Composed mapping is the identity.
           call.transformTo(bottomProject.getChild());
         } else {
-          call.transformTo(RelOptUtil.project(bottomProject.getChild(),
-              mapping));
+          call.transformTo(
+              RelOptUtil.project(bottomProject.getChild(), mapping));
         }
         return;
       }

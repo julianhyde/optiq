@@ -814,7 +814,7 @@ public abstract class Mappings {
 
   public abstract static class FiniteAbstractMapping extends AbstractMapping {
     public Iterator<IntPair> iterator() {
-      return new FunctionMappingIter(this);
+      return new FunctionMappingIterator(this);
     }
 
     public int hashCode() {
@@ -829,24 +829,45 @@ public abstract class Mappings {
     }
   }
 
-  static class FunctionMappingIter implements Iterator<IntPair> {
+  static class FunctionMappingIterator implements Iterator<IntPair> {
     private int i = 0;
     private final FunctionMapping mapping;
 
-    FunctionMappingIter(FunctionMapping mapping) {
+    FunctionMappingIterator(FunctionMapping mapping) {
       this.mapping = mapping;
     }
 
     public boolean hasNext() {
-      return (i < mapping.getSourceCount())
-          || (mapping.getSourceCount() == -1);
+      final int sourceCount = mapping.getSourceCount();
+      return i < sourceCount || sourceCount == -1;
     }
 
     public IntPair next() {
       int x = i++;
-      return new IntPair(
-          x,
-          mapping.getTarget(x));
+      return new IntPair(x, mapping.getTarget(x));
+    }
+
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  static class InverseFunctionMappingIterator implements Iterator<IntPair> {
+    private int i = 0;
+    private final Mapping mapping;
+
+    InverseFunctionMappingIterator(Mapping mapping) {
+      this.mapping = mapping;
+    }
+
+    public boolean hasNext() {
+      final int targetCount = mapping.getTargetCount();
+      return i < targetCount || targetCount == -1;
+    }
+
+    public IntPair next() {
+      int x = i++;
+      return new IntPair(mapping.getSource(x), x);
     }
 
     public void remove() {
@@ -1753,6 +1774,10 @@ public abstract class Mappings {
 
     @Override public final int getSourceOpt(int target) {
       return getSource(target);
+    }
+
+    @Override public Iterator<IntPair> iterator() {
+      return new InverseFunctionMappingIterator(this);
     }
   }
 
