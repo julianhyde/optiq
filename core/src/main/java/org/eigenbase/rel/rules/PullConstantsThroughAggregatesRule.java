@@ -90,7 +90,9 @@ public class PullConstantsThroughAggregatesRule extends RelOptRule {
     if (constantList.size() == 0) {
       return;
     }
-    final int newGroupCount = groupCount - constantList.size();
+    // At least a single item in group by is required.
+    // Otherwise group by 1,2 might be altered to group by ()
+    final int newGroupCount = Math.min(groupCount - constantList.size(), 1);
     final RelNode newAggregate;
 
     // If the constants are on the trailing edge of the group list, we just
@@ -101,12 +103,8 @@ public class PullConstantsThroughAggregatesRule extends RelOptRule {
           new ArrayList<AggregateCall>();
       for (AggregateCall aggCall : aggregate.getAggCallList()) {
         newAggCalls.add(
-            new AggregateCall(
-                aggCall.getAggregation(),
-                aggCall.isDistinct(),
-                aggCall.getArgList(),
-                aggCall.getType(),
-                aggCall.getName()));
+            aggCall.adaptTo(child, aggCall.getArgList(), groupCount,
+                newGroupCount));
       }
       newAggregate =
           new AggregateRel(
@@ -150,12 +148,7 @@ public class PullConstantsThroughAggregatesRule extends RelOptRule {
           args.add(mapping.getTarget(arg));
         }
         newAggCalls.add(
-            new AggregateCall(
-                aggCall.getAggregation(),
-                aggCall.isDistinct(),
-                args,
-                aggCall.getType(),
-                aggCall.getName()));
+            aggCall.adaptTo(project, args, groupCount, newGroupCount));
       }
 
       // Aggregate on projection.

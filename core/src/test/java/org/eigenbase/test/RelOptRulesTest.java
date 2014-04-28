@@ -634,17 +634,54 @@ public class RelOptRulesTest extends RelOptTestBase {
         + "select cast(gender as varchar(128)) from sales.emps");
   }
 
-  @Ignore // assert failure
-  @Test public void testPushAggThroughUnion() throws Exception {
+  private void basePushAggThroughUnion() throws Exception {
     HepProgram program = new HepProgramBuilder()
         .addRuleInstance(PushProjectPastSetOpRule.INSTANCE)
+        .addRuleInstance(MergeProjectRule.INSTANCE)
         .addRuleInstance(PushAggregateThroughUnionRule.INSTANCE)
         .build();
-    checkPlanning(program,
-        "select ename,sum(empno),count(*) from "
-        + "(select * from emp as e1 union all "
-        + "select * from emp as e2) "
-        + "group by ename");
+    checkPlanning(program, "${sql}");
+  }
+
+  @Test public void testPushSumConstantThroughUnion() throws Exception {
+    basePushAggThroughUnion();
+  }
+
+  @Test public void testPushSumNullConstantThroughUnion() throws Exception {
+    basePushAggThroughUnion();
+  }
+
+  @Test public void testPushSumNullableThroughUnion() throws Exception {
+    basePushAggThroughUnion();
+  }
+
+  @Test public void testPushSumNullableNOGBYThroughUnion() throws
+      Exception {
+    basePushAggThroughUnion();
+  }
+
+  @Test public void testPushCountStarThroughUnion() throws Exception {
+    basePushAggThroughUnion();
+  }
+
+  @Test public void testPushCountNullableThroughUnion() throws Exception {
+    basePushAggThroughUnion();
+  }
+
+  @Test public void testPushMaxNullableThroughUnion() throws Exception {
+    basePushAggThroughUnion();
+  }
+
+  @Test public void testPushMinThroughUnion() throws Exception {
+    basePushAggThroughUnion();
+  }
+
+  @Test public void testPushAvgThroughUnion() throws Exception {
+    basePushAggThroughUnion();
+  }
+
+  @Test public void testPushSumCountStarThroughUnion() throws Exception {
+    basePushAggThroughUnion();
   }
 }
 
