@@ -683,6 +683,55 @@ public class RelOptRulesTest extends RelOptTestBase {
   @Test public void testPushSumCountStarThroughUnion() throws Exception {
     basePushAggThroughUnion();
   }
+
+  private void basePullConstantTroughAggregate() throws Exception {
+    HepProgram program = new HepProgramBuilder()
+        .addRuleInstance(MergeProjectRule.INSTANCE)
+        .addRuleInstance(PullConstantsThroughAggregatesRule.INSTANCE)
+        .addRuleInstance(MergeProjectRule.INSTANCE)
+        .build();
+    checkPlanning(program, "${sql}");
+  }
+
+  @Test public void testPullConstantThroughConstLast() throws
+      Exception {
+    basePullConstantTroughAggregate();
+  }
+
+  @Test public void testPullConstantThroughAggregateSimpleNonNullable() throws
+      Exception {
+    basePullConstantTroughAggregate();
+  }
+
+  @Test public void testPullConstantThroughAggregatePermuted() throws
+      Exception {
+    basePullConstantTroughAggregate();
+  }
+
+  @Test public void testPullConstantThroughAggregatePermutedConstFirst() throws
+      Exception {
+    basePullConstantTroughAggregate();
+  }
+
+  @Test public void testPullConstantThroughAggregatePermutedConstGroupBy()
+    throws Exception {
+    basePullConstantTroughAggregate();
+  }
+
+  @Test public void testPullConstantThroughAggregateConstGroupBy()
+    throws Exception {
+    basePullConstantTroughAggregate();
+  }
+
+  @Test public void testPullConstantThroughAggregateAllConst()
+    throws Exception {
+    basePullConstantTroughAggregate();
+  }
+
+  @Test public void testPullConstantThroughAggregateAllLiterals()
+    throws Exception {
+    basePullConstantTroughAggregate();
+  }
 }
 
 // End RelOptRulesTest.java

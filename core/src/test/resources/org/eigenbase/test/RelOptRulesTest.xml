@@ -972,4 +972,193 @@ AggregateRel(group=[{0}], EXPR$1=[SUM($1)], EXPR$2=[$SUM0($2)], EXPR$3=[MIN($3)]
 ]]>
         </Resource>
     </TestCase>
+    <TestCase name="testPullConstantThroughConstLast">
+        <Resource name="sql">
+            <![CDATA[select deptno, max(mgr) from (
+  select *, 4 as four, 2+3 as two_plus_three, deptno+42 as deptno42 from emp
+) group by deptno, four]]>
+        </Resource>
+        <Resource name="planBefore">
+            <![CDATA[
+ProjectRel(DEPTNO=[$0], EXPR$1=[$2])
+  AggregateRel(group=[{0, 1}], EXPR$1=[MAX($2)])
+    ProjectRel(DEPTNO=[$7], FOUR=[$9], MGR=[$3])
+      ProjectRel(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], SLACKER=[$8], FOUR=[4], TWO_PLUS_THREE=[+(2, 3)], DEPTNO42=[+($7, 42)])
+        TableAccessRel(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+        <Resource name="planAfter">
+            <![CDATA[
+ProjectRel(DEPTNO=[$0], EXPR$1=[$1])
+  AggregateRel(group=[{0}], EXPR$1=[MAX($2)])
+    ProjectRel(DEPTNO=[$7], FOUR=[4], MGR=[$3])
+      TableAccessRel(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+    </TestCase>
+    <TestCase name="testPullConstantThroughAggregateSimpleNonNullable">
+        <Resource name="sql">
+            <![CDATA[select deptno, max(ename) from (
+  select *, 4 as four, 2+3 as two_plus_three, deptno+42 as deptno42 from emp
+) group by deptno, four]]>
+        </Resource>
+        <Resource name="planBefore">
+            <![CDATA[
+ProjectRel(DEPTNO=[$0], EXPR$1=[$2])
+  AggregateRel(group=[{0, 1}], EXPR$1=[MAX($2)])
+    ProjectRel(DEPTNO=[$7], FOUR=[$9], ENAME=[$1])
+      ProjectRel(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], SLACKER=[$8], FOUR=[4], TWO_PLUS_THREE=[+(2, 3)], DEPTNO42=[+($7, 42)])
+        TableAccessRel(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+        <Resource name="planAfter">
+            <![CDATA[
+ProjectRel(DEPTNO=[$0], EXPR$1=[$1])
+  AggregateRel(group=[{0}], EXPR$1=[MAX($2)])
+    ProjectRel(DEPTNO=[$7], FOUR=[4], ENAME=[$1])
+      TableAccessRel(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+    </TestCase>
+    <TestCase name="testPullConstantThroughAggregatePermuted">
+        <Resource name="sql">
+            <![CDATA[select deptno, max(mgr) from (
+  select *, 4 as four, 2+3 as two_plus_three, deptno+42 as deptno42 from emp
+) group by deptno, four, two_plus_three, deptno42]]>
+        </Resource>
+        <Resource name="planBefore">
+            <![CDATA[
+ProjectRel(DEPTNO=[$0], EXPR$1=[$4])
+  AggregateRel(group=[{0, 1, 2, 3}], EXPR$1=[MAX($4)])
+    ProjectRel(DEPTNO=[$7], FOUR=[$9], TWO_PLUS_THREE=[$10], DEPTNO42=[$11], MGR=[$3])
+      ProjectRel(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], SLACKER=[$8], FOUR=[4], TWO_PLUS_THREE=[+(2, 3)], DEPTNO42=[+($7, 42)])
+        TableAccessRel(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+        <Resource name="planAfter">
+            <![CDATA[
+ProjectRel(DEPTNO=[$0], EXPR$1=[$2])
+  AggregateRel(group=[{0, 1}], EXPR$1=[MAX($4)])
+    ProjectRel(DEPTNO=[$7], DEPTNO42=[+($7, 42)], FOUR=[4], TWO_PLUS_THREE=[+(2, 3)], MGR=[$3])
+      TableAccessRel(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+    </TestCase>
+    <TestCase name="testPullConstantThroughAggregatePermutedConstFirst">
+        <Resource name="sql">
+            <![CDATA[select deptno, max(mgr) from (
+  select *, 4 as four, 2+3 as two_plus_three, deptno+42 as deptno42 from emp
+) group by four, deptno]]>
+        </Resource>
+        <Resource name="planBefore">
+            <![CDATA[
+ProjectRel(DEPTNO=[$1], EXPR$1=[$2])
+  AggregateRel(group=[{0, 1}], EXPR$1=[MAX($2)])
+    ProjectRel(FOUR=[$9], DEPTNO=[$7], MGR=[$3])
+      ProjectRel(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], SLACKER=[$8], FOUR=[4], TWO_PLUS_THREE=[+(2, 3)], DEPTNO42=[+($7, 42)])
+        TableAccessRel(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+        <Resource name="planAfter">
+            <![CDATA[
+ProjectRel(DEPTNO=[$0], EXPR$1=[$1])
+  AggregateRel(group=[{0}], EXPR$1=[MAX($2)])
+    ProjectRel(DEPTNO=[$7], FOUR=[4], MGR=[$3])
+      TableAccessRel(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+    </TestCase>
+    <TestCase name="testPullConstantThroughAggregatePermutedConstGroupBy">
+        <Resource name="sql">
+            <![CDATA[select deptno, max(mgr) from (
+  select *, 4 as four, 2+3 as two_plus_three, deptno+42 as deptno42 from emp
+) group by 42+24, deptno]]>
+        </Resource>
+        <Resource name="planBefore">
+            <![CDATA[
+ProjectRel(DEPTNO=[$1], EXPR$1=[$2])
+  AggregateRel(group=[{0, 1}], EXPR$1=[MAX($2)])
+    ProjectRel($f0=[+(42, 24)], DEPTNO=[$7], MGR=[$3])
+      ProjectRel(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], SLACKER=[$8], FOUR=[4], TWO_PLUS_THREE=[+(2, 3)], DEPTNO42=[+($7, 42)])
+        TableAccessRel(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+        <Resource name="planAfter">
+            <![CDATA[
+ProjectRel(DEPTNO=[$0], EXPR$1=[$1])
+  AggregateRel(group=[{0}], EXPR$1=[MAX($2)])
+    ProjectRel(DEPTNO=[$7], $f0=[+(42, 24)], MGR=[$3])
+      TableAccessRel(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+    </TestCase>
+    <TestCase name="testPullConstantThroughAggregateConstGroupBy">
+        <Resource name="sql">
+            <![CDATA[select 4, 2+3, max(mgr) from (
+  select *, 4 as four, 2+3 as two_plus_three, deptno+42 as deptno42 from emp
+) group by 4, 2+3]]>
+        </Resource>
+        <Resource name="planBefore">
+            <![CDATA[
+AggregateRel(group=[{0, 1}], EXPR$2=[MAX($2)])
+  ProjectRel(EXPR$0=[4], EXPR$1=[+(2, 3)], MGR=[$3])
+    ProjectRel(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], SLACKER=[$8], FOUR=[4], TWO_PLUS_THREE=[+(2, 3)], DEPTNO42=[+($7, 42)])
+      TableAccessRel(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+        <Resource name="planAfter">
+            <![CDATA[
+ProjectRel(EXPR$0=[$0], EXPR$1=[+(2, 3)], EXPR$2=[$1])
+  AggregateRel(group=[{0}], EXPR$2=[MAX($2)])
+    ProjectRel(EXPR$0=[4], EXPR$1=[+(2, 3)], MGR=[$3])
+      TableAccessRel(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+    </TestCase>
+    <TestCase name="testPullConstantThroughAggregateAllConst">
+        <Resource name="sql">
+            <![CDATA[select 4, 2+3, max(five) from (
+  select *, 4 as four, 2+3 as two_plus_three, 5 as five, deptno+42 as deptno42 from emp
+) group by 4, 2+3]]>
+        </Resource>
+        <Resource name="planBefore">
+            <![CDATA[
+AggregateRel(group=[{0, 1}], EXPR$2=[MAX($2)])
+  ProjectRel(EXPR$0=[4], EXPR$1=[+(2, 3)], FIVE=[$11])
+    ProjectRel(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], SLACKER=[$8], FOUR=[4], TWO_PLUS_THREE=[+(2, 3)], FIVE=[5], DEPTNO42=[+($7, 42)])
+      TableAccessRel(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+        <Resource name="planAfter">
+            <![CDATA[
+ProjectRel(EXPR$0=[$0], EXPR$1=[+(2, 3)], EXPR$2=[$1])
+  AggregateRel(group=[{0}], EXPR$2=[MAX($2)])
+    ProjectRel(EXPR$0=[4], EXPR$1=[+(2, 3)], FIVE=[5])
+      TableAccessRel(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+    </TestCase>
+    <TestCase name="testPullConstantThroughAggregateAllLiterals">
+        <Resource name="sql">
+            <![CDATA[select 4, 2+3, max(5) from (
+  select *, 4 as four, 2+3 as two_plus_three, 5 as five, deptno+42 as deptno42 from emp
+) group by 4, 2+3]]>
+        </Resource>
+        <Resource name="planBefore">
+            <![CDATA[
+AggregateRel(group=[{0, 1}], EXPR$2=[MAX($2)])
+  ProjectRel(EXPR$0=[4], EXPR$1=[+(2, 3)], $f2=[5])
+    ProjectRel(EMPNO=[$0], ENAME=[$1], JOB=[$2], MGR=[$3], HIREDATE=[$4], SAL=[$5], COMM=[$6], DEPTNO=[$7], SLACKER=[$8], FOUR=[4], TWO_PLUS_THREE=[+(2, 3)], FIVE=[5], DEPTNO42=[+($7, 42)])
+      TableAccessRel(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+        <Resource name="planAfter">
+            <![CDATA[
+ProjectRel(EXPR$0=[$0], EXPR$1=[+(2, 3)], EXPR$2=[$1])
+  AggregateRel(group=[{0}], EXPR$2=[MAX($2)])
+    ProjectRel(EXPR$0=[4], EXPR$1=[+(2, 3)], $f2=[5])
+      TableAccessRel(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+    </TestCase>
 </Root>
