@@ -85,9 +85,11 @@ public abstract class JoinRelBase extends AbstractRelNode {
     assert joinType != null;
     assert condition != null;
     this.joinType = joinType;
-    this.mapping = mapping;
-    assert mapping == null
-        || mapping.getSourceCount()
+    this.mapping = mapping != null
+        ? mapping
+        : Mappings.createIdentity(left.getRowType().getFieldCount()
+            + right.getRowType().getFieldCount());
+    assert this.mapping.getSourceCount()
         == left.getRowType().getFieldCount()
         + right.getRowType().getFieldCount();
   }
@@ -198,8 +200,7 @@ public abstract class JoinRelBase extends AbstractRelNode {
         .input("right", right)
         .item("condition", condition)
         .item("joinType", joinType.name().toLowerCase())
-        .itemIf("mapping", mapping,
-            mapping != null && !Mappings.isIdentity(mapping))
+        .itemIf("mapping", mapping, !mapping.isIdentity())
         .itemIf(
             "systemFields",
             getSystemFieldList(),
@@ -394,12 +395,12 @@ public abstract class JoinRelBase extends AbstractRelNode {
     return true;
   }
 
-  @Override public RelNode permute(Mapping mapping) {
+  @Override public JoinRelBase permute(Mapping mapping) {
     final Mapping newMapping = Mappings.compose(this.mapping, mapping);
-    if (newMapping == null || newMapping.isIdentity()) {
+    if (Mappings.equal(this.mapping, newMapping)) {
       return this;
     }
-    return copy(traitSet, condition, left, right, joinType, mapping);
+    return copy(traitSet, condition, left, right, joinType, newMapping);
   }
 }
 

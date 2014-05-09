@@ -79,6 +79,8 @@ public interface Mapping
    * Returns the number of elements in the mapping.
    */
   int size();
+
+  String toLongString();
 }
 
 // End Mapping.java

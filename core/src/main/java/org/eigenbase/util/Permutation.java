@@ -83,6 +83,10 @@ public class Permutation implements Mapping, Mappings.TargetMapping {
 
   //~ Methods ----------------------------------------------------------------
 
+  public String toLongString() {
+    return toString();
+  }
+
   public Object clone() {
     return new Permutation(
         targets.clone(),

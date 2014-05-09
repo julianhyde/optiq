@@ -20,7 +20,6 @@ package org.eigenbase.rel.rules;
 import java.util.*;
 
 import org.eigenbase.rel.*;
-import org.eigenbase.rel.RelFactories.ProjectFactory;
 import org.eigenbase.relopt.*;
 import org.eigenbase.reltype.*;
 import org.eigenbase.rex.*;
@@ -39,21 +38,17 @@ public class SwapJoinRule extends RelOptRule {
   /** The singleton. */
   public static final SwapJoinRule INSTANCE = new SwapJoinRule();
 
-  private final ProjectFactory projectFactory;
-
   //~ Constructors -----------------------------------------------------------
 
   /**
    * Creates a SwapJoinRule.
    */
   private SwapJoinRule() {
-    this(JoinRel.class, RelFactories.DEFAULT_PROJECT_FACTORY);
+    this(JoinRel.class);
   }
 
-  public SwapJoinRule(Class<? extends JoinRelBase> clazz,
-      ProjectFactory projectFactory) {
+  public SwapJoinRule(Class<? extends JoinRelBase> clazz) {
     super(operand(clazz, any()));
-    this.projectFactory = projectFactory;
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -118,16 +113,20 @@ public class SwapJoinRule extends RelOptRule {
             : (JoinRelBase) swapped.getInput(0);
     call.transformTo(swapped);
 
-    // We have converted join='a join b' into swapped='select
-    // a0,a1,a2,b0,b1 from b join a'. Now register that project='select
-    // b0,b1,a0,a1,a2 from (select a0,a1,a2,b0,b1 from b join a)' is the
-    // same as 'b join a'. If we didn't do this, the swap join rule
-    // would fire on the new join, ad infinitum.
-    final Mapping mapping = RelOptUtil.createJoinMapping(newJoin, join, false);
-    RelNode project = swapped.permute(mapping);
+    if (false) {
+      // We have converted join='a join b' into swapped='select
+      // a0,a1,a2,b0,b1 from b join a'. Now register that project='select
+      // b0,b1,a0,a1,a2 from (select a0,a1,a2,b0,b1 from b join a)' is the
+      // same as 'b join a'. If we didn't do this, the swap join rule
+      // would fire on the new join, ad infinitum.
+      final Mapping mapping = RelOptUtil.createJoinMapping(newJoin,
+          join,
+          false);
+      RelNode project = swapped.permute(mapping);
 
-    RelNode rel = call.getPlanner().ensureRegistered(project, newJoin);
-    Util.discard(rel);
+      RelNode rel = call.getPlanner().ensureRegistered(project, newJoin);
+      Util.discard(rel);
+    }
   }
 
   //~ Inner Classes ----------------------------------------------------------

@@ -982,6 +982,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
     }
 
     final ImmutableSet<String> variablesStopped = ImmutableSet.of();
+    assert rel.mapping.isIdentity();
     RelNode newRel =
         new JoinRel(
             rel.getCluster(),
@@ -989,7 +990,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
             newRightRel,
             condition,
             rel.getJoinType(),
-            rel.mapping,
+            null,
             variablesStopped);
 
     mapOldToNewRel.put(rel, newRel);

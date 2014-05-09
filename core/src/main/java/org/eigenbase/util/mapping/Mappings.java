@@ -18,6 +18,7 @@
 package org.eigenbase.util.mapping;
 
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eigenbase.util.*;
 
@@ -33,6 +34,9 @@ import net.hydromatic.optiq.util.BitSets;
  * @see Permutation
  */
 public abstract class Mappings {
+  @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+  private static final IdentityCache IDENTITY_CACHE = new IdentityCache();
+
   //~ Constructors -----------------------------------------------------------
 
   private Mappings() {
@@ -81,7 +85,7 @@ public abstract class Mappings {
   }
 
   /**
-   * Creates the identity mapping.
+   * Creates the identity mapping, or gets one from cache.
    *
    * <p>For example, {@code createIdentity(2)} returns the mapping
    * {0:0, 1:1, 2:2}.
@@ -90,7 +94,7 @@ public abstract class Mappings {
    * @return Identity mapping
    */
   public static IdentityMapping createIdentity(int fieldCount) {
-    return new Mappings.IdentityMapping(fieldCount);
+    return IDENTITY_CACHE.get(fieldCount);
   }
 
   /**
@@ -334,21 +338,6 @@ public abstract class Mappings {
   }
 
   /**
-   * Returns whether a mapping is the identity.
-   */
-  public static boolean isIdentity(TargetMapping mapping) {
-    if (mapping.getSourceCount() != mapping.getTargetCount()) {
-      return false;
-    }
-    for (int i = 0; i < mapping.getSourceCount(); i++) {
-      if (mapping.getTargetOpt(i) != i) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  /**
    * Creates a mapping that consists of a set of contiguous ranges.
    *
    * <p>For example,</p>
@@ -383,8 +372,7 @@ public abstract class Mappings {
    *                    {@code (target, source, count)}
    * @return Mapping that maps from source ranges to target ranges
    */
-  public static TargetMapping createShiftMapping(
-      int sourceCount, int... ints) {
+  public static Mapping createShiftMapping(int sourceCount, int... ints) {
     int targetCount = 0;
     assert ints.length % 3 == 0;
     for (int i = 0; i < ints.length; i += 3) {
@@ -393,7 +381,7 @@ public abstract class Mappings {
       final int top = target + length;
       targetCount = Math.max(targetCount, top);
     }
-    final TargetMapping mapping =
+    final Mapping mapping =
         create(
             MappingType.INVERSE_SURJECTION,
             sourceCount, // aCount + bCount + cCount,
@@ -415,14 +403,14 @@ public abstract class Mappings {
   /**
    * Creates a mapping by appending two mappings.
    */
-  public static TargetMapping append(
+  public static Mapping append(
       TargetMapping mapping0,
       TargetMapping mapping1) {
     final int s0 = mapping0.getSourceCount();
     final int s1 = mapping1.getSourceCount();
     final int t0 = mapping0.getTargetCount();
     final int t1 = mapping1.getTargetCount();
-    final TargetMapping mapping =
+    final Mapping mapping =
         create(MappingType.INVERSE_SURJECTION, s0 + s1, t0 + t1);
     for (int s = 0; s < s0; s++) {
       int t = mapping0.getTargetOpt(s);
@@ -538,22 +526,46 @@ public abstract class Mappings {
         mapping.getTargetCount() + offset);
   }
 
-
   /** Returns the composition of two mappings.
    *
    * <p>Left, right and return value may each be null; null means the identity
-   * mapping</p>
+   * mapping.</p>
    *
    * <p>For all x, compose(m1, m2)(x) = m1(m2(x)).</p>
    * @param left Left mapping (mapping applied second)
    * @param right Right mapping (mapping applied first)
-   * @return Composition
+   * @return Composition, or null if identity
    */
-  public static Mapping compose(final Mapping left, final Mapping right) {
+  public static Mapping composeNull(final Mapping left, final Mapping right) {
     if (left == null) {
       return right;
     }
     if (right == null) {
+      return left;
+    }
+    final Mapping mapping = compose(left, right);
+    if (mapping.isIdentity()) {
+      return null;
+    }
+    return mapping;
+  }
+
+  /** Returns the composition of two mappings.
+   *
+   * <p>Neither input, nor output, may be null</p>
+   *
+   * <p>For all x, compose(m1, m2)(x) = m1(m2(x)).</p>
+   * @param left Left mapping (mapping applied second)
+   * @param right Right mapping (mapping applied first)
+   * @return Composition, never null
+   */
+  public static Mapping compose(final Mapping left, final Mapping right) {
+    assert left != null;
+    assert right != null;
+    if (left.isIdentity()) {
+      return right;
+    }
+    if (right.isIdentity()) {
       return left;
     }
     if (left.getTargetCount() != right.getSourceCount()) {
@@ -583,6 +595,28 @@ public abstract class Mappings {
       }
     }
     return mapping;
+  }
+
+  /** Returns whether two mappings are equal.
+   *
+   * <p>Null mappings are equivalent to the identity (of any cardinality).</p>
+   */
+  public static boolean equal(Mapping m0, Mapping m1) {
+    if (m0 == m1) {
+      return true;
+    }
+    if (m0 == null) {
+      return m1.isIdentity();
+    }
+    if (m1 == null) {
+      return m0.isIdentity();
+    }
+    return m0.equals(m1);
+  }
+
+  /** Creates a bijection mapping. */
+  public static Mapping createBijection(int count) {
+    return create(MappingType.BIJECTION, count, count);
   }
 
   //~ Inner Interfaces -------------------------------------------------------
@@ -794,7 +828,7 @@ public abstract class Mappings {
      *
      * <p>This method relies upon the optional method {@link #iterator()}.
      */
-    public String toString() {
+    public String toLongString() {
       StringBuilder buf = new StringBuilder();
       buf.append("[size=").append(size())
           .append(", sourceCount=").append(getSourceCount())
@@ -809,6 +843,10 @@ public abstract class Mappings {
       }
       buf.append("]]");
       return buf.toString();
+    }
+
+    @Override public String toString() {
+      return toLongString();
     }
   }
 
@@ -1184,6 +1222,32 @@ public abstract class Mappings {
 
     public int getSource(int target) {
       return sources[target];
+    }
+
+    /** {@inheritDoc}
+     *
+     * <p>Prints a range of targets, for example "[4-7, 0-3]".</p>
+     */
+    @Override public String toString() {
+      StringBuilder buf = new StringBuilder("[");
+      int start = 0;
+      for (int i = 0; i < sources.length; i++) {
+        int source = sources[i];
+        if (i + 1 < sources.length && sources[i + 1] == source + 1) {
+          continue;
+        }
+        if (start > 0) {
+          buf.append(", ");
+        }
+        if (i - start > 0) {
+          buf.append(source - (i - start)).append('-').append(source);
+        } else {
+          buf.append(source);
+        }
+        start = i + 1;
+      }
+      buf.append("]");
+      return buf.toString();
     }
   }
 
@@ -1716,6 +1780,10 @@ public abstract class Mappings {
     public void set(int source, int target) {
       parent.set(target, source);
     }
+
+    public String toLongString() {
+      return toString();
+    }
   }
 
   private static class ImmutableSurjection
@@ -1831,6 +1899,35 @@ public abstract class Mappings {
 
     @Override public int getSourceOpt(int target) {
       return left.getSource(right.getSource(target));
+    }
+  }
+
+  /** List that populates itself on demand with identity mappings. */
+  private static class IdentityCache
+      extends CopyOnWriteArrayList<IdentityMapping> {
+    @Override public IdentityMapping get(final int index) {
+      for (;;) {
+        try {
+          return super.get(index);
+        } catch (IndexOutOfBoundsException e) {
+          if (index < 0) {
+            throw new IllegalArgumentException();
+          }
+          final int start = size();
+          final int end = Math.max(index + 1, start * 2);
+          addAll(
+              new AbstractList<IdentityMapping>() {
+                public IdentityMapping get(int index) {
+                  return new Mappings.IdentityMapping(start + index);
+                }
+
+                public int size() {
+                  return end - start;
+                }
+              }
+          );
+        }
+      }
     }
   }
 }

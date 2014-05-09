@@ -23,7 +23,7 @@ import org.eigenbase.rel.*;
 import org.eigenbase.rel.RelFactories.ProjectFactory;
 import org.eigenbase.relopt.*;
 import org.eigenbase.rex.*;
-import org.eigenbase.util.mapping.Mappings;
+import org.eigenbase.util.mapping.*;
 
 import net.hydromatic.optiq.util.BitSets;
 
@@ -128,11 +128,21 @@ public class PushJoinThroughJoinRule extends RelOptRule {
       return;
     }
 
+    // Permute the top condition so that it is in terms of the columns from
+    // A and B, not permuted using bottomJoin.mapping. Columns from C are not
+    // affected.
+    final RexNode topCondition =
+        topJoin.getCondition().accept(
+            new RexPermuteInputsShuttle(
+                Mappings.append(bottomJoin.mapping.inverse(),
+                    Mappings.createIdentity(cCount)),
+                relA, relB));
+
     // Split the condition of topJoin into a conjunction. Each of the
     // parts that does not use columns from B can be pushed down.
     final List<RexNode> intersecting = new ArrayList<RexNode>();
     final List<RexNode> nonIntersecting = new ArrayList<RexNode>();
-    split(topJoin.getCondition(), bBitSet, intersecting, nonIntersecting);
+    split(topCondition, bBitSet, intersecting, nonIntersecting);
 
     // If there's nothing to push down, it's not worth proceeding.
     if (nonIntersecting.isEmpty()) {
@@ -147,6 +157,7 @@ public class PushJoinThroughJoinRule extends RelOptRule {
         bottomJoin.getCondition(), bBitSet, bottomIntersecting,
         bottomNonIntersecting);
 
+    // Re-map the conditions that were in the top join, now in the bottom join.
     // target: | A       | C      |
     // source: | A       | B | C      |
     final Mappings.TargetMapping bottomMapping =
@@ -168,33 +179,50 @@ public class PushJoinThroughJoinRule extends RelOptRule {
         RexUtil.composeConjunction(rexBuilder, newBottomList, false);
     final JoinRelBase newBottomJoin =
         bottomJoin.copy(bottomJoin.getTraitSet(), newBottomCondition, relA,
-            relC, bottomJoin.getJoinType(), bottomJoin.mapping);
+            relC, bottomJoin.getJoinType(), null);
 
+    // Re-map the conditions that were in the bottom join, now in the top join.
     // target: | A       | C      | B |
     // source: | A       | B | C      |
-    final Mappings.TargetMapping topMapping =
+    final Mapping topMapping =
         Mappings.createShiftMapping(
             aCount + bCount + cCount,
             0, 0, aCount,
             aCount + cCount, aCount, bCount,
             aCount, aCount + bCount, cCount);
     List<RexNode> newTopList = new ArrayList<RexNode>();
-    new RexPermuteInputsShuttle(topMapping, newBottomJoin, relB)
-        .visitList(intersecting, newTopList);
-    new RexPermuteInputsShuttle(topMapping, newBottomJoin, relB)
-        .visitList(bottomIntersecting, newTopList);
+    final RexPermuteInputsShuttle shuttle =
+        new RexPermuteInputsShuttle(topMapping, newBottomJoin, relB);
+    shuttle.visitList(intersecting, newTopList);
+    shuttle.visitList(bottomIntersecting, newTopList);
     RexNode newTopCondition =
         RexUtil.composeConjunction(rexBuilder, newTopList, false);
+
+    // Compute the mapping from the old output to the new output.
+    final Mapping mapping = Mappings.createBijection(aCount + bCount + cCount);
+    for (int t = 0; t < mapping.getTargetCount(); t++) {
+      final int t2 = topJoin.mapping.getSource(t);
+      final int s = t2 < aCount + bCount
+          ? bottomJoin.mapping.getSource(t2)
+          : t2;
+      final int s2;
+      if (s >= aCount + bCount) {
+        s2 = s - bCount; // from input c
+      } else if (s >= aCount) {
+        s2 = s + cCount; // from input b
+      } else {
+        s2 = s; // from input a
+      }
+      mapping.set(s2, t);
+      System.out.println("aCount=" + aCount + ", bCount=" + bCount + ", cCount="
+          + cCount + ", s=" + s + ", s2=" + s2 + ", t=" + t + ", t2=" + t2);
+    }
     @SuppressWarnings("SuspiciousNameCombination")
     final JoinRelBase newTopJoin =
         topJoin.copy(topJoin.getTraitSet(), newTopCondition, newBottomJoin,
-            relB, topJoin.getJoinType(), topJoin.mapping);
+            relB, topJoin.getJoinType(), mapping);
 
-    assert !Mappings.isIdentity(topMapping);
-    final RelNode newProject = RelFactories.createProject(projectFactory,
-        newTopJoin, Mappings.asList(topMapping));
-
-    call.transformTo(newProject);
+    call.transformTo(newTopJoin);
   }
 
   /**
@@ -256,17 +284,18 @@ public class PushJoinThroughJoinRule extends RelOptRule {
 
     // target: | C      | B |
     // source: | A       | B | C      |
-    final Mappings.TargetMapping bottomMapping =
+    final int sourceCount = aCount + bCount + cCount;
+    final Mapping bottomMapping =
         Mappings.createShiftMapping(
-            aCount + bCount + cCount,
+            sourceCount,
             cCount, aCount, bCount,
             0, aCount + bCount, cCount);
     List<RexNode> newBottomList = new ArrayList<RexNode>();
     new RexPermuteInputsShuttle(bottomMapping, relC, relB)
         .visitList(nonIntersecting, newBottomList);
-    final Mappings.TargetMapping bottomBottomMapping =
+    final Mapping bottomBottomMapping =
         Mappings.createShiftMapping(
-            aCount + bCount + cCount,
+            sourceCount,
             0, aCount + bCount, cCount,
             cCount, aCount, bCount);
     new RexPermuteInputsShuttle(bottomBottomMapping, relC, relB)
@@ -276,13 +305,34 @@ public class PushJoinThroughJoinRule extends RelOptRule {
         RexUtil.composeConjunction(rexBuilder, newBottomList, false);
     final JoinRelBase newBottomJoin =
         bottomJoin.copy(bottomJoin.getTraitSet(), newBottomCondition, relC,
-            relB, bottomJoin.getJoinType(), bottomJoin.mapping);
+            relB, bottomJoin.getJoinType(), null);
 
     // target: | C      | B | A       |
     // source: | A       | B | C      |
-    final Mappings.TargetMapping topMapping =
+    final Mapping topMapping =
+        Mappings.create(MappingType.INVERSE_SURJECTION, sourceCount,
+            sourceCount);
+    for (int t = 0; t < sourceCount; t++) {
+      final int t2 = topJoin.mapping.getSource(t);
+      final int s = t2 < aCount + bCount
+          ? bottomJoin.mapping.getSource(t2)
+          : t2;
+      final int s2;
+      if (s >= aCount + bCount) {
+        s2 = s - aCount - bCount; // from input c
+      } else if (s >= aCount) {
+        s2 = s - aCount + cCount; // from input b
+      } else {
+        s2 = s + cCount + bCount; // from input a
+      }
+      System.out.println("aCount=" + aCount + ", bCount=" + bCount + ", cCount="
+          + cCount + ", s=" + s + ", s2=" + s2 + ", t=" + t + ", t2=" + t2);
+      topMapping.set(s2, t2);
+    }
+
+    Object o = // TODO: remove
         Mappings.createShiftMapping(
-            aCount + bCount + cCount,
+            sourceCount,
             cCount + bCount, 0, aCount,
             cCount, aCount, bCount,
             0, aCount + bCount, cCount);
@@ -296,12 +346,10 @@ public class PushJoinThroughJoinRule extends RelOptRule {
     @SuppressWarnings("SuspiciousNameCombination")
     final JoinRelBase newTopJoin =
         topJoin.copy(topJoin.getTraitSet(), newTopCondition, newBottomJoin,
-            relA, topJoin.getJoinType(), topJoin.mapping);
+            relA, topJoin.getJoinType(),
+            Mappings.compose(topMapping, topJoin.mapping));
 
-    final RelNode newProject = RelFactories.createProject(projectFactory,
-        newTopJoin, Mappings.asList(topMapping));
-
-    call.transformTo(newProject);
+    call.transformTo(newTopJoin);
   }
 
   /**

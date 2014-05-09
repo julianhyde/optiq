@@ -2142,18 +2142,22 @@ public abstract class RelOptUtil {
       RelNode newJoin,
       JoinRelBase origJoin,
       boolean origOrder) {
-    final List<RelDataTypeField> newJoinFields =
-        newJoin.getRowType().getFieldList();
+    return createJoinMapping(
+        origOrder,
+        origJoin.getLeft().getRowType().getFieldCount(),
+        origJoin.getRight().getRowType().getFieldCount());
+  }
+
+  public static Mapping createJoinMapping(boolean origOrder, int left,
+      int right) {
+    // TODO: replace this logic with a shift mapping
+    final int size = left + right;
     final Mapping mapping =
         Mappings.create(
-            MappingType.INVERSE_SURJECTION,
-            newJoinFields.size(),
-            newJoinFields.size());
-    final int nFields =
-        origOrder ? origJoin.getRight().getRowType().getFieldCount()
-            : origJoin.getLeft().getRowType().getFieldCount();
-    for (int i = 0; i < newJoinFields.size(); i++) {
-      final int source = (i + nFields) % newJoinFields.size();
+            MappingType.INVERSE_SURJECTION, size, size);
+    final int nFields = origOrder ? right : left;
+    for (int i = 0; i < size; i++) {
+      final int source = (i + nFields) % size;
       mapping.set(source, i);
     }
     return mapping;
@@ -2450,7 +2454,7 @@ public abstract class RelOptUtil {
       final RelNode child = project.getChild();
       final int childFieldCount = child.getRowType().getFieldCount();
       if (!isIdentity(indexes, childFieldCount)) {
-        mapping = Mappings.compose(
+        mapping = Mappings.composeNull(
             Mappings.createSurjection(indexes, childFieldCount), mapping);
       }
       node = child;

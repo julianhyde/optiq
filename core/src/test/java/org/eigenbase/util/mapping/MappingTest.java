@@ -59,17 +59,14 @@ public class MappingTest {
   }
 
   @Test public void testMappings() {
-    assertTrue(Mappings.isIdentity(Mappings.createIdentity(0)));
-    assertTrue(Mappings.isIdentity(Mappings.createIdentity(5)));
+    assertTrue(Mappings.createIdentity(0).isIdentity());
+    assertTrue(Mappings.createIdentity(5).isIdentity());
     assertFalse(
-        Mappings.isIdentity(
-            Mappings.create(MappingType.PARTIAL_SURJECTION, 3, 4)));
+        Mappings.create(MappingType.PARTIAL_SURJECTION, 3, 4).isIdentity());
     assertFalse(
-        Mappings.isIdentity(
-            Mappings.create(MappingType.PARTIAL_SURJECTION, 3, 3)));
+        Mappings.create(MappingType.PARTIAL_SURJECTION, 3, 3).isIdentity());
     assertFalse(
-        Mappings.isIdentity(
-            Mappings.create(MappingType.PARTIAL_SURJECTION, 4, 4)));
+        Mappings.create(MappingType.PARTIAL_SURJECTION, 4, 4).isIdentity());
   }
 
   /**
@@ -81,7 +78,7 @@ public class MappingTest {
         Mappings.createShiftMapping(
             20,
             3, 6, 2,
-            10, 15, 3).toString());
+            10, 15, 3).toLongString());
 
     // no triples makes for a mapping with 0 targets, 20 sources, but still
     // valid
@@ -89,7 +86,7 @@ public class MappingTest {
         Mappings.createShiftMapping(
             20);
     assertEquals("[size=0, sourceCount=20, targetCount=0, elements=[]]",
-        mapping.toString());
+        ((Mapping) mapping).toLongString());
     assertEquals(20, mapping.getSourceCount());
     assertEquals(0, mapping.getTargetCount());
   }
@@ -99,17 +96,16 @@ public class MappingTest {
    */
   @Test public void testMappingsAppend() {
     assertTrue(
-        Mappings.isIdentity(
-            Mappings.append(
-                Mappings.createIdentity(3),
-                Mappings.createIdentity(2))));
+        Mappings.append(
+            Mappings.createIdentity(3),
+            Mappings.createIdentity(2)).isIdentity());
     Mapping mapping0 = Mappings.create(MappingType.PARTIAL_SURJECTION, 5, 3);
     mapping0.set(0, 2);
     mapping0.set(3, 1);
     mapping0.set(4, 0);
     assertEquals(
         "[size=5, sourceCount=7, targetCount=5, elements=[0:2, 3:1, 4:0, 5:3, 6:4]]",
-        Mappings.append(mapping0, Mappings.createIdentity(2)).toString());
+        Mappings.append(mapping0, Mappings.createIdentity(2)).toLongString());
   }
 
   /**
