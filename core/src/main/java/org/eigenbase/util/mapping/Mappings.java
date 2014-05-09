@@ -619,6 +619,59 @@ public abstract class Mappings {
     return create(MappingType.BIJECTION, count, count);
   }
 
+  /** Makes a mapping immutable and converts to a more efficient
+   * representation if possible. */
+  public static Mapping freeze(Mapping mapping) {
+    if (mapping instanceof IdentityMapping) {
+      return mapping;
+    }
+    if (mapping.isIdentity()) {
+      return createIdentity(mapping.getSourceCount());
+    }
+    if (mapping instanceof SurjectionWithInverse) {
+      return mapping;
+    }
+    if (exactlyOneTargetPerSource(mapping)
+      && exactlyOneSourcePerTarget(mapping)) {
+      // REVIEW: Is Permutation more efficient?
+      final SurjectionWithInverse mapping2 =
+          new SurjectionWithInverse(
+              mapping.getSourceCount(),
+              mapping.getTargetCount());
+      for (IntPair pair : mapping) {
+        mapping2.set(pair.source, pair.target);
+      }
+      return mapping2;
+    }
+    return mapping;
+  }
+
+  private static boolean exactlyOneTargetPerSource(Mapping mapping) {
+    final BitSet bitSet = new BitSet();
+    int n = 0;
+    for (IntPair intPair : mapping) {
+      if (bitSet.get(intPair.source)) {
+        return false;
+      }
+      bitSet.set(intPair.source);
+      ++n;
+    }
+    return n == mapping.getSourceCount();
+  }
+
+  private static boolean exactlyOneSourcePerTarget(Mapping mapping) {
+    final BitSet bitSet = new BitSet();
+    int n = 0;
+    for (IntPair intPair : mapping) {
+      if (bitSet.get(intPair.target)) {
+        return false;
+      }
+      bitSet.set(intPair.target);
+      ++n;
+    }
+    return n == mapping.getTargetCount();
+  }
+
   //~ Inner Interfaces -------------------------------------------------------
 
   /**
@@ -848,6 +901,18 @@ public abstract class Mappings {
     @Override public String toString() {
       return toLongString();
     }
+
+    public Set<IntPair> entrySet() {
+      return new AbstractSet<IntPair>() {
+        @Override public Iterator<IntPair> iterator() {
+          return AbstractMapping.this.iterator();
+        }
+
+        @Override public int size() {
+          return AbstractMapping.this.size();
+        }
+      };
+    }
   }
 
   public abstract static class FiniteAbstractMapping extends AbstractMapping {
@@ -861,9 +926,11 @@ public abstract class Mappings {
     }
 
     public boolean equals(Object obj) {
-      // not very efficient
-      return (obj instanceof Mapping)
-          && toString().equals(obj.toString());
+      return this == obj
+          || (obj instanceof Mapping)
+          && getTargetCount() == ((Mapping) obj).getTargetCount()
+          && getSourceCount() == ((Mapping) obj).getSourceCount()
+          && entrySet().equals(((Mapping) obj).entrySet());
     }
   }
 
@@ -1226,7 +1293,9 @@ public abstract class Mappings {
 
     /** {@inheritDoc}
      *
-     * <p>Prints a range of targets, for example "[4-7, 0-3]".</p>
+     * <p>Prints a range of targets, for example "[4-6, 0-3]" indicates
+     * (source, target) pairs [(0, 4), (1, 5), (2, 6), (3, 0), (4, 1), (5, 2),
+     * (6, 3)].</p>
      */
     @Override public String toString() {
       StringBuilder buf = new StringBuilder("[");
@@ -1783,6 +1852,18 @@ public abstract class Mappings {
 
     public String toLongString() {
       return toString();
+    }
+
+    public Set<IntPair> entrySet() {
+      return new AbstractSet<IntPair>() {
+        @Override public Iterator<IntPair> iterator() {
+          return InverseMapping.this.iterator();
+        }
+
+        @Override public int size() {
+          return parent.size();
+        }
+      };
     }
   }
 

@@ -81,6 +81,9 @@ public interface Mapping
   int size();
 
   String toLongString();
+
+  /** Returns the set of entries. */
+  Set<IntPair> entrySet();
 }
 
 // End Mapping.java

@@ -400,7 +400,8 @@ public abstract class JoinRelBase extends AbstractRelNode {
     if (Mappings.equal(this.mapping, newMapping)) {
       return this;
     }
-    return copy(traitSet, condition, left, right, joinType, newMapping);
+    return copy(traitSet, condition, left, right, joinType,
+        Mappings.freeze(newMapping));
   }
 }
 

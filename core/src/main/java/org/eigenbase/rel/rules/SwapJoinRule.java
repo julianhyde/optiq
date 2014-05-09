@@ -58,7 +58,7 @@ public class SwapJoinRule extends RelOptRule {
    * modify <code>join</code>. Returns null if the join cannot be swapped (for
    * example, because it is an outer join).
    */
-  public static RelNode swap(JoinRelBase join) {
+  public static JoinRelBase swap(JoinRelBase join) {
     return swap(join, false);
   }
 
@@ -67,7 +67,7 @@ public class SwapJoinRule extends RelOptRule {
    * @param swapOuterJoins whether outer joins should be swapped
    * @return swapped join if swapping possible; else null
    */
-  public static RelNode swap(JoinRelBase join, boolean swapOuterJoins) {
+  public static JoinRelBase swap(JoinRelBase join, boolean swapOuterJoins) {
     final JoinRelType joinType = join.getJoinType();
     if (!swapOuterJoins && joinType != JoinRelType.INNER) {
       return null;
@@ -100,17 +100,13 @@ public class SwapJoinRule extends RelOptRule {
       return;
     }
 
-    final RelNode swapped = swap(join);
+    final JoinRelBase swapped = swap(join);
     if (swapped == null) {
       return;
     }
 
     // The result is either a Project or, if the project is trivial, a
     // raw Join.
-    final JoinRelBase newJoin =
-        swapped instanceof JoinRelBase
-            ? (JoinRelBase) swapped
-            : (JoinRelBase) swapped.getInput(0);
     call.transformTo(swapped);
 
     if (false) {
@@ -119,12 +115,12 @@ public class SwapJoinRule extends RelOptRule {
       // b0,b1,a0,a1,a2 from (select a0,a1,a2,b0,b1 from b join a)' is the
       // same as 'b join a'. If we didn't do this, the swap join rule
       // would fire on the new join, ad infinitum.
-      final Mapping mapping = RelOptUtil.createJoinMapping(newJoin,
+      final Mapping mapping = RelOptUtil.createJoinMapping(swapped,
           join,
           false);
       RelNode project = swapped.permute(mapping);
 
-      RelNode rel = call.getPlanner().ensureRegistered(project, newJoin);
+      RelNode rel = call.getPlanner().ensureRegistered(project, swapped);
       Util.discard(rel);
     }
   }

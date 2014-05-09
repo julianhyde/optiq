@@ -347,7 +347,7 @@ public class PushJoinThroughJoinRule extends RelOptRule {
     final JoinRelBase newTopJoin =
         topJoin.copy(topJoin.getTraitSet(), newTopCondition, newBottomJoin,
             relA, topJoin.getJoinType(),
-            Mappings.compose(topMapping, topJoin.mapping));
+            Mappings.freeze(Mappings.compose(topMapping, topJoin.mapping)));
 
     call.transformTo(newTopJoin);
   }

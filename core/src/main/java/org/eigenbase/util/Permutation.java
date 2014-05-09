@@ -72,7 +72,7 @@ public class Permutation implements Mapping, Mappings.TargetMapping {
   }
 
   /**
-   * Creates a permuation. Arrays are not copied, and are assumed to be valid
+   * Creates a permutation. Arrays are not copied, and are assumed to be valid
    * permutations.
    */
   private Permutation(int[] targets, int[] sources) {
@@ -189,7 +189,7 @@ public class Permutation implements Mapping, Mappings.TargetMapping {
    * @param target Target position
    * @throws ArrayIndexOutOfBoundsException if source or target is negative or
    *                                        greater than or equal to the size of
-   *                                        the permuation
+   *                                        the permutation
    */
   public void set(int source, int target) {
     set(source, target, false);
@@ -492,6 +492,18 @@ public class Permutation implements Mapping, Mappings.TargetMapping {
 
       public void remove() {
         throw new UnsupportedOperationException();
+      }
+    };
+  }
+
+  public Set<IntPair> entrySet() {
+    return new AbstractSet<IntPair>() {
+      @Override public Iterator<IntPair> iterator() {
+        return Permutation.this.iterator();
+      }
+
+      @Override public int size() {
+        return Permutation.this.size();
       }
     };
   }

@@ -22,7 +22,7 @@ package org.eigenbase.util.mapping;
  *
  * @see Mapping#iterator()
  */
-public class IntPair {
+public class IntPair implements Comparable<IntPair> {
   //~ Instance fields --------------------------------------------------------
 
   public final int source;
@@ -51,6 +51,14 @@ public class IntPair {
 
   public int hashCode() {
     return this.source ^ (this.target << 4);
+  }
+
+  public int compareTo(IntPair pair) {
+    int c = Integer.compare(source, pair.source);
+    if (c != 0) {
+      return c;
+    }
+    return Integer.compare(target, pair.target);
   }
 }
 
