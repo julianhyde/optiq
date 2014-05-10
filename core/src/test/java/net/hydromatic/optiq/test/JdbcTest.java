@@ -2638,20 +2638,6 @@ public class JdbcTest {
   }
 
   /** Same result (and plan) as {@link #testSelectDistinct}. */
-  @Ignore("Analytic functions over constants are not supported :(")
-  @Test public void testGroupByMax1OverIsNull() {
-    OptiqAssert.that()
-        .with(OptiqAssert.Config.REGULAR)
-        .query(
-            "select * from (\n"
-            + "select max(1) over (partition by 2 order by 3) max_id\n"
-            + "from \"hr\".\"emps\" where 1=2\n"
-            + ") where max_id is null")
-        .returnsUnordered(
-            "MAX_ID=null");
-  }
-
-  /** Same result (and plan) as {@link #testSelectDistinct}. */
   @Test public void testGroupBy1Max1() {
     OptiqAssert.that()
         .with(OptiqAssert.Config.REGULAR)
@@ -2829,12 +2815,35 @@ public class JdbcTest {
             + "window w as (order by \"salary\"+1 rows 1 preceding)\n")
         .typeIs(
             "[M REAL]")
-        .planContains("final float row = net.hydromatic.optiq.runtime.SqlFunctions.toFloat(_rows[i]);")
+        .planContains(
+            "final float row = net.hydromatic.optiq.runtime.SqlFunctions.toFloat(_rows[i]);")
         .returnsUnordered(
             "M=7001.0",
             "M=8001.0",
             "M=10001.0",
             "M=11501.0");
+  }
+
+  /**
+   * Tests that {@link org.eigenbase.rel.CalcRel} is implemented propely
+   * when input is {@link org.eigenbase.rel.WindowRel} and literal.
+   */
+  @Test public void testWinAggScalarNonNullPhysTypePlusOne() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            "select 1+min(\"salary\"+1) over w as m\n"
+            + "from \"hr\".\"emps\"\n"
+            + "window w as (order by \"salary\"+1 rows 1 preceding)\n")
+        .typeIs(
+            "[M REAL]")
+        .planContains(
+            "final float row = net.hydromatic.optiq.runtime.SqlFunctions.toFloat(_rows[i]);")
+        .returnsUnordered(
+            "M=7002.0",
+            "M=8002.0",
+            "M=10002.0",
+            "M=11502.0");
   }
 
   /** Tests for RANK and ORDER BY ... DESCENDING, NULLS FIRST, NULLS LAST. */
@@ -2857,6 +2866,76 @@ public class JdbcTest {
             + "deptno=10; empid=150; commission=null; RCNF=1; RCNL=3; R=3; RD=1\n"
             + "deptno=10; empid=110; commission=250; RCNF=3; RCNL=2; R=2; RD=2\n"
             + "deptno=10; empid=100; commission=1000; RCNF=2; RCNL=1; R=1; RD=3\n");
+  }
+
+  /** Tests UNBOUNDED PRECEDING clause. */
+  @Test public void testOverUnboundedPreceding() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            "select \"empid\", count(\"empid\") over (partition by 42\n"
+            + "order by \"commission\" nulls first\n"
+            + "rows between UNBOUNDED PRECEDING and current row) m\n"
+            + "from \"hr\".\"emps\"")
+        .returnsUnordered(
+            "empid=100; M=4",
+            "empid=200; M=3",
+            "empid=150; M=1",
+            "empid=110; M=2");
+  }
+
+  /** Tests window aggregate over constant. */
+  @Test public void testWinAggConstant() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            "select max(1) over (partition by \"deptno\"\n"
+            + "order by \"empid\"\n"
+            + ") m\n"
+            + "from \"hr\".\"emps\"")
+        .returnsUnordered(
+            "M=1",
+            "M=1",
+            "M=1",
+            "M=1");
+  }
+
+  /** Tests window aggregate partition by constant. */
+  @Test public void testWinAggPartitionByConstant() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            // *0 is used to make results predictable.
+            // If using just max(empid) optiq cannot compute the result
+            // properly since it does not support range windows yet :(
+            "select max(\"empid\"*0) over (partition by 42\n"
+            + "order by \"empid\"\n"
+            + ") m\n"
+            + "from \"hr\".\"emps\"")
+        .returnsUnordered(
+            "M=0",
+            "M=0",
+            "M=0",
+            "M=0");
+  }
+
+  /** Tests window aggregate partition by constant. */
+  @Test public void testWinAggOrderByConstant() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            // *0 is used to make results predictable.
+            // If using just max(empid) optiq cannot compute the result
+            // properly since it does not support range windows yet :(
+            "select max(\"empid\"*0) over (partition by \"deptno\"\n"
+            + "order by 42\n"
+            + ") m\n"
+            + "from \"hr\".\"emps\"")
+        .returnsUnordered(
+            "M=0",
+            "M=0",
+            "M=0",
+            "M=0");
   }
 
   /** Tests WHERE comparing a nullable integer with an integer literal. */

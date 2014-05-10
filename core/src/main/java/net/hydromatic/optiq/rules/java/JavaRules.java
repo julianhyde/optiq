@@ -349,14 +349,17 @@ public class JavaRules {
     static List<Type> fieldTypes(
         final JavaTypeFactory typeFactory,
         final RelDataType inputRowType,
+        final List<? extends RexNode> extraInputs,
         final List<Integer> argList) {
+      final List<RelDataTypeField> inputFields = inputRowType.getFieldList();
       return new AbstractList<Type>() {
         public Type get(int index) {
+          final int arg = argList.get(index);
           return EnumUtil.javaClass(
               typeFactory,
-              inputRowType.getFieldList()
-                  .get(argList.get(index))
-                  .getType());
+              arg < inputFields.size()
+              ? inputFields.get(arg).getType()
+              : extraInputs.get(arg - inputFields.size()).getType());
         }
         public int size() {
           return argList.size();
@@ -998,7 +1001,7 @@ public class JavaRules {
                 physType.fieldClass(keyArity + ord.i),
                 EnumUtil.fieldTypes(typeFactory,
                     inputRowType,
-                    ord.e.left.getArgList())));
+                    null, ord.e.left.getArgList())));
       }
 
       final PhysType accPhysType =
@@ -1961,7 +1964,7 @@ public class JavaRules {
           convert(child,
               child.getTraitSet().replace(EnumerableConvention.INSTANCE));
       return new EnumerableWindowRel(rel.getCluster(), traitSet, convertedChild,
-          winAgg.getRowType(), winAgg.windows);
+          winAgg.getConstants(), winAgg.getRowType(), winAgg.windows);
     }
   }
 
@@ -1974,15 +1977,16 @@ public class JavaRules {
         RelOptCluster cluster,
         RelTraitSet traits,
         RelNode child,
+        List<RexLiteral> constants,
         RelDataType rowType,
-        List<WindowRel.Window> windows) {
-      super(cluster, traits, child, rowType, windows);
+        List<Window> windows) {
+      super(cluster, traits, child, constants, rowType, windows);
     }
 
     @Override
     public RelNode copy(RelTraitSet traitSet, List<RelNode> inputs) {
       return new EnumerableWindowRel(getCluster(), traitSet, sole(inputs),
-          rowType, windows);
+          constants, rowType, windows);
     }
 
     public RelOptCost computeSelfCost(RelOptPlanner planner) {
@@ -2200,7 +2204,7 @@ public class JavaRules {
                   parameter.type,
                   EnumUtil.fieldTypes(typeFactory,
                       inputPhysType.getRowType(),
-                      ord.e.left.getArgList()));
+                      constants, ord.e.left.getArgList()));
           variables.add(parameter);
           builder4.add(Expressions.declare(0, parameter, initExpression));
         }
@@ -2217,27 +2221,63 @@ public class JavaRules {
             implementors, variables, rows_, i_, row_, expressions,
             new Function1<AggCallContext, Void>() {
               public Void apply(AggCallContext a0) {
-                for (Ord<Pair<AggregateCall, AggImplementor>> ord
+                final int inputFieldCount =
+                    finalInputPhysType.getRowType().getFieldCount();
+                for (final Ord<Pair<AggregateCall, AggImplementor>> ord
                     : Ord.zip(Pair.zip(aggregateCalls, implementors))) {
                   final Expression accumulator = variables.get(ord.i);
                   final List<Expression> conditions =
                       new ArrayList<Expression>();
                   for (int arg : ord.e.left.getArgList()) {
-                    if (finalInputPhysType.fieldNullable(arg)) {
-                      conditions.add(
-                          Expressions.notEqual(
-                              finalInputPhysType.fieldReference(row_, arg),
-                              Expressions.constant(null)));
+                    if (arg < inputFieldCount) {
+                      if (finalInputPhysType.fieldNullable(arg)) {
+                        conditions.add(
+                            Expressions.notEqual(
+                                finalInputPhysType.fieldReference(row_, arg),
+                                Expressions.constant(null)));
+                      }
+                    } else {
+                      final RexLiteral const_ = constants.get(
+                          arg - inputFieldCount);
+                      if (const_.getType().isNullable()) {
+                        conditions.add(
+                          RexToLixTranslator.translateLiteral(
+                              const_, const_.getType(), typeFactory,
+                              RexImpTable.NullAs.IS_NOT_NULL));
+                      }
                     }
                   }
+                  final List<Integer> argList = ord.e.left.getArgList();
+                  final List<Expression> arguments =
+                    new AbstractList<Expression>() {
+                      @Override
+                      public Expression get(int index) {
+                        int arg = argList.get(index);
+                        if (arg < inputFieldCount) {
+                          return finalInputPhysType.fieldReference(row_,
+                              arg);
+                        }
+
+                        final RexLiteral const_ =
+                            constants.get(arg - inputFieldCount);
+                        return RexToLixTranslator.translateLiteral(
+                            const_, const_.getType(), typeFactory,
+                            RexImpTable.NullAs.NULL);
+                      }
+
+                      @Override
+                      public int size() {
+                        return argList.size();
+                      }
+                    };
+
                   final Statement assign =
                       Expressions.statement(
                           Expressions.assign(accumulator,
                               ord.e.right.implementAdd(translator,
                                   ord.e.left.getAggregation(),
                                   accumulator,
-                                  finalInputPhysType.accessors(
-                                      row_, ord.e.left.getArgList()))));
+                                  arguments)));
                   if (conditions.isEmpty()) {
                     a0.builder().add(assign);
                   } else {
@@ -2320,7 +2360,9 @@ public class JavaRules {
               window.lowerBound, window.upperBound, window.isRows);
       final Expression start_ =
           builder.append("start",
-              optimizeAdd(i_,
+              offsetAndRange.range == Long.MAX_VALUE
+              ? min_
+              : optimizeAdd(i_,
                   (int) offsetAndRange.offset - (int) offsetAndRange.range,
                   min_, max_),
               false);
