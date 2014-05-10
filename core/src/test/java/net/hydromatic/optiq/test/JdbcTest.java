@@ -2729,9 +2729,9 @@ public class JdbcTest {
     OptiqAssert.that()
         .with(OptiqAssert.Config.REGULAR)
         .query("select \"deptno\" from \"hr\".\"emps\"\n"
-        + "where exists (\n"
-        + "  with dept2 as (select * from \"hr\".\"depts\" where \"depts\".\"deptno\" >= \"emps\".\"deptno\")\n"
-        + "  select 1 from dept2 where \"deptno\" <= \"emps\".\"deptno\")")
+               + "where exists (\n"
+               + "  with dept2 as (select * from \"hr\".\"depts\" where \"depts\".\"deptno\" >= \"emps\".\"deptno\")\n"
+               + "  select 1 from dept2 where \"deptno\" <= \"emps\".\"deptno\")")
         .returnsUnordered("deptno=10",
             "deptno=10",
             "deptno=10");
@@ -2812,6 +2812,29 @@ public class JdbcTest {
             + "S=10100.0; FIVE=5; M=10000.0; C=1; C2=1; C11=2; C11DEPT=2; deptno=10; empid=100\n"
             + "S=23220.0; FIVE=5; M=11500.0; C=2; C2=2; C11=3; C11DEPT=3; deptno=10; empid=110\n"
             + "S=14300.0; FIVE=5; M=7000.0; C=2; C2=3; C11=3; C11DEPT=2; deptno=10; empid=150\n");
+  }
+
+  /**
+   * Tests that window aggregates work when computed over non-nullable
+   * {@link net.hydromatic.optiq.rules.java.JavaRowFormat#SCALAR} inputs.
+   * Window aggregates use temporary buffers, hus need to check if
+   * primitives are properly boxed and unboxed.
+   */
+  @Test public void testWinAggScalarNonNullPhysType() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            "select min(\"salary\"+1) over w as m\n"
+            + "from \"hr\".\"emps\"\n"
+            + "window w as (order by \"salary\"+1 rows 1 preceding)\n")
+        .typeIs(
+            "[M REAL]")
+        .planContains("final float row = net.hydromatic.optiq.runtime.SqlFunctions.toFloat(_rows[i]);")
+        .returnsUnordered(
+            "M=7001.0",
+            "M=8001.0",
+            "M=10001.0",
+            "M=11501.0");
   }
 
   /** Tests for RANK and ORDER BY ... DESCENDING, NULLS FIRST, NULLS LAST. */

@@ -2182,7 +2182,7 @@ public class JavaRules {
         final Expression row_ =
             builder4.append(
                 "row",
-                Expressions.convert_(
+                RexToLixTranslator.convert(
                     Expressions.arrayIndex(rows_, i_),
                     inputPhysType.getJavaRowType()));
 
