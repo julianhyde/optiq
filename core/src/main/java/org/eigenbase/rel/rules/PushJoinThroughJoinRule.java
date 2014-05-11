@@ -20,7 +20,6 @@ package org.eigenbase.rel.rules;
 import java.util.*;
 
 import org.eigenbase.rel.*;
-import org.eigenbase.rel.RelFactories.ProjectFactory;
 import org.eigenbase.relopt.*;
 import org.eigenbase.rex.*;
 import org.eigenbase.util.mapping.*;
@@ -61,28 +60,17 @@ public class PushJoinThroughJoinRule extends RelOptRule {
 
   private final boolean right;
 
-  private final ProjectFactory projectFactory;
-
   /**
    * Creates a PushJoinThroughJoinRule.
    */
   private PushJoinThroughJoinRule(String description, boolean right,
       Class<? extends JoinRelBase> clazz) {
-    this(description, right, clazz, RelFactories.DEFAULT_PROJECT_FACTORY);
-  }
-
-  public PushJoinThroughJoinRule(
-      String description,
-      boolean right,
-      Class<? extends JoinRelBase> clazz, ProjectFactory pFactory) {
     super(
-        operand(
-            clazz,
+        operand(clazz,
             operand(clazz, any()),
             operand(RelNode.class, any())),
         description);
     this.right = right;
-    projectFactory = pFactory;
   }
 
   @Override
@@ -214,8 +202,8 @@ public class PushJoinThroughJoinRule extends RelOptRule {
         s2 = s; // from input a
       }
       mapping.set(s2, t);
-      System.out.println("aCount=" + aCount + ", bCount=" + bCount + ", cCount="
-          + cCount + ", s=" + s + ", s2=" + s2 + ", t=" + t + ", t2=" + t2);
+//    System.out.println("aCount=" + aCount + ", bCount=" + bCount + ", cCount="
+//        + cCount + ", s=" + s + ", s2=" + s2 + ", t=" + t + ", t2=" + t2);
     }
     @SuppressWarnings("SuspiciousNameCombination")
     final JoinRelBase newTopJoin =
@@ -325,8 +313,8 @@ public class PushJoinThroughJoinRule extends RelOptRule {
       } else {
         s2 = s + cCount + bCount; // from input a
       }
-      System.out.println("aCount=" + aCount + ", bCount=" + bCount + ", cCount="
-          + cCount + ", s=" + s + ", s2=" + s2 + ", t=" + t + ", t2=" + t2);
+//    System.out.println("aCount=" + aCount + ", bCount=" + bCount + ", cCount="
+//        + cCount + ", s=" + s + ", s2=" + s2 + ", t=" + t + ", t2=" + t2);
       topMapping.set(s2, t2);
     }
 

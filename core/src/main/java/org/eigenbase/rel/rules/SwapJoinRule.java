@@ -25,6 +25,7 @@ import org.eigenbase.reltype.*;
 import org.eigenbase.rex.*;
 import org.eigenbase.util.*;
 import org.eigenbase.util.mapping.Mapping;
+import org.eigenbase.util.mapping.Mappings;
 
 import com.google.common.collect.ImmutableList;
 
@@ -85,11 +86,13 @@ public class SwapJoinRule extends RelOptRule {
     // join, and one for the swapped join, and no more.  This
     // doesn't prevent us from seeing any new combinations assuming
     // that the planner tries the desired order (semijoins after swaps).
-    JoinRelBase newJoin =
-        join.copy(join.getTraitSet(), condition, join.getRight(),
-            join.getLeft(), joinType.swap(), join.mapping);
-    final Mapping mapping = RelOptUtil.createJoinMapping(newJoin, join, true);
-    return newJoin.permute(mapping);
+    final Mapping mapping = RelOptUtil.createJoinMapping(true,
+        leftRowType.getFieldCount(),
+        rightRowType.getFieldCount());
+    final Mapping mapping2 =
+        Mappings.freeze(Mappings.compose(mapping, join.mapping));
+    return join.copy(join.getTraitSet(), condition, join.getRight(),
+        join.getLeft(), joinType.swap(), mapping2);
   }
 
   public void onMatch(final RelOptRuleCall call) {
@@ -109,20 +112,22 @@ public class SwapJoinRule extends RelOptRule {
     // raw Join.
     call.transformTo(swapped);
 
-    if (false) {
-      // We have converted join='a join b' into swapped='select
-      // a0,a1,a2,b0,b1 from b join a'. Now register that project='select
-      // b0,b1,a0,a1,a2 from (select a0,a1,a2,b0,b1 from b join a)' is the
-      // same as 'b join a'. If we didn't do this, the swap join rule
-      // would fire on the new join, ad infinitum.
-      final Mapping mapping = RelOptUtil.createJoinMapping(swapped,
-          join,
-          false);
-      RelNode project = swapped.permute(mapping);
+    // We have converted join='a join b' into swapped='select
+    // a0,a1,a2,b0,b1 from b join a'. Now register that project='select
+    // b0,b1,a0,a1,a2 from (select a0,a1,a2,b0,b1 from b join a)' is the
+    // same as 'b join a'. If we didn't do this, the swap join rule
+    // would fire on the new join, ad infinitum.
+    final Mapping mapping = RelOptUtil.createJoinMapping(swapped,
+        join,
+        false);
+//    RelNode project = swapped.permute(mapping);
+    RelNode project =
+        swapped.copy(swapped.getTraitSet(), swapped.getCondition(),
+            swapped.getLeft(), swapped.getRight(), swapped.getJoinType(),
+            Mappings.freeze(Mappings.compose(swapped.mapping, mapping)));
 
-      RelNode rel = call.getPlanner().ensureRegistered(project, swapped);
-      Util.discard(rel);
-    }
+    RelNode rel = call.getPlanner().ensureRegistered(project, swapped);
+    Util.discard(rel);
   }
 
   //~ Inner Classes ----------------------------------------------------------

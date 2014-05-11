@@ -1333,6 +1333,10 @@ public abstract class Mappings {
       this.size = size;
     }
 
+    @Override public String toString() {
+      return "[0-" + (size - 1) + "]";
+    }
+
     public int size() {
       return size;
     }
