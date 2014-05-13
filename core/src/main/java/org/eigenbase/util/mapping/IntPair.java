@@ -17,6 +17,8 @@
 */
 package org.eigenbase.util.mapping;
 
+import net.hydromatic.optiq.runtime.Utilities;
+
 /**
  * An immutable pair of integers.
  *
@@ -54,11 +56,11 @@ public class IntPair implements Comparable<IntPair> {
   }
 
   public int compareTo(IntPair pair) {
-    int c = Integer.compare(source, pair.source);
+    int c = Utilities.compare(source, pair.source);
     if (c != 0) {
       return c;
     }
-    return Integer.compare(target, pair.target);
+    return Utilities.compare(target, pair.target);
   }
 }
 
