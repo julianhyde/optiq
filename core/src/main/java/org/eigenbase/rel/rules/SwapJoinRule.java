@@ -112,22 +112,26 @@ public class SwapJoinRule extends RelOptRule {
     // raw Join.
     call.transformTo(swapped);
 
-    // We have converted join='a join b' into swapped='select
-    // a0,a1,a2,b0,b1 from b join a'. Now register that project='select
-    // b0,b1,a0,a1,a2 from (select a0,a1,a2,b0,b1 from b join a)' is the
-    // same as 'b join a'. If we didn't do this, the swap join rule
-    // would fire on the new join, ad infinitum.
-    final Mapping mapping = RelOptUtil.createJoinMapping(swapped,
-        join,
-        false);
+    if (false) {
+      // We have converted join='a join b' into swapped='select
+      // a0,a1,a2,b0,b1 from b join a'. Now register that project='select
+      // b0,b1,a0,a1,a2 from (select a0,a1,a2,b0,b1 from b join a)' is the
+      // same as 'b join a'. If we didn't do this, the swap join rule
+      // would fire on the new join, ad infinitum.
+      final Mapping mapping = RelOptUtil.createJoinMapping(
+          swapped, join, false);
 //    RelNode project = swapped.permute(mapping);
-    RelNode project =
-        swapped.copy(swapped.getTraitSet(), swapped.getCondition(),
-            swapped.getLeft(), swapped.getRight(), swapped.getJoinType(),
-            Mappings.freeze(Mappings.compose(swapped.mapping, mapping)));
+      RelNode project = swapped.copy(
+          swapped.getTraitSet(),
+          swapped.getCondition(),
+          swapped.getLeft(),
+          swapped.getRight(),
+          swapped.getJoinType(),
+          Mappings.freeze(Mappings.compose(swapped.mapping, mapping)));
 
-    RelNode rel = call.getPlanner().ensureRegistered(project, swapped);
-    Util.discard(rel);
+      RelNode rel = call.getPlanner().ensureRegistered(project, swapped);
+      Util.discard(rel);
+    }
   }
 
   //~ Inner Classes ----------------------------------------------------------

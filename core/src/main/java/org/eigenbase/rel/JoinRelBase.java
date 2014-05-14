@@ -122,7 +122,7 @@ public abstract class JoinRelBase extends AbstractRelNode {
   }
 
   // TODO: enable
-  public boolean isValid_(boolean fail) {
+  public boolean isValid(boolean fail) {
     if (!super.isValid(fail)) {
       return false;
     }

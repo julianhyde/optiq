@@ -208,7 +208,7 @@ public class PushJoinThroughJoinRule extends RelOptRule {
     @SuppressWarnings("SuspiciousNameCombination")
     final JoinRelBase newTopJoin =
         topJoin.copy(topJoin.getTraitSet(), newTopCondition, newBottomJoin,
-            relB, topJoin.getJoinType(), mapping);
+            relB, topJoin.getJoinType(), Mappings.freeze(mapping));
 
     call.transformTo(newTopJoin);
   }
