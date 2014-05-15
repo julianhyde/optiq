@@ -25,6 +25,8 @@ import org.eigenbase.rel.*;
 import org.eigenbase.rel.metadata.*;
 import org.eigenbase.util.*;
 
+import net.hydromatic.optiq.tools.FrameworkContext;
+
 import static org.eigenbase.util.Static.RESOURCE;
 
 /**
@@ -57,6 +59,8 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
 
   private final Set<RelTrait> traits = new HashSet<RelTrait>();
 
+  private final FrameworkContext context;
+
   private Executor executor;
 
   //~ Constructors -----------------------------------------------------------
@@ -64,8 +68,11 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
   /**
    * Creates an AbstractRelOptPlanner.
    */
-  protected AbstractRelOptPlanner(RelOptCostFactory costFactory) {
+  protected AbstractRelOptPlanner(RelOptCostFactory costFactory, //
+      FrameworkContext frameworkContext) {
+    assert costFactory != null;
     this.costFactory = costFactory;
+    this.context = frameworkContext;
     mapDescToRule = new HashMap<String, RelOptRule>();
 
     // In case no one calls setCancelFlag, set up a
@@ -76,6 +83,10 @@ public abstract class AbstractRelOptPlanner implements RelOptPlanner {
   //~ Methods ----------------------------------------------------------------
 
   public void clear() {}
+
+  public FrameworkContext getFrameworkContext() {
+    return context;
+  }
 
   public RelOptCostFactory getCostFactory() {
     return costFactory;

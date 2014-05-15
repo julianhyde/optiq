@@ -34,6 +34,7 @@ import net.hydromatic.optiq.materialize.MaterializationService;
 import net.hydromatic.optiq.rules.java.*;
 import net.hydromatic.optiq.runtime.*;
 import net.hydromatic.optiq.server.OptiqServerStatement;
+import net.hydromatic.optiq.tools.FrameworkContext;
 import net.hydromatic.optiq.tools.Frameworks;
 
 import org.eigenbase.rel.*;
@@ -139,15 +140,18 @@ public class OptiqPrepareImpl implements OptiqPrepare {
     return Collections.<Function1<Context, RelOptPlanner>>singletonList(
         new Function1<Context, RelOptPlanner>() {
           public RelOptPlanner apply(Context context) {
-            return createPlanner(context);
+            return createPlanner(context, null, null);
           }
         });
   }
 
   /** Creates a query planner and initializes it with a default set of
    * rules. */
-  protected RelOptPlanner createPlanner(Context context) {
-    final VolcanoPlanner planner = new VolcanoPlanner();
+  protected RelOptPlanner createPlanner(Context context, //
+      FrameworkContext frameworkContext, //
+      RelOptCostFactory costFactory) {
+    final VolcanoPlanner planner = //
+        new VolcanoPlanner(costFactory, frameworkContext);
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
     if (ENABLE_COLLATION_TRAIT) {
       planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
@@ -529,7 +533,9 @@ public class OptiqPrepareImpl implements OptiqPrepare {
         context.getDefaultSchemaPath(),
         typeFactory);
     final RexBuilder rexBuilder = new RexBuilder(typeFactory);
-    final RelOptPlanner planner = createPlanner(context);
+    final RelOptPlanner planner = createPlanner(context, //
+        action.getConfig().getFrameworkContext(), //
+        action.getConfig().getCostFactory());
     final RelOptQuery query = new RelOptQuery(planner);
     final RelOptCluster cluster =
         query.createCluster(rexBuilder.getTypeFactory(), rexBuilder);

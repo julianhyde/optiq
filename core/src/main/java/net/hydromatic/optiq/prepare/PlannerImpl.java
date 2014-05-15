@@ -25,22 +25,28 @@ import net.hydromatic.optiq.tools.*;
 
 import org.eigenbase.rel.RelNode;
 import org.eigenbase.relopt.*;
+import org.eigenbase.relopt.RelOptTable.ViewExpander;
+import org.eigenbase.reltype.RelDataType;
 import org.eigenbase.rex.RexBuilder;
 import org.eigenbase.sql.SqlNode;
 import org.eigenbase.sql.SqlOperatorTable;
 import org.eigenbase.sql.parser.SqlParseException;
 import org.eigenbase.sql.parser.SqlParser;
 import org.eigenbase.sql.parser.SqlParserImplFactory;
+import org.eigenbase.sql.validate.SqlValidator;
 import org.eigenbase.sql2rel.SqlRexConvertletTable;
 import org.eigenbase.sql2rel.SqlToRelConverter;
 import org.eigenbase.util.Util;
 
 import com.google.common.collect.ImmutableList;
 
+import java.util.List;
+
 /** Implementation of {@link net.hydromatic.optiq.tools.Planner}. */
 public class PlannerImpl implements Planner {
   private final SqlOperatorTable operatorTable;
   private final ImmutableList<RuleSet> ruleSets;
+  private final FrameworkConfig config;
 
   /** Holds the trait definitions to be registered with planner. May be null. */
   private final ImmutableList<RelTraitDef> traitDefs;
@@ -70,22 +76,20 @@ public class PlannerImpl implements Planner {
   private SqlRexConvertletTable convertletTable;
   private RelNode rel;
 
+
+
   /** Creates a planner. Not a public API; call
    * {@link net.hydromatic.optiq.tools.Frameworks#getPlanner} instead. */
-  public PlannerImpl(Lex lex, SqlParserImplFactory parserFactory,
-      SchemaPlus defaultSchema,
-      SqlOperatorTable operatorTable, ImmutableList<RuleSet> ruleSets,
-      ImmutableList<RelTraitDef> traitDefs,
-      SqlRexConvertletTable convertletTable) {
-    assert defaultSchema != null;
-    this.defaultSchema = defaultSchema;
-    this.operatorTable = operatorTable;
-    this.ruleSets = ruleSets;
-    this.lex = lex;
-    this.parserFactory = parserFactory;
+  public PlannerImpl(FrameworkConfig config) {
+    this.config = config;
+    this.defaultSchema = config.getDefaultSchema();
+    this.operatorTable = config.getOperatorTable();
+    this.ruleSets = config.getRuleSets();
+    this.lex = config.getLex();
+    this.parserFactory = config.getParserFactory();
     this.state = State.STATE_0_CLOSED;
-    this.traitDefs = traitDefs;
-    this.convertletTable = convertletTable;
+    this.traitDefs = config.getTraitDefs();
+    this.convertletTable = config.getConvertletTable();
     reset();
   }
 
@@ -132,7 +136,8 @@ public class PlannerImpl implements Planner {
             planner = cluster.getPlanner();
             return null;
           }
-        });
+        },
+        config);
 
     state = State.STATE_2_READY;
 
@@ -180,7 +185,7 @@ public class PlannerImpl implements Planner {
     assert validatedSqlNode != null;
     this.sqlToRelConverter =
         new SqlToRelConverter(
-            null, validator, createCatalogReader(), planner,
+            new ViewExpanderImpl(), validator, createCatalogReader(), planner,
             createRexBuilder(), convertletTable);
     sqlToRelConverter.setTrimUnusedFields(false);
     sqlToRelConverter.enableTableAccessConversion(false);
@@ -189,6 +194,38 @@ public class PlannerImpl implements Planner {
     rel = sqlToRelConverter.decorrelate(validatedSqlNode, rel);
     state = State.STATE_5_CONVERTED;
     return rel;
+  }
+
+  /** Implements {@link org.eigenbase.relopt.RelOptTable.ViewExpander}
+   * interface for {@link net.hydromatic.optiq.tools.Planner} */
+  public class ViewExpanderImpl implements ViewExpander {
+    public RelNode expandView(RelDataType rowType, String queryString,
+        List<String> schemaPath) {
+      SqlParser parser = SqlParser.create(parserFactory, queryString,
+          lex.quoting, lex.unquotedCasing, lex.quotedCasing);
+      SqlNode sqlNode;
+      try {
+        sqlNode = parser.parseQuery();
+      } catch (SqlParseException e) {
+        throw new RuntimeException("parse failed", e);
+      }
+
+      final OptiqCatalogReader catalogReader =
+          createCatalogReader().withSchemaPath(schemaPath);
+      SqlValidator validator = new OptiqSqlValidator(
+          operatorTable, catalogReader, typeFactory);
+      SqlNode validatedSqlNode = validator.validate(sqlNode);
+
+      SqlToRelConverter sqlToRelConverter = new SqlToRelConverter(
+          null, validator, catalogReader, planner,
+          createRexBuilder(), convertletTable);
+      sqlToRelConverter.setTrimUnusedFields(false);
+
+      RelNode relNode = sqlToRelConverter.convertQuery(
+          validatedSqlNode, true, false);
+
+      return relNode;
+    }
   }
 
   // OptiqCatalogReader is stateless; no need to store one
