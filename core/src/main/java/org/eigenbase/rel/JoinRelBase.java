@@ -85,13 +85,10 @@ public abstract class JoinRelBase extends AbstractRelNode {
     assert joinType != null;
     assert condition != null;
     this.joinType = joinType;
-    this.mapping = mapping != null
-        ? mapping
-        : Mappings.createIdentity(left.getRowType().getFieldCount()
-            + right.getRowType().getFieldCount());
-    assert this.mapping.getSourceCount()
-        == left.getRowType().getFieldCount()
-        + right.getRowType().getFieldCount();
+    final int n =
+        left.getRowType().getFieldCount() + right.getRowType().getFieldCount();
+    this.mapping = mapping != null ? mapping : Mappings.createIdentity(n);
+    assert this.mapping.getSourceCount() == n;
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -122,7 +119,7 @@ public abstract class JoinRelBase extends AbstractRelNode {
   }
 
   // TODO: enable
-  public boolean isValid(boolean fail) {
+  public boolean _isValid(boolean fail) {
     if (!super.isValid(fail)) {
       return false;
     }

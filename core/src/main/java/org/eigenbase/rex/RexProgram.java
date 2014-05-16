@@ -45,8 +45,6 @@ import com.google.common.collect.ImmutableList;
  * @see RexProgramBuilder
  */
 public class RexProgram {
-  static int n = 0;
-
   //~ Instance fields --------------------------------------------------------
 
   /**
@@ -102,10 +100,6 @@ public class RexProgram {
     this.condition = condition;
     this.outputRowType = outputRowType;
     assert isValid(true);
-    System.out.println("RexProgram: " + n++ + this);
-    if (n % 1000 == 0) {
-      Util.discard(true);
-    }
   }
 
   //~ Methods ----------------------------------------------------------------

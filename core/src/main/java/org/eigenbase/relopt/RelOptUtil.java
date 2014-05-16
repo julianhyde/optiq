@@ -1848,7 +1848,7 @@ public abstract class RelOptUtil {
    * @return true if at least one filter was pushed
    */
   public static boolean classifyFilters(
-      RelNode joinRel,
+      JoinRelBase joinRel,
       List<RexNode> filters,
       boolean pushJoin,
       boolean pushLeft,
@@ -1857,17 +1857,23 @@ public abstract class RelOptUtil {
       List<RexNode> leftFilters,
       List<RexNode> rightFilters) {
     RexBuilder rexBuilder = joinRel.getCluster().getRexBuilder();
-    boolean filterPushed = false;
-    List<RelDataTypeField> joinFields = joinRel.getRowType().getFieldList();
-    final int nTotalFields = joinFields.size();
-    final int nSysFields = 0; // joinRel.getSystemFieldList().size();
+    int changeCount = 0;
+    final RelNode left = joinRel.getLeft();
+    final RelNode right = joinRel.getRight();
     final List<RelDataTypeField> leftFields =
-        joinRel.getInputs().get(0).getRowType().getFieldList();
-    final int nFieldsLeft = leftFields.size();
+        left.getRowType().getFieldList();
     final List<RelDataTypeField> rightFields =
-        joinRel.getInputs().get(1).getRowType().getFieldList();
+        right.getRowType().getFieldList();
+    final List<RelDataTypeField> joinFields =
+        CompositeList.of(leftFields, rightFields);
     final int nFieldsRight = rightFields.size();
-    assert nTotalFields == nSysFields + nFieldsLeft + nFieldsRight;
+    final int nFieldsLeft = leftFields.size();
+    final int nSysFields = 0; // joinRel.getSystemFieldList().size();
+    final int nTotalFields = nSysFields + nFieldsLeft + nFieldsRight;
+
+    assert joinRel.mapping.getSourceCount() == nTotalFields;
+    assert joinRel.mapping.getTargetCount() ==
+        joinRel.getRowType().getFieldCount();
 
     // set the reference bitmaps for the left and right children
     BitSet leftBitmap =
@@ -1888,7 +1894,7 @@ public abstract class RelOptUtil {
       // does not generate NULLs and the only columns referenced in
       // the filter originate from the left child
       if (pushLeft && BitSets.contains(leftBitmap, filterBitmap)) {
-        filterPushed = true;
+        ++changeCount;
 
         // ignore filters that always evaluate to true
         if (!filter.isAlwaysTrue()) {
@@ -1913,18 +1919,17 @@ public abstract class RelOptUtil {
         // filters can be pushed to the right child if the right child
         // does not generate NULLs and the only columns referenced in
         // the filter originate from the right child
-      } else if (
-          pushRight
-              && BitSets.contains(rightBitmap, filterBitmap)) {
-        filterPushed = true;
+      } else if (pushRight
+          && BitSets.contains(rightBitmap, filterBitmap)) {
+        ++changeCount;
         if (!filter.isAlwaysTrue()) {
           // adjust the field references in the filter to reflect
           // that fields in the right now shift over to the left;
           // since we never push filters to a NULL generating
-          // child, the types of the source should match the dest
+          // child, the types of the source should match the destination
           // so we don't need to explicitly pass the destination
           // fields to RexInputConverter
-          final RexNode shilftedFilter =
+          final RexNode shiftedFilter =
               shiftFilter(
                   nSysFields + nFieldsLeft,
                   nTotalFields,
@@ -1934,7 +1939,7 @@ public abstract class RelOptUtil {
                   nTotalFields,
                   rightFields,
                   filter);
-          rightFilters.add(shilftedFilter);
+          rightFilters.add(shiftedFilter);
         }
         filterIter.remove();
 
@@ -1942,7 +1947,7 @@ public abstract class RelOptUtil {
         // is an inner join, push them to the join if they originated
         // from above the join
       } else if (pushJoin) {
-        filterPushed = true;
+        ++changeCount;
         joinFilters.add(filter);
         filterIter.remove();
       }
@@ -1950,7 +1955,7 @@ public abstract class RelOptUtil {
       // else, leave the filter where it is
     }
 
-    return filterPushed;
+    return changeCount > 0;
   }
 
   private static RexNode shiftFilter(

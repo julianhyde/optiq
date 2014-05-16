@@ -17,14 +17,16 @@
 */
 package org.eigenbase.rel.rules;
 
-import java.util.*;
-
 import org.eigenbase.rel.*;
 import org.eigenbase.relopt.*;
-import org.eigenbase.reltype.*;
 import org.eigenbase.rex.*;
 
 import com.google.common.collect.ImmutableSet;
+import org.eigenbase.util.CompositeList;
+import org.eigenbase.util.mapping.Mapping;
+import org.eigenbase.util.mapping.Mappings;
+
+import java.util.Arrays;
 
 /**
  * PushProjectPastJoinRule implements the rule for pushing a projection past a
@@ -95,20 +97,17 @@ public class PushProjectPastJoinRule extends RelOptRule {
 
     // convert the join condition to reference the projected columns
     RexNode newJoinFilter = null;
-    int[] adjustments = pushProject.getAdjustments();
+    final int[] adjustments1 = pushProject.getAdjustments();
+    Mapping mapping = pushProject.getMapping();
+    int[] adjustments = Mappings.getAdjustments(mapping);
+    assert Arrays.equals(adjustments, adjustments1);
     if (joinRel.getCondition() != null) {
-      List<RelDataTypeField> projJoinFieldList =
-          new ArrayList<RelDataTypeField>();
-      projJoinFieldList.addAll(
-          joinRel.getSystemFieldList());
-      projJoinFieldList.addAll(
-          leftProjRel.getRowType().getFieldList());
-      projJoinFieldList.addAll(
-          rightProjRel.getRowType().getFieldList());
       newJoinFilter =
           pushProject.convertRefsAndExprs(
               joinRel.getCondition(),
-              projJoinFieldList,
+              CompositeList.of(joinRel.getSystemFieldList(),
+                  leftProjRel.getRowType().getFieldList(),
+                  rightProjRel.getRowType().getFieldList()),
               adjustments);
     }
 
@@ -120,7 +119,8 @@ public class PushProjectPastJoinRule extends RelOptRule {
             rightProjRel,
             newJoinFilter,
             joinRel.getJoinType(),
-            joinRel.mapping,
+            Mappings.freeze(
+                Mappings.compose(joinRel.mapping, mapping.inverse())),
             ImmutableSet.<String>of(),
             joinRel.isSemiJoinDone(),
             joinRel.getSystemFieldList());

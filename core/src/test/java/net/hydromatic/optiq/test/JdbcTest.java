@@ -1294,7 +1294,7 @@ public class JdbcTest {
    * {@link net.hydromatic.optiq.rules.java.JavaRules.EnumerableCalcRel} in the
    * plan.
    *
-   * <p>Test case for (not yet fixed)
+   * <p>Test case for
    * <a href="https://github.com/julianhyde/optiq/issues/92">#92</a>, "Project
    * should be optimized away, not converted to EnumerableCalcRel".</p>
    */
@@ -1305,20 +1305,19 @@ public class JdbcTest {
         .with(OptiqAssert.Config.FOODMART_CLONE)
         .query(set.queries.get(16).sql)
         .explainContains(
-            "EnumerableSortRel(sort0=[$0], sort1=[$1], sort2=[$2], sort3=[$4], sort4=[$10], sort5=[$11], sort6=[$12], sort7=[$13], sort8=[$22], sort9=[$23], sort10=[$24], sort11=[$25], sort12=[$26], sort13=[$27], dir0=[Ascending-nulls-last], dir1=[Ascending-nulls-last], dir2=[Ascending-nulls-last], dir3=[Ascending-nulls-last], dir4=[Ascending-nulls-last], dir5=[Ascending-nulls-last], dir6=[Ascending-nulls-last], dir7=[Ascending-nulls-last], dir8=[Ascending-nulls-last], dir9=[Ascending-nulls-last], dir10=[Ascending-nulls-last], dir11=[Ascending-nulls-last], dir12=[Ascending-nulls-last], dir13=[Ascending-nulls-last])\n"
-            + "  EnumerableCalcRel(expr#0..26=[{inputs}], proj#0..4=[{exprs}], c5=[$t4], c6=[$t5], c7=[$t6], c8=[$t7], c9=[$t8], c10=[$t9], c11=[$t10], c12=[$t11], c13=[$t12], c14=[$t13], c15=[$t14], c16=[$t15], c17=[$t16], c18=[$t17], c19=[$t18], c20=[$t19], c21=[$t20], c22=[$t21], c23=[$t22], c24=[$t23], c25=[$t24], c26=[$t25], c27=[$t26])\n"
+            "PLAN=EnumerableCalcRel(expr#0..26=[{inputs}], proj#0..4=[{exprs}], c5=[$t4], c6=[$t5], c7=[$t6], c8=[$t7], c9=[$t8], c10=[$t9], c11=[$t10], c12=[$t11], c13=[$t12], c14=[$t13], c15=[$t14], c16=[$t15], c17=[$t16], c18=[$t17], c19=[$t18], c20=[$t19], c21=[$t20], c22=[$t21], c23=[$t22], c24=[$t23], c25=[$t24], c26=[$t25], c27=[$t26])\n"
+            + "  EnumerableSortRel(sort0=[$0], sort1=[$1], sort2=[$2], sort3=[$4], sort4=[$9], sort5=[$10], sort6=[$11], sort7=[$12], sort8=[$21], sort9=[$22], sort10=[$23], sort11=[$24], sort12=[$25], sort13=[$26], dir0=[ASC-nulls-last], dir1=[ASC-nulls-last], dir2=[ASC-nulls-last], dir3=[ASC-nulls-last], dir4=[ASC-nulls-last], dir5=[ASC-nulls-last], dir6=[ASC-nulls-last], dir7=[ASC-nulls-last], dir8=[ASC-nulls-last], dir9=[ASC-nulls-last], dir10=[ASC-nulls-last], dir11=[ASC-nulls-last], dir12=[ASC-nulls-last], dir13=[ASC-nulls-last])\n"
             + "    EnumerableAggregateRel(group=[{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26}])\n"
-            + "      EnumerableCalcRel(expr#0..80=[{inputs}], c0=[$t12], c1=[$t10], c2=[$t9], c3=[$t0], fullname=[$t28], c6=[$t19], c7=[$t17], c8=[$t22], c9=[$t18], c10=[$t46], c11=[$t44], c12=[$t43], c13=[$t40], c14=[$t38], c15=[$t47], c16=[$t52], c17=[$t53], c18=[$t54], c19=[$t55], c20=[$t56], c21=[$t42], c22=[$t80], c23=[$t79], c24=[$t78], c25=[$t77], c26=[$t63], c27=[$t64])\n"
-            + "        EnumerableJoinRel(condition=[=($61, $76)], joinType=[inner])\n"
-            + "          EnumerableJoinRel(condition=[=($29, $62)], joinType=[inner])\n"
-            + "            EnumerableJoinRel(condition=[=($33, $37)], joinType=[inner])\n"
-            + "              EnumerableCalcRel(expr#0..36=[{inputs}], customer_id=[$t8], account_num=[$t9], lname=[$t10], fname=[$t11], mi=[$t12], address1=[$t13], address2=[$t14], address3=[$t15], address4=[$t16], city=[$t17], state_province=[$t18], postal_code=[$t19], country=[$t20], customer_region_id=[$t21], phone1=[$t22], phone2=[$t23], birthdate=[$t24], marital_status=[$t25], yearly_income=[$t26], gender=[$t27], total_children=[$t28], num_children_at_home=[$t29], education=[$t30], date_accnt_opened=[$t31], member_card=[$t32], occupation=[$t33], houseowner=[$t34], num_cars_owned=[$t35], fullname=[$t36], product_id=[$t0], time_id=[$t1], customer_id0=[$t2], promotion_id=[$t3], store_id=[$t4], store_sales=[$t5], store_cost=[$t6], unit_sales=[$t7])\n"
-            + "                EnumerableJoinRel(condition=[=($2, $8)], joinType=[inner])\n"
-            + "                  EnumerableTableAccessRel(table=[[foodmart2, sales_fact_1997]])\n"
-            + "                  EnumerableTableAccessRel(table=[[foodmart2, customer]])\n"
-            + "              EnumerableTableAccessRel(table=[[foodmart2, store]])\n"
-            + "            EnumerableTableAccessRel(table=[[foodmart2, product]])\n"
-            + "          EnumerableTableAccessRel(table=[[foodmart2, product_class]])\n");
+            + "      EnumerableCalcRel(expr#0..80=[{inputs}], c0=[$t12], c1=[$t10], c2=[$t9], c3=[$t0], c5=[$t28], c6=[$t19], c7=[$t17], c8=[$t22], c9=[$t18], c10=[$t46], c11=[$t44], c12=[$t43], c13=[$t40], c14=[$t38], c15=[$t47], c16=[$t52], c17=[$t53], c18=[$t54], c19=[$t55], c20=[$t56], c21=[$t42], c22=[$t80], c23=[$t79], c24=[$t78], c25=[$t77], c26=[$t63], c27=[$t64])\n"
+            + "        EnumerableJoinRel(condition=[=($7, $52)], joinType=[inner], mapping=[[52-80, 5-12, 28-51, 13-27, 0-4]])\n"
+            + "          EnumerableJoinRel(condition=[=($24, $47)], joinType=[inner], mapping=[[47-51, 39-46, 24-38, 0-23]])\n"
+            + "            EnumerableJoinRel(condition=[=($24, $33)], joinType=[inner], mapping=[[0-23, 32-46, 24-31]])\n"
+            + "              EnumerableJoinRel(condition=[=($4, $8)], joinType=[inner], mapping=[[8-31, 0-7]])\n"
+            + "                EnumerableTableAccessRel(table=[[foodmart2, sales_fact_1997]])\n"
+            + "                EnumerableTableAccessRel(table=[[foodmart2, store]])\n"
+            + "              EnumerableTableAccessRel(table=[[foodmart2, product]])\n"
+            + "            EnumerableTableAccessRel(table=[[foodmart2, product_class]])\n"
+            + "          EnumerableTableAccessRel(table=[[foodmart2, customer]])\n");
   }
 
   /** Checks that a 3-way join is re-ordered so that join conditions can be

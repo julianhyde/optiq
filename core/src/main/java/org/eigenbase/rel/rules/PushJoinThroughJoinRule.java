@@ -251,11 +251,23 @@ public class PushJoinThroughJoinRule extends RelOptRule {
       return;
     }
 
+    // Permute the top condition so that it is in terms of the columns from
+    // A and B, not permuted using bottomJoin.mapping. Columns from C are not
+    // affected.
+    final RexNode topCondition =
+        topJoin.getCondition().accept(
+            new RexPermuteInputsShuttle(
+                Mappings.append(bottomJoin.mapping.inverse(),
+                    Mappings.createIdentity(cCount)),
+                relA, relB
+            )
+        );
+
     // Split the condition of topJoin into a conjunction. Each of the
     // parts that does not use columns from A can be pushed down.
     final List<RexNode> intersecting = new ArrayList<RexNode>();
     final List<RexNode> nonIntersecting = new ArrayList<RexNode>();
-    split(topJoin.getCondition(), aBitSet, intersecting, nonIntersecting);
+    split(topCondition, aBitSet, intersecting, nonIntersecting);
 
     // If there's nothing to push down, it's not worth proceeding.
     if (nonIntersecting.isEmpty()) {
@@ -295,12 +307,26 @@ public class PushJoinThroughJoinRule extends RelOptRule {
         bottomJoin.copy(bottomJoin.getTraitSet(), newBottomCondition, relC,
             relB, bottomJoin.getJoinType(), null);
 
+    // Re-map the conditions that were in the bottom join, now in the top join.
     // target: | C      | B | A       |
     // source: | A       | B | C      |
     final Mapping topMapping =
-        Mappings.create(MappingType.INVERSE_SURJECTION, sourceCount,
-            sourceCount);
-    for (int t = 0; t < sourceCount; t++) {
+        Mappings.createShiftMapping(
+            aCount + bCount + cCount,
+            cCount + bCount, 0, aCount,
+            cCount, aCount, bCount,
+            0, aCount + bCount, cCount);
+    List<RexNode> newTopList = new ArrayList<RexNode>();
+    final RexPermuteInputsShuttle shuttle =
+        new RexPermuteInputsShuttle(topMapping, newBottomJoin, relA);
+    shuttle.visitList(intersecting, newTopList);
+    shuttle.visitList(bottomIntersecting, newTopList);
+    RexNode newTopCondition =
+        RexUtil.composeConjunction(rexBuilder, newTopList, false);
+
+    // Compute the mapping from the old output to the new output.
+    final Mapping mapping = Mappings.createBijection(aCount + bCount + cCount);
+    for (int t = 0; t < mapping.getTargetCount(); t++) {
       final int t2 = topJoin.mapping.getSource(t);
       final int s = t2 < aCount + bCount
           ? bottomJoin.mapping.getSource(t2)
@@ -313,29 +339,13 @@ public class PushJoinThroughJoinRule extends RelOptRule {
       } else {
         s2 = s + cCount + bCount; // from input a
       }
-//    System.out.println("aCount=" + aCount + ", bCount=" + bCount + ", cCount="
-//        + cCount + ", s=" + s + ", s2=" + s2 + ", t=" + t + ", t2=" + t2);
-      topMapping.set(s2, t2);
+      mapping.set(s2, t);
     }
 
-    Object o = // TODO: remove
-        Mappings.createShiftMapping(
-            sourceCount,
-            cCount + bCount, 0, aCount,
-            cCount, aCount, bCount,
-            0, aCount + bCount, cCount);
-    List<RexNode> newTopList = new ArrayList<RexNode>();
-    new RexPermuteInputsShuttle(topMapping, newBottomJoin, relA)
-        .visitList(intersecting, newTopList);
-    new RexPermuteInputsShuttle(topMapping, newBottomJoin, relA)
-        .visitList(bottomIntersecting, newTopList);
-    RexNode newTopCondition =
-        RexUtil.composeConjunction(rexBuilder, newTopList, false);
     @SuppressWarnings("SuspiciousNameCombination")
     final JoinRelBase newTopJoin =
         topJoin.copy(topJoin.getTraitSet(), newTopCondition, newBottomJoin,
-            relA, topJoin.getJoinType(),
-            Mappings.freeze(Mappings.compose(topMapping, topJoin.mapping)));
+            relA, topJoin.getJoinType(), Mappings.freeze(mapping));
 
     call.transformTo(newTopJoin);
   }

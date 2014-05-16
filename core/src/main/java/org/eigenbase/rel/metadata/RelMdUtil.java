@@ -635,7 +635,7 @@ public class RelMdUtil {
    * @return number of distinct rows
    */
   public static Double getJoinDistinctRowCount(
-      RelNode joinRel,
+      JoinRelBase joinRel,
       JoinRelType joinType,
       BitSet groupKey,
       RexNode predicate,
@@ -643,8 +643,8 @@ public class RelMdUtil {
     Double distRowCount;
     BitSet leftMask = new BitSet();
     BitSet rightMask = new BitSet();
-    RelNode left = joinRel.getInputs().get(0);
-    RelNode right = joinRel.getInputs().get(1);
+    RelNode left = joinRel.getLeft();
+    RelNode right = joinRel.getRight();
 
     RelMdUtil.setLeftRightBitmaps(
         groupKey,
@@ -659,11 +659,13 @@ public class RelMdUtil {
       List<RexNode> leftFilters = new ArrayList<RexNode>();
       List<RexNode> rightFilters = new ArrayList<RexNode>();
       List<RexNode> joinFilters = new ArrayList<RexNode>();
-      List<RexNode> predList = RelOptUtil.conjunctions(predicate);
+
+      final RexVisitor<RexNode> shuttle =
+          new RexPermuteInputsShuttle(joinRel.mapping.inverse(), left, right);
 
       RelOptUtil.classifyFilters(
           joinRel,
-          predList,
+          RelOptUtil.conjunctions(predicate.accept(shuttle)),
           joinType == JoinRelType.INNER,
           !joinType.generatesNullsOnLeft(),
           !joinType.generatesNullsOnRight(),
@@ -678,26 +680,14 @@ public class RelMdUtil {
           RexUtil.composeConjunction(rexBuilder, rightFilters, true);
     }
 
+    final Double leftCount =
+        RelMetadataQuery.getDistinctRowCount(left, leftMask, leftPred);
+    final Double rightCount =
+        RelMetadataQuery.getDistinctRowCount(right, rightMask, rightPred);
     if (useMaxNdv) {
-      distRowCount = Math.max(RelMetadataQuery.getDistinctRowCount(
-                left,
-                leftMask,
-                leftPred),
-            RelMetadataQuery.getDistinctRowCount(
-                right,
-                rightMask,
-                rightPred));
+      distRowCount = Math.max(leftCount, rightCount);
     } else {
-      distRowCount =
-        NumberUtil.multiply(
-            RelMetadataQuery.getDistinctRowCount(
-                left,
-                leftMask,
-                leftPred),
-            RelMetadataQuery.getDistinctRowCount(
-                right,
-                rightMask,
-                rightPred));
+      distRowCount = NumberUtil.multiply(leftCount, rightCount);
     }
 
     return RelMdUtil.numDistinctVals(

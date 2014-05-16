@@ -31,6 +31,9 @@ import net.hydromatic.linq4j.Ord;
 import net.hydromatic.optiq.util.BitSets;
 
 import com.google.common.collect.ImmutableList;
+import org.eigenbase.util.mapping.Mapping;
+import org.eigenbase.util.mapping.MappingType;
+import org.eigenbase.util.mapping.Mappings;
 
 /**
  * PushProjector is a utility class used to perform operations used in push
@@ -476,6 +479,8 @@ public class PushProjector {
    * of projection
    *
    * @return array indicating how much each input needs to be adjusted by
+   *
+   * @deprecated Use #getMapping
    */
   public int[] getAdjustments() {
     int[] adjustments = new int[nChildFields];
@@ -489,6 +494,26 @@ public class PushProjector {
       newIdx++;
     }
     return adjustments;
+  }
+
+  /**
+   * Returns a mapping to adjust each input reference as a result of projection.
+   */
+  public Mapping getMapping() {
+    final Mapping mapping =
+        Mappings.create(MappingType.SURJECTION, projRefs.cardinality(),
+            nChildFields);
+    int newIdx = 0;
+    int rightOffset = childPreserveExprs.size();
+    for (int pos : BitSets.toIter(projRefs)) {
+      int adjustment = newIdx;
+      if (pos >= nSysFields + nFields) {
+        adjustment += rightOffset;
+      }
+      mapping.set(adjustment, pos);
+      newIdx++;
+    }
+    return mapping;
   }
 
   /**

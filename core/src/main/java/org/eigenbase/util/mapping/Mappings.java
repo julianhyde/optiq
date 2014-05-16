@@ -672,6 +672,22 @@ public abstract class Mappings {
     return n == mapping.getTargetCount();
   }
 
+  /** Converts a mapping to an adjustments array.
+   *
+   * <p>(Adjustments arrays are used in some older components. Mappings are
+   * preferred for new components.)</p>
+   */
+  public static int[] getAdjustments(Mapping mapping) {
+    final int[] adjustments = new int[mapping.getTargetCount()];
+    for (int i = 0; i < adjustments.length; i++) {
+      final int source = mapping.getSourceOpt(i);
+      if (source >= 0) {
+        adjustments[i] = source - i;
+      }
+    }
+    return adjustments;
+  }
+
   //~ Inner Interfaces -------------------------------------------------------
 
   /**
@@ -1927,6 +1943,15 @@ public abstract class Mappings {
 
     @Override public final int getSourceOpt(int target) {
       return getSource(target);
+    }
+
+    @Override public int getTargetOpt(int source) {
+      for (int t = 0; t < sources.length; t++) {
+        if (sources[t] == source) {
+          return t;
+        }
+      }
+      return -1;
     }
 
     @Override public Iterator<IntPair> iterator() {

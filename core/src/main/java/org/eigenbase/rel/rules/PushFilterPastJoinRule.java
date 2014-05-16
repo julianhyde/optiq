@@ -91,10 +91,16 @@ public abstract class PushFilterPastJoinRule extends RelOptRule {
       }
     }
 
-    final List<RexNode> aboveFilters =
-        filter != null
-            ? RelOptUtil.conjunctions(filter.getCondition())
-            : ImmutableList.<RexNode>of();
+    final List<RexNode> aboveFilters;
+    if (filter != null) {
+      aboveFilters =
+          RelOptUtil.conjunctions(
+              filter.getCondition().accept(
+                  new RexPermuteInputsShuttle(join.mapping.inverse(),
+                      join.getLeft(), join.getRight())));
+    } else {
+      aboveFilters = ImmutableList.of();
+    }
 
     List<RexNode> leftFilters = new ArrayList<RexNode>();
     List<RexNode> rightFilters = new ArrayList<RexNode>();
