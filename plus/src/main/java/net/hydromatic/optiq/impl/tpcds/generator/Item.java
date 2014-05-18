@@ -22,7 +22,7 @@ import java.sql.Date;
 import static java.util.Locale.ENGLISH;
 
 /** Entity corresponding to a row in the
- * {@code } TPC-DS table. */
+ * {@code item} TPC-DS table. */
 public class Item implements TpcdsEntity {
   // i_item_sk                 integer               not null
   public final int itemSk;

@@ -20,7 +20,7 @@ package net.hydromatic.optiq.impl.tpcds.generator;
 import static java.util.Locale.ENGLISH;
 
 /** Entity corresponding to a row in the
- * {@code } TPC-DS table. */
+ * {@code ship_mode} TPC-DS table. */
 public class ShipMode implements TpcdsEntity {
   // sm_ship_mode_sk           integer               not null
   public final int shipModeSk;

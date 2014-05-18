@@ -20,7 +20,7 @@ package net.hydromatic.optiq.impl.tpcds.generator;
 import static java.util.Locale.ENGLISH;
 
 /** Entity corresponding to a row in the
- * {@code } TPC-DS table. */
+ * {@code catalog_page} TPC-DS table. */
 public class CatalogPage implements TpcdsEntity {
   // cp_catalog_page_sk        integer               not null
   public final int catalogPageSk;

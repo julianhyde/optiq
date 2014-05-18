@@ -33,8 +33,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class TpcdsTable<E> {
   public static final TpcdsTable<Customer> CALL_CENTER =
-      new TpcdsTable<Customer>("call_center", "cc",
-          CallCenter.Column.values()) {
+      new TpcdsTable<Customer>("call_center", "cc", CallCenter.Column.values()) {
       public Iterable<Customer> createGenerator(double scaleFactor, int part,
           int partCount) {
         return new CallCenter.Generator(scaleFactor, part, partCount);
@@ -43,6 +42,7 @@ public class TpcdsTable<E> {
 
   public final String name;
   public final String prefix;
+  public final ImmutableList<TpcdsColumn<E>> columns;
 
   private static final List<TpcdsTable<?>> TABLES;
   private static final Map<String, TpcdsTable<?>> TABLES_BY_NAME;
@@ -56,6 +56,8 @@ public class TpcdsTable<E> {
   public TpcdsTable(String name, String prefix, TpcdsColumn[] columns) {
     this.name = checkNotNull(name);
     this.prefix = checkNotNull(prefix);
+    //noinspection unchecked
+    this.columns = ImmutableList.<TpcdsColumn<E>>copyOf(columns);
   }
 
   public static TpcdsTable[] getTables() {
@@ -72,7 +74,7 @@ public class TpcdsTable<E> {
   }
 
   public List<TpcdsColumn<E>> getColumns() {
-    return null;
+    return columns;
   }
 
   public static Function<TpcdsTable<?>, String> tableNameGetter() {

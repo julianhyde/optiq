@@ -23,7 +23,7 @@ import java.util.Iterator;
 import static java.util.Locale.ENGLISH;
 
 /** Entity corresponding to a row in the
- * {@code } TPC-DS table. */
+ * {@code call_center} TPC-DS table. */
 public class CallCenter implements TpcdsEntity {
   // cc_call_center_sk         integer               not null
   public final int callCenterSk;

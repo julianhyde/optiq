@@ -23,7 +23,7 @@ import java.sql.Time;
 import static java.util.Locale.ENGLISH;
 
 /** Entity corresponding to a row in the
- * {@code } TPC-DS table. */
+ * {@code dbgen_version} TPC-DS table. */
 public class DbgenVersion implements TpcdsEntity {
   // dv_version                varchar(16)
   public final String version;
