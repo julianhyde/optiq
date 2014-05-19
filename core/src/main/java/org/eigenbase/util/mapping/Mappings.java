@@ -248,6 +248,32 @@ public abstract class Mappings {
   }
 
   /**
+   * Creates a view of a list, permuting according to a backwards mapping.
+   *
+   * @param mapping Mapping
+   * @param list    List
+   * @param <T>     Element type
+   * @return Permuted view of list
+   */
+  public static <T> List<T> apply4(
+      final Mapping mapping,
+      final List<T> list) {
+    assert mapping.getTargetCount() == list.size();
+    return new AbstractList<T>() {
+      @Override
+      public T get(int index) {
+        final int target = mapping.getTargetOpt(index);
+        return target < 0 ? null : list.get(target);
+      }
+
+      @Override
+      public int size() {
+        return mapping.getTargetCount();
+      }
+    };
+  }
+
+  /**
    * Returns a mapping as a list such that {@code list.get(source)} is
    * {@code mapping.getTarget(source)} and {@code list.size()} is
    * {@code mapping.getSourceCount()}.

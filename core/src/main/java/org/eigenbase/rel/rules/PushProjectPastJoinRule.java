@@ -97,10 +97,9 @@ public class PushProjectPastJoinRule extends RelOptRule {
 
     // convert the join condition to reference the projected columns
     RexNode newJoinFilter = null;
-    final int[] adjustments1 = pushProject.getAdjustments();
     Mapping mapping = pushProject.getMapping();
     int[] adjustments = Mappings.getAdjustments(mapping);
-    assert Arrays.equals(adjustments, adjustments1);
+    assert Arrays.equals(adjustments, pushProject.getAdjustments());
     if (joinRel.getCondition() != null) {
       newJoinFilter =
           pushProject.convertRefsAndExprs(
@@ -120,7 +119,7 @@ public class PushProjectPastJoinRule extends RelOptRule {
             newJoinFilter,
             joinRel.getJoinType(),
             Mappings.freeze(
-                Mappings.compose(joinRel.mapping, mapping.inverse())),
+                Mappings.compose(mapping.inverse(), joinRel.mapping)),
             ImmutableSet.<String>of(),
             joinRel.isSemiJoinDone(),
             joinRel.getSystemFieldList());

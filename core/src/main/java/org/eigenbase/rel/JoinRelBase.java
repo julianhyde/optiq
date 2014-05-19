@@ -88,7 +88,7 @@ public abstract class JoinRelBase extends AbstractRelNode {
     final int n =
         left.getRowType().getFieldCount() + right.getRowType().getFieldCount();
     this.mapping = mapping != null ? mapping : Mappings.createIdentity(n);
-    assert this.mapping.getSourceCount() == n;
+    assert this.mapping.getTargetCount() == n;
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -334,8 +334,8 @@ public abstract class JoinRelBase extends AbstractRelNode {
     }
     if (mapping != null) {
       return typeFactory.createStructType(
-          Mappings.apply3(mapping, typeList),
-          Mappings.apply3(mapping, nameList));
+          Mappings.apply4(mapping, typeList),
+          Mappings.apply4(mapping, nameList));
     } else {
       return typeFactory.createStructType(typeList, nameList);
     }
