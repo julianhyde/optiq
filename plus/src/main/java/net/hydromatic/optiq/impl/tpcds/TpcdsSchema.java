@@ -24,7 +24,6 @@ import net.hydromatic.optiq.Table;
 import net.hydromatic.optiq.impl.AbstractSchema;
 import net.hydromatic.optiq.impl.AbstractTableQueryable;
 import net.hydromatic.optiq.impl.java.AbstractQueryableTable;
-import net.hydromatic.optiq.impl.tpcds.generator.*;
 
 import org.eigenbase.reltype.RelDataType;
 import org.eigenbase.reltype.RelDataTypeFactory;
@@ -35,7 +34,9 @@ import java.sql.Date;
 import java.util.List;
 import java.util.Map;
 
-/** Schema that provides TPC-H tables, populated according to a
+import net.hydromatic.tpcds.*;
+
+/** Schema that provides TPC-DS tables, populated according to a
  * particular scale factor. */
 public class TpcdsSchema extends AbstractSchema {
   private final double scaleFactor;
@@ -43,7 +44,6 @@ public class TpcdsSchema extends AbstractSchema {
   private final int partCount;
   private final boolean columnPrefix;
   private final ImmutableMap<String, Table> tableMap;
-  private final ImmutableMap<String, String> columnPrefixes;
 
   public TpcdsSchema(double scaleFactor, int part, int partCount,
       boolean columnPrefix) {
@@ -59,25 +59,13 @@ public class TpcdsSchema extends AbstractSchema {
           new TpcdsQueryableTable(tpcdsTable));
     }
     this.tableMap = builder.build();
-
-    this.columnPrefixes = ImmutableMap.<String, String>builder()
-        .put("LINEITEM", "L_")
-        .put("CUSTOMER", "C_")
-        .put("SUPPLIER", "S_")
-        .put("PARTSUPP", "PS_")
-        .put("PART", "P_")
-        .put("ORDERS", "O_")
-        .put("NATION", "N_")
-        .put("REGION", "R_")
-        .build();
   }
 
-  @Override
-  protected Map<String, Table> getTableMap() {
+  @Override protected Map<String, Table> getTableMap() {
     return tableMap;
   }
 
-  /** Definition of a table in the TPC-H schema. */
+  /** Definition of a table in the TPC-DS schema. */
   private class TpcdsQueryableTable<E extends TpcdsEntity>
       extends AbstractQueryableTable {
     private final TpcdsTable<E> tpcdsTable;
