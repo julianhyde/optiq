@@ -19,6 +19,8 @@ package org.eigenbase.util;
 
 import java.util.*;
 
+import com.google.common.collect.ImmutableList;
+
 /**
  * Read-only list that is the concatenation of sub-lists.
  *
@@ -34,19 +36,28 @@ import java.util.*;
  * @param <T> Element type
  */
 public class CompositeList<T> extends AbstractList<T> {
-  private final List<T>[] lists;
+  private final ImmutableList<List<T>> lists;
 
   /**
-   * Creates a CompoundList.
+   * Creates a CompositeList.
    *
    * @param lists Constituent lists
    */
-  public CompositeList(List<T>... lists) {
+  private CompositeList(ImmutableList<List<T>> lists) {
     this.lists = lists;
   }
 
   /**
-   * Creates a CompoundList.
+   * Creates a CompositeList.
+   *
+   * @param lists Constituent lists
+   */
+  public CompositeList(List<T>... lists) {
+    this.lists = ImmutableList.copyOf(lists);
+  }
+
+  /**
+   * Creates a CompositeList.
    *
    * <p>More convenient than {@link #CompositeList(java.util.List[])},
    * because element type is inferred. Use this method as you would
@@ -59,6 +70,10 @@ public class CompositeList<T> extends AbstractList<T> {
    */
   public static <T> CompositeList<T> of(List<T>... lists) {
     return new CompositeList<T>(lists);
+  }
+
+  public static <T> CompositeList<T> of(List<T> list0, List<T> list1) {
+    return new CompositeList<T>(ImmutableList.of(list0, list1));
   }
 
   public T get(int index) {

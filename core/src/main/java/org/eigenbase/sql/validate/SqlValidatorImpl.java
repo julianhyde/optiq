@@ -453,7 +453,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     final String posString = pos.toString();
     IdInfo info = idPositions.get(posString);
     if (info != null) {
-      return new SqlIdentifierMoniker(info.scope.fullyQualify(info.id));
+      return new SqlIdentifierMoniker(info.scope.fullyQualify(info.id, true));
     } else {
       return null;
     }
@@ -552,11 +552,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     case ON:
       condition.findValidOptions(this, joinScope, pos, hintList);
       return;
-    default:
 
+    default:
       // No suggestions.
       // Not supporting hints for other types such as 'Using' yet.
-      return;
     }
   }
 
@@ -2381,7 +2380,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   }
 
   public void validateIdentifier(SqlIdentifier id, SqlValidatorScope scope) {
-    final SqlIdentifier fqId = scope.fullyQualify(id);
+    if (true) {
+      return;
+    }
+    final SqlIdentifier fqId = scope.fullyQualify(id, true);
     if (expandColumnReferences) {
       // NOTE jvs 9-Apr-2007: this doesn't cover ORDER BY, which has its
       // own ideas about qualification.
@@ -3757,6 +3759,23 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     throw new UnsupportedOperationException();
   }
 
+  private static SqlIdentifier qualify(SqlIdentifier id,
+      SqlValidatorScope scope) {
+    for (int i = id.names.size(); i > 0; i--) {
+      SqlIdentifier head =
+          new SqlIdentifier(id.names.subList(0, i), id.getParserPosition());
+      final SqlIdentifier fqId = scope.fullyQualify(head, false);
+      if (fqId != null) {
+        return new SqlIdentifier(
+            CompositeList.of(head.names, Util.skip(id.names, i)),
+            id.getParserPosition());
+      }
+    }
+    // Call one more time, to generate an exception.
+    scope.fullyQualify(id, true);
+    throw new AssertionError("expected fullyQualify to throw");
+  }
+
   //~ Inner Classes ----------------------------------------------------------
 
   /**
@@ -3884,7 +3903,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
       RelDataType type = null;
       if (!(scope instanceof EmptyScope)) {
-        id = scope.fullyQualify(id);
+        id = qualify(id, scope);
       }
       for (Ord<String> ord : Ord.zip(id.names)) {
         String name = ord.e;
@@ -3983,9 +4002,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       if (call != null) {
         return call.accept(this);
       }
-      final SqlIdentifier fqId = getScope().fullyQualify(id);
-      validator.setOriginal(fqId, id);
-      return fqId;
+      final SqlNode qualify = qualify(id, getScope());
+      validator.setOriginal(qualify, id);
+      return qualify;
     }
 
     // implement SqlScopedShuttle
@@ -4072,7 +4091,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         }
       }
       if (expr instanceof SqlIdentifier) {
-        expr = getScope().fullyQualify((SqlIdentifier) expr);
+        expr = getScope().fullyQualify((SqlIdentifier) expr, true);
       }
 
       // Create a copy of the expression with the position of the order
@@ -4098,7 +4117,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       }
 
       // No match. Return identifier unchanged.
-      return getScope().fullyQualify(id);
+      return getScope().fullyQualify(id, true);
     }
 
     protected SqlNode visitScoped(SqlCall call) {

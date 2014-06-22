@@ -93,8 +93,14 @@ public interface SqlValidatorScope {
    * Converts an identifier into a fully-qualified identifier. For example,
    * the "empno" in "select empno from emp natural join dept" becomes
    * "emp.empno".
+   *
+   * <p>If {@code fail} is true, never returns null. If the identifier cannot be
+   * resolved, throws an exception.</p>
+   *
+   * @param identifier  Identifier to resolve
+   * @param fail        Whether to throw if identifier cannot be resolved.
    */
-  SqlIdentifier fullyQualify(SqlIdentifier identifier);
+  SqlIdentifier fullyQualify(SqlIdentifier identifier, boolean fail);
 
   /**
    * Registers a relation in this scope.

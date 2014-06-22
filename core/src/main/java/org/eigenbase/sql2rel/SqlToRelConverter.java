@@ -3123,7 +3123,7 @@ public class SqlToRelConverter {
 
     SqlValidatorNamespace namespace = null;
     if (bb.scope != null) {
-      identifier = bb.scope.fullyQualify(identifier);
+      identifier = bb.scope.fullyQualify(identifier, true);
       namespace = bb.scope.resolve(identifier.names.get(0), null, null);
     }
     RexNode e = bb.lookupExp(identifier.names.get(0));

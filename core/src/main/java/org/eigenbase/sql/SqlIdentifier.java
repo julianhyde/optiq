@@ -257,7 +257,7 @@ public class SqlIdentifier extends SqlNode {
     if (call != null) {
       return call.getMonotonicity(scope);
     }
-    final SqlIdentifier fqId = scope.fullyQualify(this);
+    final SqlIdentifier fqId = scope.fullyQualify(this, true);
     final SqlValidatorNamespace ns =
         SqlValidatorUtil.lookup(scope, Util.skipLast(fqId.names));
     return ns.resolve().getMonotonicity(Util.last(fqId.names));

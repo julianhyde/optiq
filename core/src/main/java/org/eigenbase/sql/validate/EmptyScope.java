@@ -48,7 +48,7 @@ class EmptyScope implements SqlValidatorScope {
     return validator;
   }
 
-  public SqlIdentifier fullyQualify(SqlIdentifier identifier) {
+  public SqlIdentifier fullyQualify(SqlIdentifier identifier, boolean fail) {
     return identifier;
   }
 

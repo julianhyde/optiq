@@ -367,7 +367,7 @@ public class SqlValidatorUtil {
     }
 
     public SqlNode visit(SqlIdentifier id) {
-      return getScope().fullyQualify(id);
+      return getScope().fullyQualify(id, true);
     }
 
     public SqlNode visit(SqlDataTypeSpec type) {

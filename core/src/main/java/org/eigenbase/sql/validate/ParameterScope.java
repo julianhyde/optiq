@@ -48,7 +48,7 @@ public class ParameterScope extends EmptyScope {
 
   //~ Methods ----------------------------------------------------------------
 
-  public SqlIdentifier fullyQualify(SqlIdentifier identifier) {
+  public SqlIdentifier fullyQualify(SqlIdentifier identifier, boolean fail) {
     return identifier;
   }
 

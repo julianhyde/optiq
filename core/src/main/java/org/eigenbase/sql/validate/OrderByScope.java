@@ -62,7 +62,7 @@ public class OrderByScope extends DelegatingScope {
     addColumnNames(ns, result);
   }
 
-  public SqlIdentifier fullyQualify(SqlIdentifier identifier) {
+  public SqlIdentifier fullyQualify(SqlIdentifier identifier, boolean fail) {
     // If it's a simple identifier, look for an alias.
     if (identifier.isSimple()
         && validator.getConformance().isSortByAlias()) {
@@ -74,7 +74,7 @@ public class OrderByScope extends DelegatingScope {
         return identifier;
       }
     }
-    return super.fullyQualify(identifier);
+    return super.fullyQualify(identifier, fail);
   }
 
   public RelDataType resolveColumn(String name, SqlNode ctx) {

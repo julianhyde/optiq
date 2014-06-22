@@ -130,7 +130,7 @@ public abstract class DelegatingScope implements SqlValidatorScope {
    *
    * <p>If the identifier cannot be resolved, throws. Never returns null.
    */
-  public SqlIdentifier fullyQualify(SqlIdentifier identifier) {
+  public SqlIdentifier fullyQualify(SqlIdentifier identifier, boolean fail) {
     if (identifier.isStar()) {
       return identifier;
     }
@@ -159,8 +159,12 @@ public abstract class DelegatingScope implements SqlValidatorScope {
       tableName = identifier.names.get(0);
       final SqlValidatorNamespace fromNs = resolve(tableName, null, null);
       if (fromNs == null) {
-        throw validator.newValidationError(identifier.getComponent(0),
-            RESOURCE.tableNameNotFound(tableName));
+        if (fail) {
+          throw validator.newValidationError(identifier.getComponent(0),
+              RESOURCE.tableNameNotFound(tableName));
+        } else {
+          return null;
+        }
       }
       columnName = identifier.names.get(1);
       final RelDataType fromRowType = fromNs.getRowType();
