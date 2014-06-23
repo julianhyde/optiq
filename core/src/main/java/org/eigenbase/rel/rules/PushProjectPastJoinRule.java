@@ -17,16 +17,17 @@
 */
 package org.eigenbase.rel.rules;
 
+import java.util.Arrays;
+
 import org.eigenbase.rel.*;
 import org.eigenbase.relopt.*;
 import org.eigenbase.rex.*;
 
-import com.google.common.collect.ImmutableSet;
 import org.eigenbase.util.CompositeList;
 import org.eigenbase.util.mapping.Mapping;
 import org.eigenbase.util.mapping.Mappings;
 
-import java.util.Arrays;
+import com.google.common.collect.ImmutableSet;
 
 /**
  * PushProjectPastJoinRule implements the rule for pushing a projection past a

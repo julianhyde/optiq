@@ -1872,8 +1872,8 @@ public abstract class RelOptUtil {
     final int nTotalFields = nSysFields + nFieldsLeft + nFieldsRight;
 
     assert joinRel.mapping.getSourceCount() == nTotalFields;
-    assert joinRel.mapping.getTargetCount() ==
-        joinRel.getRowType().getFieldCount();
+    assert joinRel.mapping.getTargetCount()
+        == joinRel.getRowType().getFieldCount();
 
     // set the reference bitmaps for the left and right children
     BitSet leftBitmap =

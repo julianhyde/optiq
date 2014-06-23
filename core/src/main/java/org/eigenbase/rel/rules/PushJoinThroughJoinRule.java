@@ -259,9 +259,7 @@ public class PushJoinThroughJoinRule extends RelOptRule {
             new RexPermuteInputsShuttle(
                 Mappings.append(bottomJoin.mapping.inverse(),
                     Mappings.createIdentity(cCount)),
-                relA, relB
-            )
-        );
+                relA, relB));
 
     // Split the condition of topJoin into a conjunction. Each of the
     // parts that does not use columns from A can be pushed down.

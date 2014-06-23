@@ -25,15 +25,15 @@ import org.eigenbase.reltype.*;
 import org.eigenbase.rex.*;
 import org.eigenbase.sql.*;
 import org.eigenbase.util.Pair;
+import org.eigenbase.util.mapping.Mapping;
+import org.eigenbase.util.mapping.MappingType;
+import org.eigenbase.util.mapping.Mappings;
 
 import net.hydromatic.linq4j.Ord;
 
 import net.hydromatic.optiq.util.BitSets;
 
 import com.google.common.collect.ImmutableList;
-import org.eigenbase.util.mapping.Mapping;
-import org.eigenbase.util.mapping.MappingType;
-import org.eigenbase.util.mapping.Mappings;
 
 /**
  * PushProjector is a utility class used to perform operations used in push
