@@ -19,12 +19,12 @@ package org.eigenbase.sql.fun;
 
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
-
 import org.eigenbase.reltype.RelDataType;
 import org.eigenbase.reltype.RelDataTypeFactory;
 import org.eigenbase.sql.*;
 import org.eigenbase.sql.type.*;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * <code>LEAD</code> and <code>LAG</code> aggregate functions
