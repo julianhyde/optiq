@@ -774,7 +774,7 @@ public class RexImpTable {
   }
 
   static class CountWinImplementor extends StrictWinAggImplementor {
-    boolean justPartitionRowCount;
+    boolean justFrameRowCount;
 
     @Override
     public List<Type> getNotNullState(WinAggContext info) {
@@ -786,7 +786,7 @@ public class RexImpTable {
         }
       }
       if (!hasNullable) {
-        justPartitionRowCount = true;
+        justFrameRowCount = true;
         return Collections.emptyList();
       }
       return super.getNotNullState(info);
@@ -794,7 +794,7 @@ public class RexImpTable {
 
     @Override
     public void implementNotNullAdd(WinAggContext info, WinAggAddContext add) {
-      if (justPartitionRowCount) {
+      if (justFrameRowCount) {
         return;
       }
       add.currentBlock().add(Expressions.statement(
@@ -804,8 +804,8 @@ public class RexImpTable {
     @Override
     protected Expression implementNotNullResult(WinAggContext info,
         WinAggResultContext result) {
-      if (justPartitionRowCount) {
-        return result.getPartitionRowCount();
+      if (justFrameRowCount) {
+        return result.getFrameRowCount();
       }
       return super.implementNotNullResult(info, result);
     }
@@ -1034,13 +1034,18 @@ public class RexImpTable {
       // no op
     }
 
+    public boolean needCacheWhenFrameIntact() {
+      return true;
+    }
+
     public Expression implementResult(AggContext info,
         AggResultContext result) {
       WinAggResultContext winResult = (WinAggResultContext) result;
+
       return Expressions.condition(winResult.hasRows(),
-          RexToLixTranslator.convert(
-              winResult.arguments(winResult.computeIndex(
-              Expressions.constant(0), seekType)).get(0), info.returnType()),
+          winResult.rowTranslator(winResult.computeIndex(
+              Expressions.constant(0), seekType)).translate(
+              winResult.rexArguments().get(0), info.returnType()),
           getDefaultValue(info.returnType()));
     }
   }

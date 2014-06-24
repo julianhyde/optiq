@@ -32,6 +32,7 @@ public class WinAggResetContextImpl extends AggResetContextImpl
   private final Expression index;
   private final Expression startIndex;
   private final Expression endIndex;
+  private final Expression frameRowCount;
   private final Expression partitionRowCount;
   private final Expression hasRows;
 
@@ -44,18 +45,19 @@ public class WinAggResetContextImpl extends AggResetContextImpl
    * @param startIndex index of the very first row in partition
    * @param endIndex index of the very last row in partition
    * @param hasRows boolean expression that tells if the partition has rows
-   * @param partitionRowCount number of rows in the current partition or
-   *                          0 if the partition is empty
-   *
+   * @param frameRowCount number of rows in the current frame
+   * @param partitionRowCount number of rows in the current partition
    */
   public WinAggResetContextImpl(BlockBuilder block,
       List<Expression> accumulator, Expression index,
       Expression startIndex, Expression endIndex,
-      Expression hasRows, Expression partitionRowCount) {
+      Expression hasRows,
+      Expression frameRowCount, Expression partitionRowCount) {
     super(block, accumulator);
     this.index = index;
     this.startIndex = startIndex;
     this.endIndex = endIndex;
+    this.frameRowCount = frameRowCount;
     this.partitionRowCount = partitionRowCount;
     this.hasRows = hasRows;
   }
@@ -74,6 +76,10 @@ public class WinAggResetContextImpl extends AggResetContextImpl
 
   public Expression hasRows() {
     return hasRows;
+  }
+
+  public Expression getFrameRowCount() {
+    return frameRowCount;
   }
 
   public Expression getPartitionRowCount() {

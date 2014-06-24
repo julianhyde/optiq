@@ -54,7 +54,16 @@ public interface WinAggFrameContext {
   Expression hasRows();
 
   /**
-   * Returns the number of rows in the current partition.
+   * Returns the number of rows in the current frame (subject to framing
+   * clause).
+   * @return number of rows in the current partition or 0 if the partition
+   *   is empty
+   */
+  Expression getFrameRowCount();
+
+  /**
+   * Returns the number of rows in the current partition (as determined by
+   * PARTITION BY clause).
    * @return number of rows in the current partition or 0 if the partition
    *   is empty
    */

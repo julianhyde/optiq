@@ -34,6 +34,22 @@ public interface WinAggFrameResultContext extends WinAggFrameContext {
       WinAggImplementor.SeekType seekType);
 
   /**
+   * Returns boolean the expression that checks if the given index is in
+   * the frame bounds.
+   * @param rowIndex index if the row to check
+   * @return expression that validates frame bounds for the given index
+   */
+  Expression rowInFrame(Expression rowIndex);
+
+  /**
+   * Returns boolean the expression that checks if the given index is in
+   * the partition bounds.
+   * @param rowIndex index if the row to check
+   * @return expression that validates partition bounds for the given index
+   */
+  Expression rowInPartition(Expression rowIndex);
+
+  /**
    * Returns row translator for given absolute row position.
    * @param rowIndex absolute index of the row.
    * @return translator for the requested row

@@ -63,6 +63,14 @@ public abstract class WinAggResultContextImpl extends AggResultContextImpl
     return getFrame().computeIndex(offset, seekType);
   }
 
+  public Expression rowInFrame(Expression rowIndex) {
+    return getFrame().rowInFrame(rowIndex);
+  }
+
+  public Expression rowInPartition(Expression rowIndex) {
+    return getFrame().rowInPartition(rowIndex);
+  }
+
   public RexToLixTranslator rowTranslator(Expression rowIndex) {
     return getFrame().rowTranslator(rowIndex)
         .setNullable(currentNullables());
@@ -86,6 +94,10 @@ public abstract class WinAggResultContextImpl extends AggResultContextImpl
 
   public Expression hasRows() {
     return getFrame().hasRows();
+  }
+
+  public Expression getFrameRowCount() {
+    return getFrame().getFrameRowCount();
   }
 
   public Expression getPartitionRowCount() {

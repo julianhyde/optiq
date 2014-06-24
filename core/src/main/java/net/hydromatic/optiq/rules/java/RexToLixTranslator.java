@@ -328,6 +328,12 @@ public class RexToLixTranslator {
       Expression x = inputGetter.field(list, index, storageType);
 
       Expression input = list.append("inp" + index + "_", x); // safe to share
+      if (nullAs == RexImpTable.NullAs.NOT_POSSIBLE
+          && input.type.equals(storageType)) {
+        // When we asked for not null input that would be stored as box, avoid
+        // unboxing via nullAs.handle below.
+        return input;
+      }
       Expression nullHandled = nullAs.handle(input);
 
       // If we get ConstantExpression, just return it (i.e. primitive false)
