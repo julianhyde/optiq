@@ -26,6 +26,7 @@ import net.hydromatic.optiq.*;
 import net.hydromatic.optiq.impl.java.JavaTypeFactory;
 import net.hydromatic.optiq.prepare.OptiqPrepareImpl;
 import net.hydromatic.optiq.prepare.Prepare;
+import net.hydromatic.optiq.rules.java.impl.*;
 import net.hydromatic.optiq.runtime.SortedMultiMap;
 import net.hydromatic.optiq.util.BitSets;
 
@@ -1049,7 +1050,7 @@ public class JavaRules {
         agg.state = decls;
         initExpressions.addAll(decls);
         agg.implementor.implementReset(agg.context,
-            new AggResultContext(initBlock, decls));
+            new AggResultContextImpl(initBlock, decls));
       }
 
       final PhysType accPhysType =
@@ -1094,7 +1095,7 @@ public class JavaRules {
         stateOffset += stateSize;
 
         AggAddContext addContext =
-            new AggAddContext(builder2, accumulator) {
+            new AggAddContextImpl(builder2, accumulator) {
               public List<RexNode> rexArguments() {
                 List<RelDataTypeField> inputTypes =
                     inputPhysType.getRowType().getFieldList();
@@ -1149,7 +1150,7 @@ public class JavaRules {
       for (final AggImpState agg : aggs) {
         results.add(agg.implementor.implementResult(
             agg.context,
-            new AggResultContext(resultBlock, agg.state)));
+            new AggResultContextImpl(resultBlock, agg.state)));
       }
       resultBlock.add(physType.record(results));
       if (keyArity == 0) {
@@ -2343,7 +2344,7 @@ public class JavaRules {
 
         for (final AggImpState agg : aggs) {
           agg.implementor.implementReset(agg.context,
-              new WinAggResetContext(builder6, agg.state, i_, startX, endX,
+              new WinAggResetContextImpl(builder6, agg.state, i_, startX, endX,
                   hasRows, partitionRowCount));
         }
 
@@ -2381,11 +2382,11 @@ public class JavaRules {
             Expressions.declare(0, "j", actualStart);
 
         final PhysType inputPhysTypeFinal = inputPhysType;
-        final Function<BlockBuilder, WinAggImplementor.WinAggFrameResultContext>
+        final Function<BlockBuilder, WinAggFrameResultContext>
             resultContextBuilder =
             getBlockBuilderWinAggFrameResultContextFunction(typeFactory, result,
                 translatedConstants, comparator_, rows_, i_, startX, endX,
-                jDecl, inputPhysTypeFinal);
+                hasRows, partitionRowCount, jDecl, inputPhysTypeFinal);
 
         final Function<AggImpState, List<RexNode>> rexArguments =
             new Function<AggImpState, List<RexNode>>() {
@@ -2406,8 +2407,7 @@ public class JavaRules {
               }
             };
 
-        implementAdd(aggs, i_, startX, endX, hasRows, partitionRowCount,
-            builder7, jDecl, resultContextBuilder, rexArguments);
+        implementAdd(aggs, builder7, resultContextBuilder, rexArguments, jDecl);
 
         BlockStatement forBlock = builder7.toBlock();
         if (!forBlock.statements.isEmpty()) {
@@ -2423,9 +2423,7 @@ public class JavaRules {
           builder5.add(forAggLoop);
         }
 
-        implementResult(aggs, i_, startX, endX, hasRows, builder5,
-            partitionRowCount,
-            resultContextBuilder, rexArguments);
+        implementResult(aggs, builder5, resultContextBuilder, rexArguments);
 
         builder4.add(Expressions.ifThen(Expressions.orElse(
             lowerBoundCanChange,
@@ -2476,40 +2474,31 @@ public class JavaRules {
       return implementor.result(inputPhysType, builder.toBlock());
     }
 
-    private Function<BlockBuilder, WinAggImplementor.WinAggFrameResultContext>
+    private Function<BlockBuilder, WinAggFrameResultContext>
     getBlockBuilderWinAggFrameResultContextFunction(
         final JavaTypeFactory typeFactory, final Result result,
         final List<Expression> translatedConstants,
         final Expression comparator_,
         final Expression rows_, final ParameterExpression i_,
-        final Expression startX,
-        final Expression endX, final DeclarationStatement jDecl,
-        final PhysType inputPhysTypeFinal) {
+        final Expression startX, final Expression endX,
+        final Expression hasRows, final Expression partitionRowCount,
+        final DeclarationStatement jDecl,
+        final PhysType inputPhysType) {
       return new Function<BlockBuilder,
-          WinAggImplementor.WinAggFrameResultContext>() {
-        public WinAggImplementor.WinAggFrameResultContext apply(
+          WinAggFrameResultContext>() {
+        public WinAggFrameResultContext apply(
             final BlockBuilder block) {
-          return new WinAggImplementor.WinAggFrameResultContext() {
+          return new WinAggFrameResultContext() {
             public RexToLixTranslator rowTranslator(Expression rowIndex) {
               Expression row =
                   getRow(rowIndex);
               final RexToLixTranslator.InputGetter inputGetter =
-                  new WindowRelInputGetter(row, inputPhysTypeFinal,
+                  new WindowRelInputGetter(row, inputPhysType,
                       result.physType.getRowType().getFieldCount(),
                       translatedConstants);
 
               return RexToLixTranslator.forAggregation(typeFactory,
                   block, inputGetter);
-            }
-
-            public List<RexNode> rexArguments() {
-              throw new UnsupportedOperationException(
-                  "Should not be used");
-            }
-
-            public List<Expression> arguments(Expression rowIndex) {
-              throw new UnsupportedOperationException(
-                  "Should not be used");
             }
 
             public Expression computeIndex(Expression offset,
@@ -2548,7 +2537,27 @@ public class JavaRules {
                   "jRow",
                   RexToLixTranslator.convert(
                       Expressions.arrayIndex(rows_, rowIndex),
-                      inputPhysTypeFinal.getJavaRowType()));
+                      inputPhysType.getJavaRowType()));
+            }
+
+            public Expression index() {
+              return i_;
+            }
+
+            public Expression startIndex() {
+              return startX;
+            }
+
+            public Expression endIndex() {
+              return endX;
+            }
+
+            public Expression hasRows() {
+              return hasRows;
+            }
+
+            public Expression getPartitionRowCount() {
+              return partitionRowCount;
             }
           };
         }
@@ -2668,7 +2677,7 @@ public class JavaRules {
         List<Expression> outputRow) {
       for (final AggImpState agg: aggs) {
         agg.context =
-            new WinAggImplementor.WinAggContext() {
+            new WinAggContext() {
               public Aggregation aggregation() {
                 return agg.call.getAggregation();
               }
@@ -2727,68 +2736,23 @@ public class JavaRules {
         agg.result = aggRes;
         outputRow.add(aggRes);
         agg.implementor.implementReset(agg.context,
-            new WinAggResetContext(builder, agg.state,
+            new WinAggResetContextImpl(builder, agg.state,
                 null, null, null, null, null));
       }
     }
 
     private void implementAdd(List<AggImpState> aggs,
-        final ParameterExpression i_,
-        final Expression startX, final Expression endX,
-        final Expression hasRows,
-        final Expression partitionRowCount, final BlockBuilder builder7,
-        final DeclarationStatement jDecl,
-        final Function<BlockBuilder, WinAggImplementor
-            .WinAggFrameResultContext> resultContextBuilder,
-        final Function<AggImpState, List<RexNode>> rexArguments) {
+        final BlockBuilder builder7,
+        final Function<BlockBuilder, WinAggFrameResultContext> frame,
+        final Function<AggImpState, List<RexNode>> rexArguments,
+        final DeclarationStatement jDecl) {
       for (final AggImpState agg : aggs) {
         final WinAggAddContext addContext =
-            new WinAggAddContext(builder7, agg.state) {
-              public Expression computeIndex(Expression offset,
-                  WinAggImplementor.SeekType seekType) {
-                WinAggImplementor.WinAggFrameResultContext context =
-                    resultContextBuilder.apply(currentBlock());
-                return context.computeIndex(offset, seekType);
-              }
-
-              public RexToLixTranslator rowTranslator(Expression rowIndex) {
-                WinAggImplementor.WinAggFrameResultContext context =
-                    resultContextBuilder.apply(currentBlock());
-                return context.rowTranslator(rowIndex)
-                    .setNullable(currentNullables());
-              }
-
-              public Expression compareRows(Expression a, Expression b) {
-                WinAggImplementor.WinAggFrameResultContext context =
-                    resultContextBuilder.apply(currentBlock());
-                return context.compareRows(a, b);
-              }
-
+            new WinAggAddContextImpl(builder7, agg.state, frame) {
               public Expression currentPosition() {
                 return jDecl.parameter;
               }
 
-              public Expression index() {
-                return i_;
-              }
-
-              public Expression startIndex() {
-                return startX;
-              }
-
-              public Expression endIndex() {
-                return endX;
-              }
-
-              public Expression hasRows() {
-                return hasRows;
-              }
-
-              public Expression getPartitionRowCount() {
-                return partitionRowCount;
-              }
-
-              @Override
               public List<RexNode> rexArguments() {
                 return rexArguments.apply(agg);
               }
@@ -2798,58 +2762,14 @@ public class JavaRules {
     }
 
     private void implementResult(List<AggImpState> aggs,
-        final ParameterExpression i_,
-        final Expression startX, final Expression endX,
-        final Expression hasRows,
-        final BlockBuilder builder5, final Expression partitionRowCount,
-        final Function<BlockBuilder, WinAggImplementor
-                    .WinAggFrameResultContext> resultContextBuilder,
+        final BlockBuilder builder5,
+        final Function<BlockBuilder, WinAggFrameResultContext> frame,
         final Function<AggImpState, List<RexNode>> rexArguments) {
       for (final AggImpState agg : aggs) {
         Expression res = agg.implementor.implementResult(agg.context,
-            new WinAggResultContext(builder5, agg.state) {
+            new WinAggResultContextImpl(builder5, agg.state, frame) {
               public List<RexNode> rexArguments() {
                 return rexArguments.apply(agg);
-              }
-
-              public Expression computeIndex(Expression offset,
-                  WinAggImplementor.SeekType seekType) {
-                WinAggImplementor.WinAggFrameResultContext context =
-                    resultContextBuilder.apply(currentBlock());
-                return context.computeIndex(offset, seekType);
-              }
-
-              public RexToLixTranslator rowTranslator(Expression rowIndex) {
-                WinAggImplementor.WinAggFrameResultContext context =
-                    resultContextBuilder.apply(currentBlock());
-                return context.rowTranslator(rowIndex)
-                    .setNullable(currentNullables());
-              }
-
-              public Expression compareRows(Expression a, Expression b) {
-                WinAggImplementor.WinAggFrameResultContext context =
-                    resultContextBuilder.apply(currentBlock());
-                return context.compareRows(a, b);
-              }
-
-              public Expression index() {
-                return i_;
-              }
-
-              public Expression startIndex() {
-                return startX;
-              }
-
-              public Expression endIndex() {
-                return endX;
-              }
-
-              public Expression hasRows() {
-                return hasRows;
-              }
-
-              public Expression getPartitionRowCount() {
-                return partitionRowCount;
               }
             });
         // Several count(a) and count(b) might share the result

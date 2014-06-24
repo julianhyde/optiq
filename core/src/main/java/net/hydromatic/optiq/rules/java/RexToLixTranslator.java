@@ -525,7 +525,7 @@ public class RexToLixTranslator {
    *
    * @return translated expressions
    */
-  List<Expression> translateList(List<? extends RexNode> operandList) {
+  public List<Expression> translateList(List<? extends RexNode> operandList) {
     return translateList(operandList, null);
   }
 
@@ -543,7 +543,7 @@ public class RexToLixTranslator {
    *
    * @return translated expressions
    */
-  List<Expression> translateList(List<? extends RexNode> operandList,
+  public List<Expression> translateList(List<? extends RexNode> operandList,
       List<? extends Type> storageTypes) {
     final List<Expression> list = new ArrayList<Expression>(operandList.size());
 
