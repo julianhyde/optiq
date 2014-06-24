@@ -194,6 +194,8 @@ public class RexImpTable {
     winAggMap.put(FIRST_VALUE,
         constructorSupplier(FirstValueImplementor.class));
     winAggMap.put(LAST_VALUE, constructorSupplier(LastValueImplementor.class));
+    winAggMap.put(LEAD, constructorSupplier(LeadImplementor.class));
+    winAggMap.put(LAG, constructorSupplier(LagImplementor.class));
     winAggMap.put(COUNT, constructorSupplier(CountWinImplementor.class));
   }
 
@@ -1059,6 +1061,86 @@ public class RexImpTable {
   static class LastValueImplementor extends FirstLastValueImplementor {
     protected LastValueImplementor() {
       super(SeekType.END);
+    }
+  }
+
+  static class LeadLagImplementor implements WinAggImplementor {
+    private final boolean isLead;
+
+    protected LeadLagImplementor(boolean isLead) {
+      this.isLead = isLead;
+    }
+
+    public List<Type> getStateType(AggContext info) {
+      return Collections.emptyList();
+    }
+
+    public void implementReset(AggContext info, AggResetContext reset) {
+      // no op
+    }
+
+    public void implementAdd(AggContext info, AggAddContext add) {
+      // no op
+    }
+
+    public boolean needCacheWhenFrameIntact() {
+      return false;
+    }
+
+    public Expression implementResult(AggContext info,
+        AggResultContext result) {
+      WinAggResultContext winResult = (WinAggResultContext) result;
+
+      List<RexNode> rexArgs = winResult.rexArguments();
+
+      ParameterExpression res = Expressions.parameter(0, info.returnType(),
+          result.currentBlock().newName(isLead ? "lead" : "lag"));
+
+      Expression offset;
+      RexToLixTranslator currentRowTranslator =
+          winResult.rowTranslator(winResult.computeIndex(
+              Expressions.constant(0), SeekType.SET));
+      if (rexArgs.size() >= 2) {
+        // lead(x, offset) or lead(x, offset, default)
+        offset = currentRowTranslator.translate(
+            rexArgs.get(1), int.class);
+      } else {
+        offset = Expressions.constant(1);
+      }
+      if (!isLead) {
+        offset = Expressions.negate(offset);
+      }
+      Expression dstIndex = winResult.computeIndex(offset, SeekType.SET);
+
+      Expression rowInRange = winResult.rowInPartition(dstIndex);
+
+      BlockBuilder thenBlock = result.nestBlock();
+      Expression lagResult = winResult.rowTranslator(dstIndex).translate(
+          rexArgs.get(0), res.type);
+      thenBlock.add(Expressions.statement(Expressions.assign(res, lagResult)));
+      result.exitBlock();
+      BlockStatement thenBranch = thenBlock.toBlock();
+
+      Expression defaultValue = rexArgs.size() == 3
+          ? currentRowTranslator.translate(rexArgs.get(2), res.type)
+          : getDefaultValue(res.type);
+
+      result.currentBlock().add(Expressions.declare(0, res, null));
+      result.currentBlock().add(Expressions.ifThenElse(rowInRange, thenBranch,
+          Expressions.statement(Expressions.assign(res, defaultValue))));
+      return res;
+    }
+  }
+
+  public static class LeadImplementor extends LeadLagImplementor {
+    protected LeadImplementor() {
+      super(true);
+    }
+  }
+
+  public static class LagImplementor extends LeadLagImplementor {
+    protected LagImplementor() {
+      super(false);
     }
   }
 
