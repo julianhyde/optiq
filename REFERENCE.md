@@ -436,6 +436,7 @@ Not implemented:
 | LAST_VALUE(value) OVER window
 | LEAD(value, offset, default) OVER window
 | LAG(value, offset, default) OVER window
+| NTILE(value) OVER window
 
 Not implemented:
 * COUNT(DISTINCT value) OVER window

@@ -3383,6 +3383,99 @@ public class JdbcTest {
             "Cannot apply 'LAG' to arguments of type 'LAG(<INTEGER>, <DATE>, <INTEGER>)'");
   }
 
+  /**
+   * Tests NTILE(2).
+   */
+  @Test public void testNtile1() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            "select rn, ntile(1) over (order by rn) l\n"
+                + " from " + START_OF_GROUP_DATA)
+        .typeIs(
+            "[RN INTEGER NOT NULL, L INTEGER NOT NULL]")
+        .returnsUnordered(
+            "RN=1; L=1",
+            "RN=2; L=1",
+            "RN=3; L=1",
+            "RN=4; L=1",
+            "RN=5; L=1",
+            "RN=6; L=1",
+            "RN=7; L=1",
+            "RN=8; L=1");
+  }
+
+  /**
+   * Tests NTILE(2).
+   */
+  @Test public void testNtile2() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            "select rn, ntile(2) over (order by rn) l\n"
+                + " from " + START_OF_GROUP_DATA)
+        .typeIs(
+            "[RN INTEGER NOT NULL, L INTEGER NOT NULL]")
+        .returnsUnordered(
+            "RN=1; L=1",
+            "RN=2; L=1",
+            "RN=3; L=1",
+            "RN=4; L=1",
+            "RN=5; L=2",
+            "RN=6; L=2",
+            "RN=7; L=2",
+            "RN=8; L=2");
+  }
+
+  /**
+   * Tests expression in offset value of LAG function.
+   */
+  @Ignore("Have no idea how to validate that expression is constant")
+  @Test public void testNtileConstantArgs() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            "select rn, ntile(1+1) over (order by rn) l\n"
+                + " from " + START_OF_GROUP_DATA)
+        .typeIs(
+            "[RN INTEGER NOT NULL, VAL INTEGER NOT NULL, EXPECTED INTEGER NOT NULL, L INTEGER NOT NULL]")
+        .returnsUnordered(
+            "RN=1; L=1",
+            "RN=2; L=1",
+            "RN=3; L=1",
+            "RN=4; L=1",
+            "RN=5; L=2",
+            "RN=6; L=2",
+            "RN=7; L=2",
+            "RN=8; L=2");
+  }
+
+  /**
+   * Tests expression in offset value of LAG function.
+   */
+  @Test public void testNtileNegativeArg() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            "select rn, ntile(-1) over (order by rn) l\n"
+                + " from " + START_OF_GROUP_DATA)
+        .throws_(
+            "Argument to function 'NTILE' must be a positive integer literal");
+  }
+
+  /**
+   * Tests expression in offset value of LAG function.
+   */
+  @Test public void testNtileDecimalArg() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            "select rn, ntile(3.141592653) over (order by rn) l\n"
+                + " from " + START_OF_GROUP_DATA)
+        .throws_(
+            "Cannot apply 'NTILE' to arguments of type 'NTILE(<DECIMAL(10, 9)>)'");
+  }
+
   /** Tests for FIRST_VALUE */
   @Test public void testWinAggFirstValue() {
     OptiqAssert.that()

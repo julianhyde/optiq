@@ -196,6 +196,7 @@ public class RexImpTable {
     winAggMap.put(LAST_VALUE, constructorSupplier(LastValueImplementor.class));
     winAggMap.put(LEAD, constructorSupplier(LeadImplementor.class));
     winAggMap.put(LAG, constructorSupplier(LagImplementor.class));
+    winAggMap.put(NTILE, constructorSupplier(NtileImplementor.class));
     winAggMap.put(COUNT, constructorSupplier(CountWinImplementor.class));
   }
 
@@ -1141,6 +1142,46 @@ public class RexImpTable {
   public static class LagImplementor extends LeadLagImplementor {
     protected LagImplementor() {
       super(false);
+    }
+  }
+
+  static class NtileImplementor implements WinAggImplementor {
+    public List<Type> getStateType(AggContext info) {
+      return Collections.emptyList();
+    }
+
+    public void implementReset(AggContext info, AggResetContext reset) {
+      // no op
+    }
+
+    public void implementAdd(AggContext info, AggAddContext add) {
+      // no op
+    }
+
+    public boolean needCacheWhenFrameIntact() {
+      return false;
+    }
+
+    public Expression implementResult(AggContext info,
+        AggResultContext result) {
+      WinAggResultContext winResult = (WinAggResultContext) result;
+
+      List<RexNode> rexArgs = winResult.rexArguments();
+
+      Expression tiles =
+          winResult.rowTranslator(winResult.index()).translate(
+              rexArgs.get(0), int.class);
+
+      Expression ntile =
+          Expressions.add(Expressions.constant(1),
+              Expressions.divide(
+                  Expressions.multiply(
+                      tiles,
+                      Expressions.subtract(
+                          winResult.index(), winResult.startIndex())),
+                  winResult.getPartitionRowCount()));
+
+      return ntile;
     }
   }
 
