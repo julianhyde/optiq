@@ -95,6 +95,14 @@ public class RelOptRulesTest extends RelOptTestBase {
         + " where d.name = 'Charlie'");
   }
 
+  @Test public void testPushFilterThroughWindow() {
+    // TODO: implement true push filter through window
+    checkPlanning(
+        PushFilterPastProjectRule.INSTANCE,
+        "select * from (select e.ename, e.deptno+e.empno qq, row_number() over (partition by e.deptno+e.empno order by e.empno) r from sales.emp e) where qq=10"
+    );
+  }
+
   @Test public void testReduceAverage() {
     checkPlanning(
         ReduceAggregatesRule.INSTANCE,
