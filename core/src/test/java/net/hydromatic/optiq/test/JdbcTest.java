@@ -3042,9 +3042,10 @@ public class JdbcTest {
             + "from \"hr\".\"emps\"\n"
             + ") where \"deptno\"=10 and \"empid\"=100")
         .explainContains(
-            "EnumerableCalcRel(expr#0..5=[{inputs}], expr#6=[CAST($t1):INTEGER NOT NULL], expr#7=[10], expr#8=[=($t6, $t7)], expr#9=[CAST($t0):INTEGER NOT NULL], expr#10=[100], expr#11=[=($t9, $t10)], expr#12=[AND($t8, $t11)], proj#0..1=[{exprs}], $2=[$t5], $condition=[$t12])\n"
+            "EnumerableCalcRel(expr#0..2=[{inputs}], expr#3=[CAST($t1):INTEGER NOT NULL], expr#4=[10], expr#5=[=($t3, $t4)], expr#6=[CAST($t0):INTEGER NOT NULL], expr#7=[100], expr#8=[=($t6, $t7)], expr#9=[AND($t5, $t8)], proj#0..2=[{exprs}], $condition=[$t9])\n"
             + "  EnumerableWindowRel(window#0=[window(partition {} order by [] range between UNBOUNDED PRECEDING and UNBOUNDED FOLLOWING aggs [COUNT()])])\n"
-            + "    EnumerableTableAccessRel(table=[[hr, emps]])")
+            + "    EnumerableCalcRel(expr#0..4=[{inputs}], proj#0..1=[{exprs}])\n"
+            + "      EnumerableTableAccessRel(table=[[hr, emps]])")
         .returns("empid=100; deptno=10; C=4\n");
     // There are 4 employees in total
   }
@@ -3063,9 +3064,10 @@ public class JdbcTest {
             + "from \"hr\".\"emps\"\n"
             + ") where \"deptno\"=10 and \"empid\"=100")
         .explainContains(
-            "EnumerableCalcRel(expr#0..5=[{inputs}], expr#6=[CAST($t1):INTEGER NOT NULL], expr#7=[10], expr#8=[=($t6, $t7)], expr#9=[CAST($t0):INTEGER NOT NULL], expr#10=[100], expr#11=[=($t9, $t10)], expr#12=[AND($t8, $t11)], proj#0..1=[{exprs}], $2=[$t5], $condition=[$t12])\n"
+            "EnumerableCalcRel(expr#0..2=[{inputs}], expr#3=[CAST($t1):INTEGER NOT NULL], expr#4=[10], expr#5=[=($t3, $t4)], expr#6=[CAST($t0):INTEGER NOT NULL], expr#7=[100], expr#8=[=($t6, $t7)], expr#9=[AND($t5, $t8)], proj#0..2=[{exprs}], $condition=[$t9])\n"
             + "  EnumerableWindowRel(window#0=[window(partition {1} order by [] range between UNBOUNDED PRECEDING and UNBOUNDED FOLLOWING aggs [COUNT()])])\n"
-            + "    EnumerableTableAccessRel(table=[[hr, emps]])")
+            + "    EnumerableCalcRel(expr#0..4=[{inputs}], proj#0..1=[{exprs}])\n"
+            + "      EnumerableTableAccessRel(table=[[hr, emps]])")
         .returns("empid=100; deptno=10; C=3\n");
     // There are 3 employees in department 10
   }
