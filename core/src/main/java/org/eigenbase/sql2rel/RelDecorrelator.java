@@ -496,7 +496,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
     mapNewRelToMapOldToNewOutputPos.put(newAggregateRel, combinedMap);
 
     if (produceCorVar) {
-      // AggregaterRel does not change input ordering so corVars will be
+      // AggregateRel does not change input ordering so corVars will be
       // located at the same position as the input newProjectRel.
       mapNewRelToMapCorVarToOutputPos.put(
           newAggregateRel,

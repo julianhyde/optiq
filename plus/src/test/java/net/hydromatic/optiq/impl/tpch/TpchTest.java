@@ -812,6 +812,54 @@ public class TpchTest {
         });
   }
 
+  @Test public void testQuery02SimplifiedConversion() {
+    // causes AssertionError
+    String s0 =
+        "select\n"
+            + "  p.p_partkey\n"
+            + "from\n"
+            + "  tpch.part p,\n"
+            + "  tpch.partsupp ps\n"
+            + "where\n"
+            + "  p.p_partkey = ps.ps_partkey\n"
+            + "  and ps.ps_supplycost = (\n"
+            + "    select\n"
+            + "      ps.ps_supplycost\n"
+            + "    from\n"
+            + "      tpch.partsupp ps2,\n"
+            + "      tpch.supplier s\n"
+            + "    where\n"
+            + "      p.p_partkey = ps2.ps_partkey\n"
+            + "      and s.s_suppkey = ps2.ps_suppkey\n"
+            + "  )\n";
+    String s =
+        "select\n"
+            + "  p.p_partkey\n"
+            + "from\n"
+            + "  tpch.part p,\n"
+            + "  tpch.partsupp ps\n"
+            + "where\n"
+            + "  p.p_partkey = ps.ps_partkey\n"
+            + "  and ps.ps_supplycost in (\n"
+            + "    select\n"
+            + "      ps.ps_supplycost\n"
+            + "    from\n"
+            + "      tpch.partsupp ps,\n"
+            + "      tpch.supplier s\n"
+            + "    where\n"
+            + "      p.p_partkey = ps.ps_partkey\n"
+            + "      and s.s_suppkey = ps.ps_suppkey)";
+    with()
+        .query(s0.replaceAll("tpch\\.", "tpch_01."))
+        .convertMatches(new Function1<RelNode, Void>() {
+          public Void apply(RelNode relNode) {
+            String s = RelOptUtil.toString(relNode);
+            assertThat(s, not(containsString("CorrelatorRel")));
+            return null;
+          }
+        });
+  }
+
   @Test public void testQuery03() {
     checkQuery(3);
   }
