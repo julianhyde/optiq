@@ -1903,6 +1903,75 @@ public class JdbcTest {
             + "          EnumerableTableAccessRel(table=[[foodmart2, product_class]])\n");
   }
 
+  /**
+   * Test join over complex expression. It used to hit
+   * IllegalArgumentException in SqlToRelConverter.
+   */
+  @Test public void testJoinComplexExpr() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query("select e.\"deptno\", d.\"deptno\" \n"
+            + " from \"hr\".\"emps\" as e \n"
+            + "  join \"hr\".\"depts\" as d \n"
+            + " on ( e.\"deptno\" + 1 - 1 = d.\"deptno\" + 2 - 2  and e.\"deptno\" + 10 - 10 = d.\"deptno\" + 20 - 20) ")
+        .returnsUnordered(
+            "deptno=10; deptno=10",
+            "deptno=10; deptno=10",
+            "deptno=10; deptno=10");
+  }
+
+  /**
+   * Test join over complex expression. It used to hit
+   * IllegalArgumentException in SqlToRelConverter.
+   * Switch the LHS and RHS in join condition.
+   */
+  @Test public void testJoinComplexExprAlt1() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query("select e.\"deptno\", d.\"deptno\" \n"
+            + " from \"hr\".\"emps\" as e \n"
+            + "  join \"hr\".\"depts\" as d \n"
+            + " on ( d.\"deptno\" + 2 - 2 = e.\"deptno\" + 1 - 1  and d.\"deptno\" + 20 - 20 = e.\"deptno\" + 10 - 10) ")
+        .returnsUnordered(
+            "deptno=10; deptno=10",
+            "deptno=10; deptno=10",
+            "deptno=10; deptno=10");
+  }
+
+  /**
+   * Test join over complex expression. It used to hit
+   * IllegalArgumentException in SqlToRelConverter.
+   * Switch the LHS and RHS in join condition.
+   */
+  @Test public void testJoinComplexExprAlt2() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query("select e.\"deptno\", d.\"deptno\" \n"
+            + " from \"hr\".\"emps\" as e \n"
+            + "  join \"hr\".\"depts\" as d \n"
+            + " on ( d.\"deptno\" + 2 - 2 = e.\"deptno\" + 1 - 1  and  e.\"deptno\" + 10 - 10 = d.\"deptno\" + 20 - 20) ")
+        .returnsUnordered(
+            "deptno=10; deptno=10",
+            "deptno=10; deptno=10",
+            "deptno=10; deptno=10");
+  }
+
+  /**
+   * Used to compare the query result against the result in testJoinComplexExpr.
+   */
+  @Test public void testJoinSimpleKey() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query("select e.\"deptno\", d.\"deptno\" \n"
+            + "from \"hr\".\"emps\" as e \n"
+            + "  join \"hr\".\"depts\" as d \n"
+            + " on ( e.\"deptno\" = d.\"deptno\") ")
+        .returnsUnordered(
+            "deptno=10; deptno=10",
+            "deptno=10; deptno=10",
+            "deptno=10; deptno=10");
+  }
+
   /** Checks that a 3-way join is re-ordered so that join conditions can be
    * applied. The plan must not contain cartesian joins.
    * {@link org.eigenbase.rel.rules.PushJoinThroughJoinRule} makes this
