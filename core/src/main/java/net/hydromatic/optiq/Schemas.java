@@ -179,6 +179,22 @@ public final class Schemas {
     }
   }
 
+  /** Parses and validates a SQL query and converts to relational algebra. For
+   * use within Optiq only. */
+  public static OptiqPrepare.ConvertResult convert(
+      final OptiqConnection connection, final OptiqSchema schema,
+      final List<String> schemaPath, final String sql) {
+    final OptiqPrepare prepare = OptiqPrepare.DEFAULT_FACTORY.apply();
+    final OptiqPrepare.Context context =
+        makeContext(connection, schema, schemaPath);
+    OptiqPrepare.Dummy.push(context);
+    try {
+      return prepare.convert(context, sql);
+    } finally {
+      OptiqPrepare.Dummy.pop(context);
+    }
+  }
+
   /** Prepares a SQL query for execution. For use within Optiq only. */
   public static OptiqPrepare.PrepareResult<Object> prepare(
       final OptiqConnection connection, final OptiqSchema schema,

@@ -19,6 +19,8 @@ package net.hydromatic.optiq;
 
 import com.google.common.collect.ImmutableList;
 
+import net.hydromatic.optiq.materialize.Lattice;
+
 /**
  * Extension to the {@link Schema} interface.
  *
@@ -57,6 +59,9 @@ public interface SchemaPlus extends Schema {
 
   /** Adds a function to this schema. */
   void add(String name, Function function);
+
+  /** Adds a lattice to this schema. */
+  void add(String name, Lattice lattice);
 
   boolean isMutable();
 

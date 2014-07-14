@@ -39,6 +39,7 @@ import net.hydromatic.optiq.tools.Frameworks;
 import org.eigenbase.rel.*;
 import org.eigenbase.rel.rules.*;
 import org.eigenbase.relopt.*;
+import org.eigenbase.relopt.hep.*;
 import org.eigenbase.relopt.volcano.VolcanoPlanner;
 import org.eigenbase.reltype.*;
 import org.eigenbase.rex.RexBuilder;
@@ -143,6 +144,15 @@ public class OptiqPrepareImpl implements OptiqPrepare {
 
   public ParseResult parse(
       Context context, String sql) {
+    return parse_(context, sql, false);
+  }
+
+  public ConvertResult convert(Context context, String sql) {
+    return (ConvertResult) parse_(context, sql, true);
+  }
+
+  /** Shared implementation for {@link #parse} and {@link #convert}. */
+  private ParseResult parse_(Context context, String sql, boolean convert) {
     final JavaTypeFactory typeFactory = context.getTypeFactory();
     OptiqCatalogReader catalogReader =
         new OptiqCatalogReader(
@@ -161,8 +171,24 @@ public class OptiqPrepareImpl implements OptiqPrepare {
         new OptiqSqlValidator(
             SqlStdOperatorTable.instance(), catalogReader, typeFactory);
     SqlNode sqlNode1 = validator.validate(sqlNode);
-    return new ParseResult(this, validator, sql, sqlNode1,
-        validator.getValidatedNodeType(sqlNode1));
+    if (!convert) {
+      return new ParseResult(this, validator, sql, sqlNode1,
+          validator.getValidatedNodeType(sqlNode1));
+    }
+    final OptiqPreparingStmt preparingStmt =
+        new OptiqPreparingStmt(
+            context,
+            catalogReader,
+            typeFactory,
+            context.getRootSchema(),
+            null,
+            new HepPlanner(new HepProgramBuilder().build()),
+            EnumerableConvention.INSTANCE);
+    final SqlToRelConverter converter =
+        preparingStmt.getSqlToRelConverter(validator, catalogReader);
+    final RelNode relNode = converter.convertQuery(sqlNode1, false, true);
+    return new ConvertResult(this, validator, sql, sqlNode1,
+        validator.getValidatedNodeType(sqlNode1), relNode);
   }
 
   /** Creates a collection of planner factories.
