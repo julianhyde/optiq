@@ -255,7 +255,7 @@ public class ModelHandler {
       }
       OptiqSchema optiqSchema = OptiqSchema.from(schema);
       schema.add(jsonLattice.name,
-          Lattice.create(optiqSchema, jsonLattice.name, jsonLattice.sql));
+          Lattice.create(optiqSchema, jsonLattice.sql));
     } catch (Exception e) {
       throw new RuntimeException("Error instantiating " + jsonLattice, e);
     }
