@@ -109,11 +109,7 @@ public class LatticeTest {
 
   /** Tests a lattice with valid join SQL. */
   @Test public void testLatticeSqlWithJoin() {
-    modelWithLattice("star",
-        "select 1 from \"foodmart\".\"sales_fact_1997\" as s\n"
-        + "join \"foodmart\".\"product\" as p using (\"product_id\")\n"
-        + "join \"foodmart\".\"time_by_day\" as t using (\"time_id\")\n"
-        + "join \"foodmart\".\"product_class\" as pc on p.\"product_class_id\" = pc.\"product_class_id\"")
+    foodmartModel()
         .query("values 1")
         .returnsValue("1");
   }
@@ -134,6 +130,33 @@ public class LatticeTest {
         + "join \"foodmart\".\"product\" as p using (\"product_id\")\n"
         + "left join \"foodmart\".\"time_by_day\" as t on s.\"product_id\" = p.\"product_id\"")
         .connectThrows("only inner join allowed, but got LEFT");
+  }
+
+  /** When a lattice is registered, there is a table with the same name.
+   * It can be used for explain, but not for queries. */
+  @Test public void testLatticeStarTable() {
+    foodmartModel()
+        .query("explain plan for select count(*) from \"adhoc\".\"star\"")
+        .returnsValue("EnumerableAggregateRel(group=[{}], EXPR$0=[COUNT()])\n"
+            + "  EnumerableCalcRel(expr#0..37=[{inputs}], expr#38=[0], DUMMY=[$t38])\n"
+            + "    EnumerableTableAccessRel(table=[[adhoc, star]])\n");
+  }
+
+  /** Tests that a 2-way join query can be mapped 4-way join lattice. */
+  @Test public void testLatticeRecognizeJoin() {
+    foodmartModel()
+        .query("select s.\"unit_sales\", p.\"brand_name\"\n"
+            + "from \"foodmart\".\"sales_fact_1997\" as s\n"
+            + "join \"foodmart\".\"product\" as p using (\"product_id\")\n")
+        .convertContains("xx");
+  }
+
+  private OptiqAssert.AssertThat foodmartModel() {
+    return modelWithLattice("star",
+        "select 1 from \"foodmart\".\"sales_fact_1997\" as s\n"
+        + "join \"foodmart\".\"product\" as p using (\"product_id\")\n"
+        + "join \"foodmart\".\"time_by_day\" as t using (\"time_id\")\n"
+        + "join \"foodmart\".\"product_class\" as pc on p.\"product_class_id\" = pc.\"product_class_id\"");
   }
 }
 

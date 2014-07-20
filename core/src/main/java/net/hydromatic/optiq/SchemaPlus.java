@@ -17,9 +17,9 @@
 */
 package net.hydromatic.optiq;
 
-import com.google.common.collect.ImmutableList;
-
 import net.hydromatic.optiq.materialize.Lattice;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * Extension to the {@link Schema} interface.

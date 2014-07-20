@@ -23,6 +23,7 @@ import net.hydromatic.linq4j.expressions.Expression;
 import net.hydromatic.optiq.*;
 import net.hydromatic.optiq.Table;
 import net.hydromatic.optiq.impl.MaterializedViewTable;
+import net.hydromatic.optiq.impl.StarTable;
 import net.hydromatic.optiq.materialize.Lattice;
 
 import org.eigenbase.util.Pair;
@@ -310,6 +311,13 @@ public class OptiqSchema {
     return builder.build();
   }
 
+  /** Returns a collection of lattices.
+   *
+   * <p>All are explicit (defined using {@link #add(String, Lattice)}). */
+  public NavigableMap<String, LatticeEntry> getLatticeMap() {
+    return Maps.unmodifiableNavigableMap(latticeMap);
+  }
+
   /** Returns the set of all table names. Includes implicit and explicit tables
    * and functions with zero parameters. */
   public NavigableSet<String> getTableNames() {
@@ -518,6 +526,8 @@ public class OptiqSchema {
     }
 
     public abstract Lattice getLattice();
+
+    public abstract TableEntry getStarTable();
   }
 
   /** Implementation of {@link SchemaPlus} based on an {@code OptiqSchema}. */
@@ -664,15 +674,24 @@ public class OptiqSchema {
    */
   public static class LatticeEntryImpl extends LatticeEntry {
     private final Lattice lattice;
+    private final OptiqSchema.TableEntry starTableEntry;
 
     /** Creates a LatticeEntryImpl. */
     public LatticeEntryImpl(OptiqSchema schema, String name, Lattice lattice) {
       super(schema, name);
       this.lattice = lattice;
+
+      // Star table has same name as lattice and is in same schema.
+      StarTable starTable1 = lattice.createStarTable();
+      starTableEntry = schema.add(name, starTable1);
     }
 
     public Lattice getLattice() {
       return lattice;
+    }
+
+    public TableEntry getStarTable() {
+      return starTableEntry;
     }
   }
 

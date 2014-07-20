@@ -17,6 +17,7 @@
 */
 package net.hydromatic.optiq.prepare;
 
+import com.google.common.collect.Lists;
 import net.hydromatic.optiq.*;
 import net.hydromatic.optiq.impl.StarTable;
 import net.hydromatic.optiq.jdbc.OptiqPrepare;
@@ -34,8 +35,8 @@ import org.eigenbase.sql2rel.SqlToRelConverter;
 import java.util.*;
 
 /**
-* Context for populating a {@link Materialization}.
-*/
+ * Context for populating a {@link Materialization}.
+ */
 class OptiqMaterializer extends OptiqPrepareImpl.OptiqPreparingStmt {
   public OptiqMaterializer(OptiqPrepare.Context context,
       CatalogReader catalogReader, OptiqSchema schema,
@@ -77,16 +78,38 @@ class OptiqMaterializer extends OptiqPrepareImpl.OptiqPreparingStmt {
   }
 
   /** Converts a relational expression to use a
+   * {@link StarTable} defined in {@code schema}.
+   * Uses the first star table that fits. */
+  private void useStar(OptiqSchema schema,
+      final Materialization materialization) {
+    useStar(schema, materialization.queryRel, new Callback() {
+      public void apply(RelNode rel,
+          OptiqSchema.TableEntry starTable,
+          RelOptTableImpl starRelOptTable)
+      {
+        // Success -- we found a star table that matches.
+        materialization.materialize(rel, starRelOptTable);
+        System.out.println("Materialization "
+            + materialization.materializedTable + " matched star table "
+            + starTable + "; query after re-write: "
+            + RelOptUtil.toString(materialization.queryRel));
+      }
+    });
+  }
+
+  /** Converts a relational expression to use a
    * {@link net.hydromatic.optiq.impl.StarTable} defined in {@code schema}.
    * Uses the first star table that fits. */
-  private void useStar(OptiqSchema schema, Materialization materialization) {
-    List<OptiqSchema.TableEntry> starTables = getStarTables(schema);
+  private void useStar(OptiqSchema schema,
+      RelNode queryRel,
+      Callback callback) {
+    List<OptiqSchema.TableEntry> starTables = getStarTables(schema.root());
     if (starTables.isEmpty()) {
       // Don't waste effort converting to leaf-join form.
       return;
     }
     final RelNode rel2 =
-        RelOptMaterialization.toLeafJoinForm(materialization.queryRel);
+        RelOptMaterialization.toLeafJoinForm(queryRel);
     for (OptiqSchema.TableEntry starTable : starTables) {
       final Table table = starTable.getTable();
       assert table instanceof StarTable;
@@ -96,34 +119,30 @@ class OptiqMaterializer extends OptiqPrepareImpl.OptiqPreparingStmt {
       final RelNode rel3 =
           RelOptMaterialization.tryUseStar(rel2, starRelOptTable);
       if (rel3 != null) {
-        // Success -- we found a star table that matches.
-        materialization.materialize(rel3, starRelOptTable);
-        System.out.println("Materialization "
-            + materialization.materializedTable + " matched star table "
-            + starTable + "; query after re-write: "
-            + RelOptUtil.toString(materialization.queryRel));
-        return;
+        callback.apply(rel3, starTable, starRelOptTable);
       }
     }
   }
 
   /** Returns the star tables defined in a schema.
+   *
    * @param schema Schema */
   private List<OptiqSchema.TableEntry> getStarTables(OptiqSchema schema) {
-    final List<OptiqSchema.TableEntry> list =
-        new ArrayList<OptiqSchema.TableEntry>();
-    // TODO: Assumes that star tables are all defined in a schema called
-    // "mat". Instead, we should look for star tables that use a given set of
-    // tables, regardless of schema.
-    final OptiqSchema matSchema = schema.root().getSubSchema("mat", true);
-    if (matSchema != null) {
-      for (OptiqSchema.TableEntry tis : matSchema.tableMap.values()) {
-        if (tis.getTable().getJdbcTableType() == Schema.TableType.STAR) {
-          list.add(tis);
-        }
-      }
-    }
+    final List<OptiqSchema.TableEntry> list = Lists.newArrayList();
+    getStarTables(schema, list);
     return list;
+  }
+
+  private void getStarTables(OptiqSchema schema,
+      List<OptiqSchema.TableEntry> list) {
+    for (OptiqSchema.LatticeEntry entry : schema.getLatticeMap().values()) {
+      final OptiqSchema.TableEntry starTable = entry.getStarTable();
+      assert starTable.getTable().getJdbcTableType() == Schema.TableType.STAR;
+      list.add(starTable);
+    }
+    for (OptiqSchema subSchema : schema.getSubSchemaMap().values()) {
+      getStarTables(subSchema, list);
+    }
   }
 
   /** Implementation of {@link RelShuttle} that returns each relational
@@ -167,6 +186,11 @@ class OptiqMaterializer extends OptiqPrepareImpl.OptiqPreparingStmt {
     }
   }
 
+  interface Callback {
+    void apply(RelNode rel,
+        OptiqSchema.TableEntry starTable,
+        RelOptTableImpl starRelOptTable);
+  }
 }
 
 // End OptiqMaterializer.java

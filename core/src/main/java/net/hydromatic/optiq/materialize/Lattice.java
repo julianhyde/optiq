@@ -18,7 +18,9 @@
 package net.hydromatic.optiq.materialize;
 
 import net.hydromatic.optiq.Schemas;
+import net.hydromatic.optiq.Table;
 import net.hydromatic.optiq.impl.MaterializedViewTable;
+import net.hydromatic.optiq.impl.StarTable;
 import net.hydromatic.optiq.jdbc.OptiqPrepare;
 import net.hydromatic.optiq.jdbc.OptiqSchema;
 import net.hydromatic.optiq.util.graph.*;
@@ -26,7 +28,6 @@ import net.hydromatic.optiq.util.graph.*;
 import org.eigenbase.rel.*;
 import org.eigenbase.relopt.RelOptUtil;
 import org.eigenbase.rex.*;
-import org.eigenbase.util.*;
 import org.eigenbase.util.mapping.IntPair;
 
 import com.google.common.base.Preconditions;
@@ -170,6 +171,14 @@ public class Lattice {
       start = end;
     }
     throw new AssertionError("input not found");
+  }
+
+  public StarTable createStarTable() {
+    final List<Table> tables = Lists.newArrayList();
+    for (Node node : nodes) {
+      tables.add(node.scan.getTable().unwrap(Table.class));
+    }
+    return new StarTable(tables);
   }
 
   /** Source relation of a lattice.
