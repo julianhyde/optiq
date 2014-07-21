@@ -22,6 +22,10 @@ import org.eigenbase.util.TestUtil;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
 
 /**
  * Unit test for lattices.
@@ -144,11 +148,14 @@ public class LatticeTest {
 
   /** Tests that a 2-way join query can be mapped 4-way join lattice. */
   @Test public void testLatticeRecognizeJoin() {
+    final AtomicInteger counter = new AtomicInteger();
     foodmartModel()
-        .query("select s.\"unit_sales\", p.\"brand_name\"\n"
-            + "from \"foodmart\".\"sales_fact_1997\" as s\n"
-            + "join \"foodmart\".\"product\" as p using (\"product_id\")\n")
-        .convertContains("xx");
+      .query(
+          "select s.\"unit_sales\", p.\"brand_name\"\n"
+          + "from \"foodmart\".\"sales_fact_1997\" as s\n"
+          + "join \"foodmart\".\"product\" as p using (\"product_id\")\n")
+        .substitutionMatches(OptiqAssert.checkRel("xx", counter));
+    assertThat(counter.intValue(), equalTo(1));
   }
 
   private OptiqAssert.AssertThat foodmartModel() {

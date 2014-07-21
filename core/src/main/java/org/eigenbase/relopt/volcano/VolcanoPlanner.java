@@ -34,8 +34,8 @@ import org.eigenbase.util.*;
 
 import net.hydromatic.linq4j.expressions.Expressions;
 
+import net.hydromatic.optiq.runtime.Hook;
 import net.hydromatic.optiq.runtime.Spaces;
-
 import net.hydromatic.optiq.util.graph.*;
 
 import com.google.common.collect.*;
@@ -272,6 +272,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
       // TODO: try to substitute other materializations in the remnant.
       // Useful for big queries, e.g.
       //   (t1 group by c1) join (t2 group by c2).
+      Hook.SUB.run(sub);
       registerImpl(sub, root.set);
       return;
     }

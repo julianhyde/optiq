@@ -682,8 +682,8 @@ public class OptiqSchema {
       this.lattice = lattice;
 
       // Star table has same name as lattice and is in same schema.
-      StarTable starTable1 = lattice.createStarTable();
-      starTableEntry = schema.add(name, starTable1);
+      final StarTable starTable = lattice.createStarTable();
+      starTableEntry = schema.add(name, starTable);
     }
 
     public Lattice getLattice() {
