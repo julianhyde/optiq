@@ -329,6 +329,20 @@ public abstract class RelMetadataQuery {
 
   /**
    * Returns the
+   * {@link BuiltInMetadata.Predicates#getPulledUpPredicates()}
+   * statistic.
+   *
+   * @param rel the relational expression
+   * @return Predicates that can be pulled above this RelNode
+   */
+  public static RelOptPulledUpPredicates getPulledUpPredicates(RelNode rel) {
+    final BuiltInMetadata.Predicates metadata =
+        rel.metadata(BuiltInMetadata.Predicates.class);
+    return metadata.getPredicates();
+  }
+
+  /**
+   * Returns the
    * {@link BuiltInMetadata.ExplainVisibility#isVisibleInExplain(SqlExplainLevel)}
    * statistic.
    *

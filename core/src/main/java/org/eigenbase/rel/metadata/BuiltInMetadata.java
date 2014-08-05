@@ -20,6 +20,7 @@ import java.util.*;
 
 import org.eigenbase.rel.*;
 import org.eigenbase.relopt.RelOptCost;
+import org.eigenbase.relopt.RelOptPulledUpPredicates;
 import org.eigenbase.rex.RexNode;
 import org.eigenbase.sql.SqlExplainLevel;
 
@@ -205,6 +206,13 @@ public abstract class BuiltInMetadata {
      * @return true for visible, false for invisible
      */
     Boolean isVisibleInExplain(SqlExplainLevel explainLevel);
+  }
+
+  /**
+   * return the Predicates that are effective above a given RelNode.
+   */
+  public interface Predicates extends Metadata {
+    RelOptPulledUpPredicates getPredicates();
   }
 
   /** The built-in forms of metadata. */
