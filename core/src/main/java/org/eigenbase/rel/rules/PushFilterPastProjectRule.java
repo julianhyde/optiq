@@ -35,9 +35,17 @@ public class PushFilterPastProjectRule extends RelOptRule {
    */
   private PushFilterPastProjectRule() {
     super(
-        operand(
-            FilterRel.class,
-            operand(ProjectRel.class, any())));
+        operand(FilterRel.class,
+            some(new RelOptRuleOperand(ProjectRel.class, null, any()) {
+              @Override
+              public boolean matches(RelNode rel) {
+                // Avoid pushing filters through windowed aggregates
+                // TODO: Implement real filter push that considers partition by
+                return super.matches(rel)
+                    && !RexOver.containsOver(((ProjectRel) rel).getProjects(),
+                        null);
+              }
+            })));
   }
 
   //~ Methods ----------------------------------------------------------------

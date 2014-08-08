@@ -3164,6 +3164,72 @@ public class JdbcTest {
             "M=10002.0");
   }
 
+  /**
+   * Tests if optiq can push filters through WindowRel when filter matches
+   * partition by.
+   */
+  @Test
+  public void testWinAggWithFilter() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            "select * from (select \"empid\", \"deptno\",\n"
+            + "count(*) over () c\n"
+            + "from \"hr\".\"emps\"\n"
+            + ") where \"deptno\"=10 and \"empid\"=100")
+        .explainContains(
+            "EnumerableCalcRel(expr#0..2=[{inputs}], expr#3=[CAST($t1):INTEGER NOT NULL], expr#4=[10], expr#5=[=($t3, $t4)], expr#6=[CAST($t0):INTEGER NOT NULL], expr#7=[100], expr#8=[=($t6, $t7)], expr#9=[AND($t5, $t8)], proj#0..2=[{exprs}], $condition=[$t9])\n"
+            + "  EnumerableWindowRel(window#0=[window(partition {} order by [] range between UNBOUNDED PRECEDING and UNBOUNDED FOLLOWING aggs [COUNT()])])\n"
+            + "    EnumerableCalcRel(expr#0..4=[{inputs}], proj#0..1=[{exprs}])\n"
+            + "      EnumerableTableAccessRel(table=[[hr, emps]])")
+        .returns("empid=100; deptno=10; C=4\n");
+    // There are 4 employees in total
+  }
+
+  /**
+   * Tests that optiq does not push filter through WindowRel when it is
+   * not allowed.
+   */
+  @Test
+  public void testWinAggWithFilterPush() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            "select * from (select \"empid\", \"deptno\",\n"
+            + " count(*) over (partition by \"deptno\") c\n"
+            + "from \"hr\".\"emps\"\n"
+            + ") where \"deptno\"=10 and \"empid\"=100")
+        .explainContains(
+            "EnumerableCalcRel(expr#0..2=[{inputs}], expr#3=[CAST($t1):INTEGER NOT NULL], expr#4=[10], expr#5=[=($t3, $t4)], expr#6=[CAST($t0):INTEGER NOT NULL], expr#7=[100], expr#8=[=($t6, $t7)], expr#9=[AND($t5, $t8)], proj#0..2=[{exprs}], $condition=[$t9])\n"
+            + "  EnumerableWindowRel(window#0=[window(partition {1} order by [] range between UNBOUNDED PRECEDING and UNBOUNDED FOLLOWING aggs [COUNT()])])\n"
+            + "    EnumerableCalcRel(expr#0..4=[{inputs}], proj#0..1=[{exprs}])\n"
+            + "      EnumerableTableAccessRel(table=[[hr, emps]])")
+        .returns("empid=100; deptno=10; C=3\n");
+    // There are 3 employees in department 10
+  }
+
+  /**
+   * Tests if optiq does not evaluate filters early as a part of input
+   * calculation for the window aggregate.
+   */
+  @Test
+  public void testWinAggWithFilterCalcFirst() {
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.REGULAR)
+        .query(
+            "select * from (select \"empid\", \"deptno\",\n"
+                + "count(*) over (partition by \"deptno\"*0) c\n"
+                + "from \"hr\".\"emps\"\n"
+                + ") where \"deptno\"=10 and \"empid\"=100")
+        .explainContains(
+            "EnumerableCalcRel(expr#0..3=[{inputs}], expr#4=[CAST($t1):INTEGER NOT NULL], expr#5=[10], expr#6=[=($t4, $t5)], expr#7=[CAST($t0):INTEGER NOT NULL], expr#8=[100], expr#9=[=($t7, $t8)], expr#10=[AND($t6, $t9)], proj#0..1=[{exprs}], $2=[$t3], $condition=[$t10])\n"
+            + "  EnumerableWindowRel(window#0=[window(partition {2} order by [] range between UNBOUNDED PRECEDING and UNBOUNDED FOLLOWING aggs [COUNT()])])\n"
+            + "    EnumerableCalcRel(expr#0..4=[{inputs}], expr#5=[0], expr#6=[*($t1, $t5)], proj#0..1=[{exprs}], $2=[$t6])\n"
+            + "      EnumerableTableAccessRel(table=[[hr, emps]])")
+        .returns("empid=100; deptno=10; C=4\n");
+    // There are 4 employees in total
+  }
+
   /** Tests for RANK and ORDER BY ... DESCENDING, NULLS FIRST, NULLS LAST. */
   @Test public void testWinAggRank() {
     OptiqAssert.that()

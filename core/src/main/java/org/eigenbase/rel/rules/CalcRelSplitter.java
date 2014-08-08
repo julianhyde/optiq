@@ -85,6 +85,9 @@ public abstract class CalcRelSplitter {
     this.typeFactory = calc.getCluster().getTypeFactory();
     this.child = calc.getChild();
     this.relTypes = relTypes;
+    assert "CalcRelType".equals(relTypes[0].name)
+        : "The first RelType should be CalcRelType for proper RexLiteral"
+        + " implementation at the last level, got " + relTypes[0].name;
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -100,11 +103,11 @@ public abstract class CalcRelSplitter {
     assert !RexUtil.containComplexExprs(exprList);
 
     // Figure out what level each expression belongs to.
-    int[] exprLevels = new int[exprs.length];
+    int[] exprLevels = new int[exprs.length + 1];
 
     // The reltype of a level is given by
     // relTypes[levelTypeOrdinals[level]].
-    int[] levelTypeOrdinals = new int[exprs.length];
+    int[] levelTypeOrdinals = new int[exprs.length + 1];
 
     int levelCount = chooseLevels(exprs, -1, exprLevels, levelTypeOrdinals);
 
@@ -248,7 +251,9 @@ public abstract class CalcRelSplitter {
       int[] levelTypeOrdinals) {
     final int inputFieldCount = program.getInputRowType().getFieldCount();
 
-    int levelCount = 0;
+    // Ensure the first level is CalcRelType so the input projection
+    // trims unnecessary fields.
+    int levelCount = 1;
     final MaxInputFinder maxInputFinder = new MaxInputFinder(exprLevels);
     boolean[] relTypesPossibleForTopLevel = new boolean[relTypes.length];
     Arrays.fill(relTypesPossibleForTopLevel, true);
@@ -370,9 +375,6 @@ public abstract class CalcRelSplitter {
     if (levelCount > 0) {
       // The latest level should be CalcRelType otherwise literals cannot be
       // implemented.
-      assert "CalcRelType".equals(relTypes[0].name)
-          : "The first RelType should be CalcRelType for proper RexLiteral"
-          + " implementation at the last level, got " + relTypes[0].name;
       if (levelTypeOrdinals[levelCount - 1] != 0) {
         levelCount++;
       }

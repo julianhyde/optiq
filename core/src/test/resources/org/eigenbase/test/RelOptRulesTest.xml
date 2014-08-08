@@ -108,6 +108,27 @@ ProjectRel(EXPR$0=[1])
 ]]>
         </Resource>
     </TestCase>
+    <TestCase name="testPushFilterThroughWindow">
+        <Resource name="sql">
+            <![CDATA[select * from (select e.ename, e.deptno+e.empno qq, row_number() over (partition by e.deptno+e.empno order by e.empno) from sales.emp e) where qq=10]]>
+        </Resource>
+        <Resource name="planBefore">
+            <![CDATA[
+ProjectRel(ENAME=[$0], QQ=[$1], R=[$2])
+  FilterRel(condition=[=($1, 10)])
+    ProjectRel(ENAME=[$1], QQ=[+($7, $0)], R=[ROW_NUMBER() OVER (PARTITION BY +($7, $0) ORDER BY $0 RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)])
+      TableAccessRel(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+        <Resource name="planAfter">
+            <![CDATA[
+ProjectRel(ENAME=[$0], QQ=[$1], R=[$2])
+  FilterRel(condition=[=($1, 10)])
+    ProjectRel(ENAME=[$1], QQ=[+($7, $0)], R=[ROW_NUMBER() OVER (PARTITION BY +($7, $0) ORDER BY $0 RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)])
+      TableAccessRel(table=[[CATALOG, SALES, EMP]])
+]]>
+        </Resource>
+    </TestCase>
     <TestCase name="testReduceAverage">
         <Resource name="sql">
             <![CDATA[select name, max(name), avg(deptno), min(name) from sales.dept group by name]]>
