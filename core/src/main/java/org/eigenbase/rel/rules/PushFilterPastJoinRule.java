@@ -74,22 +74,12 @@ public abstract class PushFilterPastJoinRule extends RelOptRule {
     final List<RexNode> joinFilters =
         RelOptUtil.conjunctions(join.getCondition());
 
-    if (filter == null) {
-      // There is only the joinRel
-      // make sure it does not match a cartesian product joinRel
-      // (with "true" condition) otherwise this rule will be applied
-      // again on the new cartesian product joinRel.
-      boolean onlyTrueFilter = true;
-      for (RexNode joinFilter : joinFilters) {
-        if (!joinFilter.isAlwaysTrue()) {
-          onlyTrueFilter = false;
-          break;
-        }
-      }
-
-      if (onlyTrueFilter) {
-        return;
-      }
+    // If there is only the joinRel,
+    // make sure it does not match a cartesian product joinRel
+    // (with "true" condition), otherwise this rule will be applied
+    // again on the new cartesian product joinRel.
+    if (filter == null && joinFilters.isEmpty()) {
+      return;
     }
 
     final List<RexNode> aboveFilters =
@@ -141,6 +131,14 @@ public abstract class PushFilterPastJoinRule extends RelOptRule {
       return;
     }
 
+    // if nothing actually got pushed and there is nothing leftover,
+    // then this rule is a no-op
+    if (joinFilters.isEmpty()
+        && leftFilters.isEmpty()
+        && rightFilters.isEmpty()) {
+      return;
+    }
+
     // create FilterRels on top of the children if any filters were
     // pushed to them
     RexBuilder rexBuilder = join.getCluster().getRexBuilder();
@@ -157,19 +155,9 @@ public abstract class PushFilterPastJoinRule extends RelOptRule {
 
     // create the new join node referencing the new children and
     // containing its new join filters (if there are any)
-    RexNode joinFilter;
+    RexNode joinFilter =
+        RexUtil.composeConjunction(rexBuilder, joinFilters, false);
 
-    if (joinFilters.size() == 0) {
-      // if nothing actually got pushed and there is nothing leftover,
-      // then this rule is a no-op
-      if ((leftFilters.size() == 0) && (rightFilters.size() == 0)) {
-        return;
-      }
-      joinFilter = rexBuilder.makeLiteral(true);
-    } else {
-      joinFilter =
-          RexUtil.composeConjunction(rexBuilder, joinFilters, true);
-    }
     RelNode newJoinRel =
         join.copy(
             join.getCluster().traitSetOf(Convention.NONE),
@@ -179,6 +167,12 @@ public abstract class PushFilterPastJoinRule extends RelOptRule {
             join.getJoinType(),
             join.isSemiJoinDone());
     call.getPlanner().onCopy(join, newJoinRel);
+    if (!leftFilters.isEmpty()) {
+      call.getPlanner().onCopy(filter, leftRel);
+    }
+    if (!rightFilters.isEmpty()) {
+      call.getPlanner().onCopy(filter, rightRel);
+    }
 
     // The pushed filters are not exact copies of the original filter, but
     // telling the planner about them seems to help the RelDecorrelator more

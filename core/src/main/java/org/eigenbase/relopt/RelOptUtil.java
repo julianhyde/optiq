@@ -1930,7 +1930,7 @@ public abstract class RelOptUtil {
           // child, the types of the source should match the dest
           // so we don't need to explicitly pass the destination
           // fields to RexInputConverter
-          final RexNode shilftedFilter =
+          final RexNode shiftedFilter =
               shiftFilter(
                   nSysFields + nFieldsLeft,
                   nTotalFields,
@@ -1940,7 +1940,7 @@ public abstract class RelOptUtil {
                   nTotalFields,
                   rightFields,
                   filter);
-          rightFilters.add(shilftedFilter);
+          rightFilters.add(shiftedFilter);
         }
         filterIter.remove();
 

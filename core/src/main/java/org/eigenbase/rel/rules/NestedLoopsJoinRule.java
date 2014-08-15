@@ -92,8 +92,8 @@ public class NestedLoopsJoinRule extends RelOptRule {
             leftKeys,
             rightKeys);
     assert leftKeys.size() == rightKeys.size();
-    final List<CorrelatorRel.Correlation> correlationList =
-        new ArrayList<CorrelatorRel.Correlation>();
+    final List<Correlation> correlationList =
+        new ArrayList<Correlation>();
     if (leftKeys.size() > 0) {
       final RelOptCluster cluster = join.getCluster();
       final RexBuilder rexBuilder = cluster.getRexBuilder();
@@ -105,7 +105,7 @@ public class NestedLoopsJoinRule extends RelOptRule {
         // Create correlation to say 'each row, set variable #id
         // to the value of column #leftKey'.
         correlationList.add(
-            new CorrelatorRel.Correlation(dynInId, p.left));
+            new Correlation(dynInId, p.left));
         condition =
             RelOptUtil.andJoinFilters(
                 rexBuilder,
