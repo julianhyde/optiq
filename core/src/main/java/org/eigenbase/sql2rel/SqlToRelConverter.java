@@ -46,6 +46,7 @@ import net.hydromatic.optiq.prepare.Prepare;
 import net.hydromatic.optiq.prepare.RelOptTableImpl;
 import net.hydromatic.optiq.util.BitSets;
 
+import com.google.common.base.Supplier;
 import com.google.common.collect.*;
 
 import static org.eigenbase.sql.SqlUtil.stripAs;
@@ -101,17 +102,21 @@ public class SqlToRelConverter {
   private final Map<String, RelNode> mapCorrelToRefRel =
       new HashMap<String, RelNode>();
 
-  private final SortedMap<CorrelatorRel.Correlation, CorrelatorRel>
-  mapCorVarToCorRel =
-      new TreeMap<CorrelatorRel.Correlation, CorrelatorRel>();
+  private final SortedMap<Correlation, CorrelatorRel> mapCorVarToCorRel =
+      new TreeMap<Correlation, CorrelatorRel>();
 
-  private final Map<RelNode, SortedSet<CorrelatorRel.Correlation>>
-  mapRefRelToCorVar =
-      new HashMap<RelNode, SortedSet<CorrelatorRel.Correlation>>();
+  private final SortedSetMultimap<RelNode, Correlation> mapRefRelToCorVar =
+      Multimaps.newSortedSetMultimap(
+          Maps.<RelNode, Collection<Correlation>>newHashMap(),
+          new Supplier<TreeSet<Correlation>>() {
+            public TreeSet<Correlation> get() {
+              Bug.upgrade("use MultimapBuilder when we're on Guava-16");
+              return Sets.newTreeSet();
+            }
+          });
 
-  private final Map<RexFieldAccess, CorrelatorRel.Correlation>
-  mapFieldAccessToCorVar =
-      new HashMap<RexFieldAccess, CorrelatorRel.Correlation>();
+  private final Map<RexFieldAccess, Correlation> mapFieldAccessToCorVar =
+      new HashMap<RexFieldAccess, Correlation>();
 
   /**
    * Stack of names of datasets requested by the <code>
@@ -335,13 +340,18 @@ public class SqlToRelConverter {
     RelNode newRootRel = typeFlattener.rewrite(rootRel, restructure);
 
     // There are three maps constructed during convertQuery which need to to
-    // be maintained for use in decorrelation. 1. mapRefRelToCorVar: - map a
-    // rel node to the coorrelated variables it references 2.
-    // mapCorVarToCorRel: - map a correlated variable to the correlatorRel
-    // providing it 3. mapFieldAccessToCorVar: - map a rex field access to
-    // the cor var it represents. because typeFlattener does not clone or
-    // modify a correlated field access this map does not need to be
-    // updated.
+    // be maintained for use in decorrelation.
+    //
+    // 1. mapRefRelToCorVar: - map a rel node to the correlated variables it
+    //    references
+    //
+    // 2. mapCorVarToCorRel: - map a correlated variable to the correlatorRel
+    //    providing it
+    //
+    // 3. mapFieldAccessToCorVar: - map a rex field access to
+    //    the cor var it represents. because typeFlattener does not clone or
+    //    modify a correlated field access this map does not need to be
+    //    updated.
     typeFlattener.updateRelInMap(mapRefRelToCorVar);
     typeFlattener.updateRelInMap(mapCorVarToCorRel);
 
@@ -1884,8 +1894,7 @@ public class SqlToRelConverter {
     }
 
     if (correlatedVariables.size() > 0) {
-      List<CorrelatorRel.Correlation> correlations =
-          new ArrayList<CorrelatorRel.Correlation>();
+      final List<Correlation> correlations = Lists.newArrayList();
 
       for (String correlName : correlatedVariables) {
         DeferredLookup lookup = mapCorrelToDeferred.get(correlName);
@@ -1952,8 +1961,8 @@ public class SqlToRelConverter {
             }
           }
 
-          CorrelatorRel.Correlation newCorVar =
-              new CorrelatorRel.Correlation(
+          Correlation newCorVar =
+              new Correlation(
                   getCorrelOrdinal(correlName),
                   pos);
 
@@ -1962,16 +1971,7 @@ public class SqlToRelConverter {
           mapFieldAccessToCorVar.put(fieldAccess, newCorVar);
 
           RelNode refRel = mapCorrelToRefRel.get(correlName);
-
-          SortedSet<CorrelatorRel.Correlation> corVarList;
-
-          if (!mapRefRelToCorVar.containsKey(refRel)) {
-            corVarList = new TreeSet<CorrelatorRel.Correlation>();
-          } else {
-            corVarList = mapRefRelToCorVar.get(refRel);
-          }
-          corVarList.add(newCorVar);
-          mapRefRelToCorVar.put(refRel, corVarList);
+          mapRefRelToCorVar.put(refRel, newCorVar);
         }
       }
 
@@ -1984,7 +1984,7 @@ public class SqlToRelConverter {
                 joinCond,
                 correlations,
                 joinType);
-        for (CorrelatorRel.Correlation correlation : correlations) {
+        for (Correlation correlation : correlations) {
           mapCorVarToCorRel.put(correlation, rel);
         }
         return rel;

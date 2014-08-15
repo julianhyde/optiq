@@ -22,9 +22,14 @@ import net.hydromatic.optiq.test.OptiqAssert;
 
 import org.eigenbase.rel.RelNode;
 import org.eigenbase.relopt.RelOptUtil;
+import org.eigenbase.util.Util;
+
+import com.google.common.collect.ImmutableList;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
@@ -32,8 +37,9 @@ import static org.junit.Assert.assertThat;
 
 /** Unit test for {@link TpchSchema}.
  *
- * <p>Only runs if {@code -Doptiq.test.slow=true} is specified on the
- * command-line.
+ * <p>Because the TPC-H data generator takes time and memory to instantiate,
+ * tests that read data (that is, most tests) only run
+ * if {@code -Doptiq.test.slow=true} is specified on the command-line.
  * (See {@link net.hydromatic.optiq.test.OptiqAssert#ENABLE_SLOW}.)</p> */
 public class TpchTest {
   private static String schema(String name, String scaleFactor) {
@@ -59,7 +65,7 @@ public class TpchTest {
       + "   ]\n"
       + "}";
 
-  static final String[] QUERIES = {
+  static final List<String> QUERIES = ImmutableList.of(
     // 01
     "select\n"
       + "  l_returnflag,\n"
@@ -745,8 +751,7 @@ public class TpchTest {
       + "group by\n"
       + "  cntrycode\n"
       + "order by\n"
-      + "  cntrycode",
-  };
+      + "  cntrycode");
 
   @Test public void testRegion() {
     with()
@@ -777,10 +782,14 @@ public class TpchTest {
         .returnsCount(150000);
   }
 
-  private OptiqAssert.AssertThat with() {
+  private OptiqAssert.AssertThat with(boolean enable) {
     return OptiqAssert.that()
         .withModel(TPCH_MODEL)
-        .enable(OptiqAssert.ENABLE_SLOW);
+        .enable(enable);
+  }
+
+  private OptiqAssert.AssertThat with() {
+    return with(OptiqAssert.ENABLE_SLOW);
   }
 
   /** Tests the customer table with scale factor 5. */
@@ -800,14 +809,15 @@ public class TpchTest {
   }
 
   @Test public void testQuery02Conversion() {
-    query(2)
+    query(2, true)
         .convertMatches(new Function1<RelNode, Void>() {
           public Void apply(RelNode relNode) {
             String s = RelOptUtil.toString(relNode);
             assertThat(s, not(containsString("CorrelatorRel")));
             return null;
           }
-        });
+        })
+        .convertContains("xx");
   }
 
   @Test public void testQuery03() {
@@ -904,12 +914,19 @@ public class TpchTest {
   }
 
   private void checkQuery(int i) {
-    query(i).runs();
+    query(i, null).runs();
   }
 
-  private OptiqAssert.AssertQuery query(int i) {
-    return with()
-        .query(QUERIES[i - 1].replaceAll("tpch\\.", "tpch_01."));
+  /** Runs with query #i.
+   *
+   * @param i Ordinal of query, per the benchmark, 1-based
+   * @param enable Whether to enable query execution.
+   *     If null, use the value of {@link OptiqAssert#ENABLE_SLOW}.
+   *     Pass true only for 'fast' tests that do not read any data.
+   */
+  private OptiqAssert.AssertQuery query(int i, Boolean enable) {
+    return with(Util.first(enable, OptiqAssert.ENABLE_SLOW))
+        .query(QUERIES.get(i - 1).replaceAll("tpch\\.", "tpch_01."));
   }
 }
 
