@@ -133,6 +133,10 @@ public final class CorrelatorRel extends JoinRelBase {
         this.joinType);
   }
 
+  @Override public RelNode accept(RelShuttle shuttle) {
+    return shuttle.visit(this);
+  }
+
   public RelWriter explainTerms(RelWriter pw) {
     return super.explainTerms(pw)
         .item("correlations", correlations);

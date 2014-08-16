@@ -2765,9 +2765,10 @@ public class SqlToRelConverter {
     RelDecorrelator decorrelator =
         new RelDecorrelator(
             rexBuilder,
-            mapRefRelToCorVar,
-            mapCorVarToCorRel,
-            mapFieldAccessToCorVar,
+            RelDecorrelator.CorelMap.of(
+                mapRefRelToCorVar,
+                mapCorVarToCorRel,
+                mapFieldAccessToCorVar),
             cluster.getPlanner().getContext());
     boolean dumpPlan = SQL2REL_LOGGER.isLoggable(Level.FINE);
 

@@ -18,13 +18,14 @@ package org.eigenbase.rel.rules;
 
 import java.util.*;
 
-import com.google.common.collect.Lists;
 import org.eigenbase.rel.*;
 import org.eigenbase.relopt.*;
 import org.eigenbase.rex.*;
 import org.eigenbase.sql.fun.*;
 import org.eigenbase.util.*;
 import org.eigenbase.util.mapping.IntPair;
+
+import com.google.common.collect.Lists;
 
 /**
  * Rule which converts a {@link JoinRel} into a {@link CorrelatorRel}, which can
