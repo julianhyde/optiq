@@ -2762,19 +2762,9 @@ public class SqlToRelConverter {
   }
 
   protected RelNode decorrelateQuery(RelNode rootRel) {
-    RelDecorrelator decorrelator =
-        new RelDecorrelator(
-            rexBuilder,
-            RelDecorrelator.CorelMap.of(
-                mapRefRelToCorVar,
-                mapCorVarToCorRel,
-                mapFieldAccessToCorVar),
-            cluster.getPlanner().getContext());
-    boolean dumpPlan = SQL2REL_LOGGER.isLoggable(Level.FINE);
+    RelNode newRootRel = RelDecorrelator.removeCorrelationViaRule(rootRel);
 
-    RelNode newRootRel = decorrelator.removeCorrelationViaRule(rootRel);
-
-    if (dumpPlan) {
+    if (SQL2REL_LOGGER.isLoggable(Level.FINE)) {
       SQL2REL_LOGGER.fine(
           RelOptUtil.dumpPlan(
               "Plan after removing CorrelatorRel",
@@ -2784,7 +2774,7 @@ public class SqlToRelConverter {
     }
 
     if (!mapCorVarToCorRel.isEmpty()) {
-      newRootRel = decorrelator.decorrelate(newRootRel);
+      newRootRel = RelDecorrelator.decorrelate(newRootRel);
     }
 
     return newRootRel;

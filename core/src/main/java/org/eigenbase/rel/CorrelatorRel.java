@@ -36,6 +36,7 @@ public final class CorrelatorRel extends JoinRelBase {
   //~ Instance fields --------------------------------------------------------
 
   protected final ImmutableList<Correlation> correlations;
+  public final boolean fromRule;
 
   //~ Constructors -----------------------------------------------------------
 
@@ -57,6 +58,30 @@ public final class CorrelatorRel extends JoinRelBase {
       RexNode joinCond,
       List<Correlation> correlations,
       JoinRelType joinType) {
+    this(cluster, left, right, joinCond, correlations, joinType, false);
+  }
+
+  /**
+   * Creates a CorrelatorRel.
+   *
+   * @param cluster      cluster this relational expression belongs to
+   * @param left         left input relational expression
+   * @param right        right input relational expression
+   * @param joinCond     join condition
+   * @param correlations set of expressions to set as variables each time a
+   *                     row arrives from the left input
+   * @param joinType     join type
+   * @param fromRule     Whether was created by
+   *                     AdjustProjectForCountAggregateRule
+   */
+  public CorrelatorRel(
+      RelOptCluster cluster,
+      RelNode left,
+      RelNode right,
+      RexNode joinCond,
+      List<Correlation> correlations,
+      JoinRelType joinType,
+      boolean fromRule) {
     super(
         cluster,
         cluster.traitSetOf(Convention.NONE),
@@ -66,6 +91,7 @@ public final class CorrelatorRel extends JoinRelBase {
         joinType,
         ImmutableSet.<String>of());
     this.correlations = ImmutableList.copyOf(correlations);
+    this.fromRule = fromRule;
     assert (joinType == JoinRelType.LEFT)
         || (joinType == JoinRelType.INNER);
   }
@@ -129,8 +155,10 @@ public final class CorrelatorRel extends JoinRelBase {
         getCluster(),
         left,
         right,
+        condition,
         correlations,
-        this.joinType);
+        this.joinType,
+        fromRule);
   }
 
   @Override public RelNode accept(RelShuttle shuttle) {
