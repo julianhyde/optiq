@@ -956,7 +956,8 @@ public class JdbcTest {
 
   @Test public void testCloneSchema()
       throws ClassNotFoundException, SQLException {
-    final OptiqConnection connection = OptiqAssert.getConnection(false);
+    final OptiqConnection connection =
+        OptiqAssert.getConnection(OptiqAssert.SchemaSpec.JDBC_FOODMART);
     final SchemaPlus rootSchema = connection.getRootSchema();
     final SchemaPlus foodmart = rootSchema.getSubSchema("foodmart");
     rootSchema.add("foodmart2", new CloneSchema(foodmart));
@@ -2051,6 +2052,20 @@ public class JdbcTest {
             + "              EnumerableTableAccessRel(table=[[foodmart2, customer]])\n"
             + "          EnumerableCalcRel(expr#0..9=[{inputs}], expr#10=[CAST($t4):INTEGER], expr#11=[1997], expr#12=[=($t10, $t11)], proj#0..9=[{exprs}], $condition=[$t12])\n"
             + "            EnumerableTableAccessRel(table=[[foodmart2, time_by_day]])")
+        .runs();
+  }
+
+  @Test public void testFoodmartLattice() throws IOException {
+    // 8: select ... from customer, sales, time ... group by ...
+    final FoodmartTest.FoodmartQuery query =
+        FoodmartTest.FoodMartQuerySet.instance().queries.get(8);
+    OptiqAssert.that()
+        .with(OptiqAssert.Config.JDBC_FOODMART_WITH_LATTICE)
+        .pooled()
+        .withSchema("foodmart")
+        .query(query.sql)
+        .enableMaterializations(true)
+        .explainContains("xx")
         .runs();
   }
 
@@ -5847,7 +5862,8 @@ public class JdbcTest {
   }
 
   @Test public void testSchemaCaching() throws Exception {
-    final OptiqConnection connection = OptiqAssert.getConnection(false);
+    final OptiqConnection connection =
+        OptiqAssert.getConnection(OptiqAssert.SchemaSpec.JDBC_FOODMART);
     final SchemaPlus rootSchema = connection.getRootSchema();
 
     // create schema "/a"
