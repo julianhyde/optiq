@@ -28,6 +28,10 @@ import net.hydromatic.optiq.test.OptiqAssert;
 
 import org.eigenbase.rel.*;
 import org.eigenbase.rel.convert.ConverterRule;
+import org.eigenbase.rel.metadata.BuiltInMetadata;
+import org.eigenbase.rel.metadata.DefaultRelMetadataProvider;
+import org.eigenbase.rel.metadata.Metadata;
+import org.eigenbase.rel.metadata.RelMetadataProvider;
 import org.eigenbase.rel.rules.*;
 import org.eigenbase.relopt.*;
 import org.eigenbase.reltype.RelDataType;
@@ -42,6 +46,7 @@ import org.eigenbase.sql.validate.SqlValidator;
 import org.eigenbase.sql.validate.SqlValidatorScope;
 import org.eigenbase.util.Util;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 
 import org.junit.Test;
@@ -219,6 +224,79 @@ public class PlannerTest {
     assertThat(toString(transform), equalTo(
         "EnumerableProjectRel(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
         + "  EnumerableTableAccessRel(table=[[hr, emps]])\n"));
+  }
+
+  /** Test case for
+   * <a href="https://issues.apache.org/jira/browse/OPTIQ-401">OPTIQ-401</a>,
+   * "New SqlExplainLevel ALL_ATTRIBUTES_COST_IF_AVAILABLE". */
+  @Test public void testExplainLevel() throws Exception {
+    Program program =
+        Programs.ofRules(
+            MergeFilterRule.INSTANCE,
+            JavaRules.ENUMERABLE_FILTER_RULE,
+            JavaRules.ENUMERABLE_PROJECT_RULE);
+    final SchemaPlus rootSchema = Frameworks.createRootSchema(true);
+    final FrameworkConfig config = Frameworks.newConfigBuilder()
+        .lex(Lex.ORACLE)
+        .defaultSchema(
+            OptiqAssert.addSchema(rootSchema, OptiqAssert.SchemaSpec.HR))
+        .traitDefs((List<RelTraitDef>) null)
+        .programs(program)
+        .metadataProvider(
+            new RelMetadataProvider() {
+              private final RelMetadataProvider defaultMetadataProvider =
+                  new DefaultRelMetadataProvider();
+
+              public Function<RelNode, Metadata> apply(
+                  Class<? extends RelNode> relClass,
+                  Class<? extends Metadata> metadataClass) {
+                if (metadataClass == BuiltInMetadata.RowCount.class) {
+                  return new Function<RelNode, Metadata>() {
+                    public BuiltInMetadata.RowCount apply(
+                        final RelNode rel) {
+                      return new BuiltInMetadata.RowCount() {
+                        public Double getRowCount() {
+                          // Row count not available.
+                          return rel instanceof TableAccessRelBase
+                              ? null
+                              : 999d;
+                        }
+
+                        public RelNode rel() {
+                          return rel;
+                        }
+                      };
+                    }
+                  };
+                }
+                // Metadata not available. Try default metadata provider.
+                return defaultMetadataProvider.apply(relClass, metadataClass);
+              }
+            })
+        .build();
+    Planner planner = Frameworks.getPlanner(config);
+    SqlNode parse =
+        planner.parse("select * from \"emps\" where \"deptno\" < 10");
+    SqlNode validate = planner.validate(parse);
+    RelNode convert = planner.convert(validate);
+    RelTraitSet traitSet = planner.getEmptyTraitSet()
+        .replace(EnumerableConvention.INSTANCE);
+    RelNode transform = planner.transform(0, traitSet, convert);
+    final String digestAttributePlan = Util.toLinux(
+        RelOptUtil.dumpPlan("", transform, false,
+            SqlExplainLevel.DIGEST_ATTRIBUTES));
+    assertThat(digestAttributePlan, equalTo(
+        "EnumerableProjectRel(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4])\n"
+        + "  EnumerableFilterRel(condition=[<($1, 10)])\n"
+        + "    EnumerableTableAccessRel(table=[[hr, emps]])\n"));
+    final String allAttributesPlan = Util.toLinux(
+        RelOptUtil.dumpPlan("", transform, false,
+            SqlExplainLevel.ALL_ATTRIBUTES)
+            .replaceAll("id = [0-9]+", "id = N"));
+    assertThat(allAttributesPlan, equalTo(
+        "EnumerableProjectRel(empid=[$0], deptno=[$1], name=[$2], salary=[$3], commission=[$4]): rowcount = 999.0, cumulative cost = null, id = N\n"
+        + "  EnumerableFilterRel(condition=[<($1, 10)]): rowcount = 999.0, cumulative cost = null, id = N\n"
+        + "    EnumerableTableAccessRel(table=[[hr, emps]]): rowcount = null, cumulative cost = {100.0 rows, 101.0 cpu, 0.0 io}, id = N\n"));
   }
 
   /** Unit test that parses, validates, converts and

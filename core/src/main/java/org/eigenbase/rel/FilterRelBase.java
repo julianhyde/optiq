@@ -85,13 +85,16 @@ public abstract class FilterRelBase extends SingleRel {
   }
 
   public RelOptCost computeSelfCost(RelOptPlanner planner) {
-    double dRows = RelMetadataQuery.getRowCount(this);
-    double dCpu = RelMetadataQuery.getRowCount(getChild());
-    double dIo = 0;
-    return planner.getCostFactory().makeCost(dRows, dCpu, dIo);
+    final Double rowCount = RelMetadataQuery.getRowCount(this);
+    final Double cpu = RelMetadataQuery.getRowCount(getChild());
+    final double io = 0d;
+    if (rowCount == null || cpu == null) {
+      return null;
+    }
+    return planner.getCostFactory().makeCost(rowCount, cpu, io);
   }
 
-  // override RelNode
+  @Override
   public double getRows() {
     return estimateFilteredRows(
         getChild(),

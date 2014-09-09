@@ -146,9 +146,16 @@ public class RelMdPercentageOriginalRows {
   // Ditto for getNonCumulativeCost
   public RelOptCost getCumulativeCost(RelNode rel) {
     RelOptCost cost = RelMetadataQuery.getNonCumulativeCost(rel);
+    if (cost == null) {
+      return null;
+    }
     List<RelNode> inputs = rel.getInputs();
     for (RelNode input : inputs) {
-      cost = cost.plus(RelMetadataQuery.getCumulativeCost(input));
+      final RelOptCost inputCost = RelMetadataQuery.getCumulativeCost(input);
+      if (inputCost == null) {
+        return null;
+      }
+      cost = cost.plus(inputCost);
     }
     return cost;
   }

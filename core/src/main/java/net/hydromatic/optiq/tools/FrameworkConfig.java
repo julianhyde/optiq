@@ -19,6 +19,7 @@ package net.hydromatic.optiq.tools;
 import net.hydromatic.optiq.SchemaPlus;
 import net.hydromatic.optiq.config.Lex;
 
+import org.eigenbase.rel.metadata.RelMetadataProvider;
 import org.eigenbase.relopt.Context;
 import org.eigenbase.relopt.RelOptCostFactory;
 import org.eigenbase.relopt.RelTraitDef;
@@ -107,6 +108,14 @@ public interface FrameworkConfig {
    * calling {@link org.eigenbase.relopt.RelOptPlanner#getContext()}.
    */
   Context getContext();
+
+  /**
+   * Returns a metadata provider. If not null, overrides the cluster's default
+   * metadata provider during planning.
+   *
+   * @return Metadata provider, or null
+   */
+  RelMetadataProvider getMetadataProvider();
 }
 
 // End FrameworkConfig.java

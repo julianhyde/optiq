@@ -23,6 +23,7 @@ import net.hydromatic.optiq.jdbc.OptiqSchema;
 import net.hydromatic.optiq.tools.*;
 
 import org.eigenbase.rel.RelNode;
+import org.eigenbase.rel.metadata.RelMetadataProvider;
 import org.eigenbase.relopt.*;
 import org.eigenbase.relopt.RelOptTable.ViewExpander;
 import org.eigenbase.reltype.RelDataType;
@@ -186,6 +187,10 @@ public class PlannerImpl implements Planner {
             createRexBuilder(), convertletTable);
     sqlToRelConverter.setTrimUnusedFields(false);
     sqlToRelConverter.enableTableAccessConversion(false);
+    final RelMetadataProvider metadataProvider = config.getMetadataProvider();
+    if (metadataProvider != null) {
+      sqlToRelConverter.getCluster().setMetadataProvider(metadataProvider);
+    }
     rel = sqlToRelConverter.convertQuery(validatedSqlNode, false, true);
     rel = sqlToRelConverter.flattenTypes(rel, true);
     rel = RelDecorrelator.decorrelateQuery(rel);

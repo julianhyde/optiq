@@ -24,6 +24,7 @@ import net.hydromatic.optiq.prepare.OptiqPrepareImpl;
 import net.hydromatic.optiq.prepare.PlannerImpl;
 import net.hydromatic.optiq.server.OptiqServerStatement;
 
+import org.eigenbase.rel.metadata.RelMetadataProvider;
 import org.eigenbase.relopt.Context;
 import org.eigenbase.relopt.RelOptCluster;
 import org.eigenbase.relopt.RelOptCostFactory;
@@ -102,7 +103,7 @@ public class Frameworks {
    * @return Return value from action
    */
   public static <R> R withPlanner(final PlannerAction<R> action, //
-      FrameworkConfig config) {
+      final FrameworkConfig config) {
     return withPrepare(
         new Frameworks.PrepareAction<R>(config) {
           public R apply(RelOptCluster cluster, RelOptSchema relOptSchema,
@@ -175,12 +176,14 @@ public class Frameworks {
     private SchemaPlus defaultSchema;
     private RelOptCostFactory costFactory;
     private SqlParserImplFactory parserFactory = SqlParserImpl.FACTORY;
+    private RelMetadataProvider metadataProvider;
 
     private ConfigBuilder() {}
 
     public FrameworkConfig build() {
       return new StdFrameworkConfig(context, convertletTable, operatorTable,
-          programs, traitDefs, lex, defaultSchema, costFactory, parserFactory);
+          programs, traitDefs, lex, defaultSchema, costFactory, parserFactory,
+          metadataProvider);
     }
 
     public ConfigBuilder context(Context c) {
@@ -250,6 +253,12 @@ public class Frameworks {
       this.parserFactory = Preconditions.checkNotNull(parserFactory);
       return this;
     }
+
+    public ConfigBuilder metadataProvider(
+        RelMetadataProvider metadataProvider) {
+      this.metadataProvider = metadataProvider;
+      return this;
+    }
   }
 
   /**
@@ -266,8 +275,9 @@ public class Frameworks {
     private final SchemaPlus defaultSchema;
     private final RelOptCostFactory costFactory;
     private final SqlParserImplFactory parserFactory;
+    private final RelMetadataProvider metadataProvider;
 
-    public StdFrameworkConfig(Context context,
+    StdFrameworkConfig(Context context,
         SqlRexConvertletTable convertletTable,
         SqlOperatorTable operatorTable,
         ImmutableList<Program> programs,
@@ -275,7 +285,8 @@ public class Frameworks {
         Lex lex,
         SchemaPlus defaultSchema,
         RelOptCostFactory costFactory,
-        SqlParserImplFactory parserFactory) {
+        SqlParserImplFactory parserFactory,
+        RelMetadataProvider metadataProvider) {
       this.context = context;
       this.convertletTable = convertletTable;
       this.operatorTable = operatorTable;
@@ -285,6 +296,7 @@ public class Frameworks {
       this.defaultSchema = defaultSchema;
       this.costFactory = costFactory;
       this.parserFactory = parserFactory;
+      this.metadataProvider = metadataProvider;
     }
 
     public Lex getLex() {
@@ -321,6 +333,10 @@ public class Frameworks {
 
     public SqlOperatorTable getOperatorTable() {
       return operatorTable;
+    }
+
+    public RelMetadataProvider getMetadataProvider() {
+      return metadataProvider;
     }
   }
 }
