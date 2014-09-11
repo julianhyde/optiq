@@ -25,8 +25,23 @@ branches:
   only:
     - master
     - javadoc
+    - coverity_scan
 script:
   mvn test site
 git:
   depth: 10000
+env:
+  global:
+   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "CTSHcmXr5qRi6DYtjUrRmEpZ6YxjtdUlriI1Dc5Xit01pP/UodZw2cmrWsOJ6vfmrKFSossSQAa1NQ008ziH9fXjybXczQvehEm/sIysezpsEKgRwvSWg2VVEEOPdnjWV20Cu+skZ7g6uyu7gRz7a99HZaD2/f1U4hgtiqloGIQ="
+addons:
+  coverity_scan:
+    project:
+      name: "julianhyde/optiq"
+      description: "Build submitted via Travis CI"
+    notification_email: jhyde@apache.org
+    build_command_prepend: "mvn clean"
+    build_command:   "mvn -DskipTests=true compile"
+    branch_pattern: coverity_scan
 # End .travis.yml
