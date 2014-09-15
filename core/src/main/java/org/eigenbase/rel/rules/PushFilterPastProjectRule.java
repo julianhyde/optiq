@@ -16,6 +16,9 @@
  */
 package org.eigenbase.rel.rules;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eigenbase.rel.*;
 import org.eigenbase.relopt.*;
 import org.eigenbase.rex.*;
@@ -66,6 +69,10 @@ public class PushFilterPastProjectRule extends RelOptRule {
     final FilterRelBase filterRel = call.rel(0);
     final ProjectRelBase projRel = call.rel(1);
 
+    if (projectHasOver(projRel)) {
+      return;
+    }
+
     // convert the filter to one that references the child of the project
     RexNode newCondition =
         RelOptUtil.pushFilterPastProject(filterRel.getCondition(), projRel);
@@ -84,6 +91,32 @@ public class PushFilterPastProjectRule extends RelOptRule {
                 projRel.getRowType().getFieldNames());
 
     call.transformTo(newProjRel);
+  }
+
+  // In general a Filter cannot be pushed below a Windowing Calculation.
+  // Applying the Filter before the Aggregation Function changes
+  // the results of the Windowing invocation.
+  //
+  // When the Filter is on the Partition expression of the Over clause
+  // it can be pushed down. For now we don't support this.
+  // @todo support this use case.
+  boolean projectHasOver(ProjectRelBase projRel) {
+    final List<RexOver> overExprInProjection = new ArrayList<RexOver>();
+
+    RexVisitor<Void> checkOver = new RexVisitorImpl<Void>(true) {
+      public Void visitOver(RexOver over) {
+        overExprInProjection.add(over);
+        return null;
+      }
+    };
+
+    for (RexNode p : projRel.getProjects()) {
+      p.accept(checkOver);
+      if (overExprInProjection.size() > 0) {
+        return true;
+      }
+    }
+    return false;
   }
 }
 
