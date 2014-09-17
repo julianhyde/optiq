@@ -915,6 +915,13 @@ public class SqlToRelConverterTest extends SqlToRelTestBase {
         Util.toLinux(sw.toString()));
   }
 
+  @Test
+  public void testSortWithTrim() {
+    tester.assertConvertsTo(
+        "select ename from (select * from emp order by sal) a", "${plan}",
+        true);
+  }
+
   /**
    * Visitor that checks that every {@link RelNode} in a tree is valid.
    *
