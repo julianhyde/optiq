@@ -18,6 +18,6 @@
 /**
  * Provides utility classes.
  */
-package org.eigenbase.util;
+package net.hydromatic.avatica.test;
 
 // End package-info.java
