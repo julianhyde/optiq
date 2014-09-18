@@ -19,6 +19,8 @@ package org.eigenbase.rel;
 import org.eigenbase.relopt.*;
 import org.eigenbase.rex.*;
 
+import net.hydromatic.optiq.impl.interpreter.*;
+
 /**
  * Relational expression that iterates over its input
  * and returns elements for which <code>condition</code> evaluates to
@@ -27,7 +29,7 @@ import org.eigenbase.rex.*;
  * <p>If the condition allows nulls, then a null value is treated the same as
  * false.</p>
  */
-public final class FilterRel extends FilterRelBase {
+public final class FilterRel extends FilterRelBase implements InterpretableRel {
   //~ Constructors -----------------------------------------------------------
 
   /**
@@ -68,6 +70,10 @@ public final class FilterRel extends FilterRelBase {
   @Override
   public RelNode accept(RelShuttle shuttle) {
     return shuttle.visit(this);
+  }
+
+  public Node interpret(Interpreter interpreter) {
+    return new FilterNode(interpreter, this);
   }
 }
 

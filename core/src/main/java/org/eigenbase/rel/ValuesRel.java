@@ -22,11 +22,13 @@ import org.eigenbase.relopt.*;
 import org.eigenbase.reltype.*;
 import org.eigenbase.rex.*;
 
+import net.hydromatic.optiq.impl.interpreter.*;
+
 /**
  * <code>ValuesRel</code> represents a sequence of zero or more literal row
  * values.
  */
-public class ValuesRel extends ValuesRelBase {
+public class ValuesRel extends ValuesRelBase implements InterpretableRel {
   //~ Constructors -----------------------------------------------------------
 
   /**
@@ -70,6 +72,10 @@ public class ValuesRel extends ValuesRelBase {
   @Override
   public RelNode accept(RelShuttle shuttle) {
     return shuttle.visit(this);
+  }
+
+  public Node interpret(Interpreter interpreter) {
+    return new ValuesNode(interpreter, this);
   }
 }
 
