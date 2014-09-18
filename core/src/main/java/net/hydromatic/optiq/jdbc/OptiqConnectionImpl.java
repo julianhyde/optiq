@@ -35,6 +35,7 @@ import net.hydromatic.optiq.runtime.Hook;
 import net.hydromatic.optiq.server.OptiqServer;
 import net.hydromatic.optiq.server.OptiqServerStatement;
 
+import org.eigenbase.reltype.RelDataTypeSystem;
 import org.eigenbase.sql.advise.SqlAdvisor;
 import org.eigenbase.sql.advise.SqlAdvisorValidator;
 import org.eigenbase.sql.fun.SqlStdOperatorTable;
@@ -83,17 +84,42 @@ abstract class OptiqConnectionImpl
       String url, Properties info, OptiqRootSchema rootSchema,
       JavaTypeFactory typeFactory) {
     super(driver, factory, url, info);
+    OptiqConnectionConfig cfg = new OptiqConnectionConfigImpl(info);
     this.prepareFactory = driver.prepareFactory;
-    this.typeFactory =
-        typeFactory != null ? typeFactory : new JavaTypeFactoryImpl();
+    if (typeFactory != null) {
+      this.typeFactory = typeFactory;
+    } else {
+      final RelDataTypeSystem typeSystem = plugin(RelDataTypeSystem.class,
+          cfg.typeSystem(), RelDataTypeSystem.DEFAULT);
+      this.typeFactory = new JavaTypeFactoryImpl(typeSystem);
+    }
     this.rootSchema =
         rootSchema != null ? rootSchema : OptiqSchema.createRootSchema(true);
 
-    OptiqConnectionConfig cfg = new OptiqConnectionConfigImpl(info);
     this.properties.put(InternalProperty.CASE_SENSITIVE, cfg.caseSensitive());
     this.properties.put(InternalProperty.UNQUOTED_CASING, cfg.unquotedCasing());
     this.properties.put(InternalProperty.QUOTED_CASING, cfg.quotedCasing());
     this.properties.put(InternalProperty.QUOTING, cfg.quoting());
+  }
+
+  private static <T> T plugin(Class<T> clazz0, String typeSystemClassName,
+      T defaultValue) {
+    if (typeSystemClassName != null) {
+      try {
+        //noinspection unchecked
+        final Class<T> clazz = (Class) Class.forName(typeSystemClassName);
+        assert clazz0.isAssignableFrom(clazz);
+        return clazz.newInstance();
+      } catch (InstantiationException e) {
+        throw new RuntimeException(e);
+      } catch (IllegalAccessException e) {
+        throw new RuntimeException(e);
+      } catch (ClassNotFoundException e) {
+        throw new RuntimeException(e);
+      }
+    } else {
+      return defaultValue;
+    }
   }
 
   @Override protected Meta createMeta() {

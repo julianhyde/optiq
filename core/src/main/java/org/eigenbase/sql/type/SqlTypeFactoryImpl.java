@@ -24,13 +24,14 @@ import org.eigenbase.sql.*;
 import org.eigenbase.util.*;
 
 /**
- * SqlTypeFactoryImpl provides a default implementation of {@link
- * RelDataTypeFactory} which supports SQL types.
+ * SqlTypeFactoryImpl provides a default implementation of
+ * {@link RelDataTypeFactory} which supports SQL types.
  */
 public class SqlTypeFactoryImpl extends RelDataTypeFactoryImpl {
   //~ Constructors -----------------------------------------------------------
 
-  public SqlTypeFactoryImpl() {
+  public SqlTypeFactoryImpl(RelDataTypeSystem typeSystem) {
+    super(typeSystem);
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -339,23 +340,24 @@ public class SqlTypeFactoryImpl extends RelDataTypeFactoryImpl {
               int p2 = type.getPrecision();
               int s1 = resultType.getScale();
               int s2 = type.getScale();
+              final int maxPrecision = typeSystem.getMaxNumericPrecision();
+              final int maxScale = typeSystem.getMaxNumericScale();
 
               int dout = Math.max(p1 - s1, p2 - s2);
               dout =
                   Math.min(
                       dout,
-                      SqlTypeName.MAX_NUMERIC_PRECISION);
+                      maxPrecision);
 
               int scale = Math.max(s1, s2);
               scale =
                   Math.min(
                       scale,
-                      SqlTypeName.MAX_NUMERIC_PRECISION - dout);
-              scale =
-                  Math.min(scale, SqlTypeName.MAX_NUMERIC_SCALE);
+                      maxPrecision - dout);
+              scale = Math.min(scale, maxScale);
 
               int precision = dout + scale;
-              assert precision <= SqlTypeName.MAX_NUMERIC_PRECISION;
+              assert precision <= maxPrecision;
               assert precision > 0;
 
               resultType =

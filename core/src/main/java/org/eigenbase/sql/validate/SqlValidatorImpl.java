@@ -2525,6 +2525,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     assert qualifier != null;
     boolean startPrecisionOutOfRange = false;
     boolean fractionalSecondPrecisionOutOfRange = false;
+    final RelDataTypeSystem typeSystem = typeFactory.getTypeSystem();
 
     if (qualifier.isYearMonth()) {
       if ((qualifier.getStartPrecision()
@@ -2536,7 +2537,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
           (qualifier.getFractionalSecondPrecision()
               < SqlTypeName.INTERVAL_YEAR_MONTH.getMinScale())
               || (qualifier.getFractionalSecondPrecision()
-              > SqlTypeName.INTERVAL_YEAR_MONTH.getMaxScale())) {
+              > typeSystem.getMaxScale(SqlTypeName.INTERVAL_YEAR_MONTH))) {
         fractionalSecondPrecisionOutOfRange = true;
       }
     } else {
@@ -2549,7 +2550,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
           (qualifier.getFractionalSecondPrecision()
               < SqlTypeName.INTERVAL_DAY_TIME.getMinScale())
               || (qualifier.getFractionalSecondPrecision()
-              > SqlTypeName.INTERVAL_DAY_TIME.getMaxScale())) {
+              > typeSystem.getMaxScale(SqlTypeName.INTERVAL_DAY_TIME))) {
         fractionalSecondPrecisionOutOfRange = true;
       }
     }

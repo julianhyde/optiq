@@ -798,7 +798,8 @@ public class RexBuilder {
     RelDataType relType;
     int scale = bd.scale();
     long l = bd.unscaledValue().longValue();
-    assert (scale >= 0) && (scale <= SqlTypeName.MAX_NUMERIC_SCALE);
+    assert scale >= 0;
+    assert scale <= typeFactory.getTypeSystem().getMaxNumericScale() : scale;
     assert BigDecimal.valueOf(l, scale).equals(bd);
     if (scale == 0) {
       if ((l >= Integer.MIN_VALUE) && (l <= Integer.MAX_VALUE)) {

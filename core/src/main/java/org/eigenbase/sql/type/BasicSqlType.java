@@ -18,6 +18,7 @@ package org.eigenbase.sql.type;
 
 import java.nio.charset.*;
 
+import org.eigenbase.reltype.RelDataTypeSystem;
 import org.eigenbase.sql.*;
 import org.eigenbase.util.*;
 
@@ -137,7 +138,7 @@ public class BasicSqlType extends AbstractSqlType {
       case BIGINT:
         return 19;
       case DECIMAL:
-        return SqlTypeName.MAX_NUMERIC_PRECISION;
+        return RelDataTypeSystem.DEFAULT.getMaxNumericPrecision(); // FIXME
       case REAL:
         return 7;
       case FLOAT:

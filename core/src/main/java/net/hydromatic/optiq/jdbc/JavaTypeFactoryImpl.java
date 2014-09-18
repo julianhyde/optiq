@@ -53,6 +53,14 @@ public class JavaTypeFactoryImpl
   syntheticTypes =
       new HashMap<List<Pair<Type, Boolean>>, SyntheticRecordType>();
 
+  public JavaTypeFactoryImpl() {
+    this(RelDataTypeSystem.DEFAULT);
+  }
+
+  public JavaTypeFactoryImpl(RelDataTypeSystem typeSystem) {
+    super(typeSystem);
+  }
+
   public RelDataType createStructType(Class type) {
     List<RelDataTypeField> list = new ArrayList<RelDataTypeField>();
     for (Field field : type.getFields()) {
