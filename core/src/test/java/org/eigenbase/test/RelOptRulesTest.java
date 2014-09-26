@@ -35,6 +35,7 @@ import org.eigenbase.rel.rules.MergeProjectRule;
 import org.eigenbase.rel.rules.ProjectToCalcRule;
 import org.eigenbase.rel.rules.PullConstantsThroughAggregatesRule;
 import org.eigenbase.rel.rules.PushAggregateThroughUnionRule;
+import org.eigenbase.rel.rules.PushFilterPastAggRule;
 import org.eigenbase.rel.rules.PushFilterPastJoinRule;
 import org.eigenbase.rel.rules.PushFilterPastProjectRule;
 import org.eigenbase.rel.rules.PushFilterPastSetOpRule;
@@ -161,6 +162,14 @@ public class RelOptRulesTest extends RelOptTestBase {
         "select 1 from sales.dept d left outer join sales.emp e"
         + " on d.deptno = e.deptno"
         + " where d.name = 'Charlie'");
+  }
+
+  @Test public void testPushFilterPastAgg() {
+    checkPlanning(
+        PushFilterPastAggRule.INSTANCE,
+        "select dname, c from"
+        + " (select name dname, count(*) as c from dept group by name) t"
+        + " where dname = 'Charlie'");
   }
 
   @Test public void testSemiJoinRule() {
