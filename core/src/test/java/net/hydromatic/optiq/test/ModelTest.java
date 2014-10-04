@@ -207,6 +207,10 @@ public class ModelTest {
         + "         {\n"
         + "           name: 'SalesStar',\n"
         + "           sql: 'select * from sales_fact_1997'\n"
+        + "         },\n"
+        + "         {\n"
+        + "           name: 'SalesStar2',\n"
+        + "           sql: [ 'select *', 'from sales_fact_1997' ]\n"
         + "         }\n"
         + "       ]\n"
         + "     }\n"
@@ -217,10 +221,13 @@ public class ModelTest {
     assertEquals(1, root.schemas.size());
     final JsonMapSchema schema = (JsonMapSchema) root.schemas.get(0);
     assertEquals("FoodMart", schema.name);
-    assertEquals(1, schema.lattices.size());
+    assertEquals(2, schema.lattices.size());
     final JsonLattice lattice0 = schema.lattices.get(0);
     assertEquals("SalesStar", lattice0.name);
-    assertEquals("select * from sales_fact_1997", lattice0.sql);
+    assertEquals("select * from sales_fact_1997", lattice0.getSql());
+    final JsonLattice lattice1 = schema.lattices.get(1);
+    assertEquals("SalesStar2", lattice1.name);
+    assertEquals("select *\nfrom sales_fact_1997\n", lattice1.getSql());
   }
 }
 

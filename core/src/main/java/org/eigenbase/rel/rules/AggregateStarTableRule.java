@@ -183,6 +183,9 @@ public class AggregateStarTableRule extends RelOptRule {
 
   private static AggregateCall rollUp(AggregateCall aggregateCall,
       MaterializationService.TileKey tileKey) {
+    if (aggregateCall.isDistinct()) {
+      return null;
+    }
     final Aggregation aggregation = aggregateCall.getAggregation();
     final Pair<Aggregation, List<Integer>> seek =
         Pair.of(aggregation, aggregateCall.getArgList());

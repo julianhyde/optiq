@@ -223,6 +223,9 @@ public class Lattice {
         use(usedNodes, node);
       }
     }
+    if (usedNodes.isEmpty()) {
+      usedNodes.add(nodes.get(0));
+    }
     final SqlDialect dialect = SqlDialect.DatabaseProduct.OPTIQ.getDialect();
     final StringBuilder buf = new StringBuilder("SELECT ");
     final StringBuilder groupBuf = new StringBuilder("\nGROUP BY ");
@@ -242,6 +245,9 @@ public class Lattice {
         buf.append(" AS ");
         dialect.quoteIdentifier(buf, fieldName);
       }
+    }
+    if (groupSet.isEmpty()) {
+      groupBuf.append("()");
     }
     int m = 0;
     for (Measure measure : aggCallList) {

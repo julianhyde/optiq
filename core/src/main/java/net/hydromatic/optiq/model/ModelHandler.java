@@ -243,7 +243,7 @@ public class ModelHandler {
       }
       OptiqSchema optiqSchema = OptiqSchema.from(schema);
       Lattice.Builder latticeBuilder =
-          Lattice.builder(optiqSchema, jsonLattice.sql)
+          Lattice.builder(optiqSchema, jsonLattice.getSql())
               .auto(jsonLattice.auto)
               .algorithm(jsonLattice.algorithm);
       if (jsonLattice.rowCountEstimate != null) {
