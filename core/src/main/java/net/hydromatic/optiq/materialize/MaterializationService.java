@@ -36,6 +36,7 @@ import net.hydromatic.optiq.util.BitSets;
 import org.eigenbase.reltype.RelDataType;
 import org.eigenbase.reltype.RelDataTypeImpl;
 import org.eigenbase.util.Pair;
+import org.eigenbase.util.Util;
 
 import com.google.common.collect.*;
 
@@ -67,7 +68,7 @@ public class MaterializationService {
   /** Defines a new materialization. Returns its key. */
   public MaterializationKey defineMaterialization(final OptiqSchema schema,
       TileKey tileKey, String viewSql, List<String> viewSchemaPath,
-      String tableName, boolean create) {
+      final String suggestedTableName, boolean create) {
     final MaterializationActor.QueryKey queryKey =
         new MaterializationActor.QueryKey(viewSql, schema, viewSchemaPath);
     final MaterializationKey existingKey = actor.keyBySql.get(queryKey);
@@ -80,68 +81,64 @@ public class MaterializationService {
 
     final OptiqConnection connection =
         MetaImpl.connect(schema.root(), null);
-    final MaterializationKey key = new MaterializationKey();
-    Table materializedTable;
+    final Pair<String, Table> pair = schema.getTableBySql(viewSql);
+    Table materializedTable = pair == null ? null : pair.right;
     RelDataType rowType = null;
-    OptiqSchema.TableEntry tableEntry;
-    if (tableName != null) {
-      final Pair<String, Table> pair = schema.getTable(tableName, true);
-      materializedTable = pair == null ? null : pair.right;
-      if (materializedTable == null) {
-        final ImmutableMap<OptiqConnectionProperty, String> map =
-            ImmutableMap.of(OptiqConnectionProperty.CREATE_MATERIALIZATIONS,
-                "false");
-        final OptiqPrepare.PrepareResult<Object> prepareResult =
-            Schemas.prepare(connection, schema, viewSchemaPath, viewSql, map);
-        rowType = prepareResult.rowType;
-        final JavaTypeFactory typeFactory = connection.getTypeFactory();
-        materializedTable =
-            CloneSchema.createCloneTable(typeFactory,
-                RelDataTypeImpl.proto(prepareResult.rowType),
-                Functions.adapt(prepareResult.structType.columns,
-                    new Function1<ColumnMetaData, ColumnMetaData.Rep>() {
-                      public ColumnMetaData.Rep apply(ColumnMetaData column) {
-                        return column.type.representation;
-                      }
-                    }),
-                new AbstractQueryable<Object>() {
-                  public Enumerator<Object> enumerator() {
-                    final DataContext dataContext =
-                        Schemas.createDataContext(connection);
-                    return prepareResult.enumerator(dataContext);
-                  }
+    if (materializedTable == null) {
+      final ImmutableMap<OptiqConnectionProperty, String> map =
+          ImmutableMap.of(OptiqConnectionProperty.CREATE_MATERIALIZATIONS,
+              "false");
+      final OptiqPrepare.PrepareResult<Object> prepareResult =
+          Schemas.prepare(connection, schema, viewSchemaPath, viewSql, map);
+      rowType = prepareResult.rowType;
+      final JavaTypeFactory typeFactory = connection.getTypeFactory();
+      materializedTable =
+          CloneSchema.createCloneTable(typeFactory,
+              RelDataTypeImpl.proto(prepareResult.rowType),
+              Functions.adapt(prepareResult.structType.columns,
+                  new Function1<ColumnMetaData, ColumnMetaData.Rep>() {
+                    public ColumnMetaData.Rep apply(ColumnMetaData column) {
+                      return column.type.representation;
+                    }
+                  }),
+              new AbstractQueryable<Object>() {
+                public Enumerator<Object> enumerator() {
+                  final DataContext dataContext =
+                      Schemas.createDataContext(connection);
+                  return prepareResult.enumerator(dataContext);
+                }
 
-                  public Type getElementType() {
-                    return Object.class;
-                  }
+                public Type getElementType() {
+                  return Object.class;
+                }
 
-                  public Expression getExpression() {
-                    throw new UnsupportedOperationException();
-                  }
+                public Expression getExpression() {
+                  throw new UnsupportedOperationException();
+                }
 
-                  public QueryProvider getProvider() {
-                    return connection;
-                  }
+                public QueryProvider getProvider() {
+                  return connection;
+                }
 
-                  public Iterator<Object> iterator() {
-                    final DataContext dataContext =
-                        Schemas.createDataContext(connection);
-                    return prepareResult.iterator(dataContext);
-                  }
-                });
-        schema.add(tableName, materializedTable);
-      }
-      tableEntry = schema.add(tableName, materializedTable);
-      Hook.CREATE_MATERIALIZATION.run(tableName);
-    } else {
-      tableEntry = null;
+                public Iterator<Object> iterator() {
+                  final DataContext dataContext =
+                      Schemas.createDataContext(connection);
+                  return prepareResult.iterator(dataContext);
+                }
+              });
     }
+    final String tableName =
+        Schemas.uniqueTableName(schema, Util.first(suggestedTableName, "m"));
+    final OptiqSchema.TableEntry tableEntry =
+        schema.add(tableName, materializedTable, ImmutableList.of(viewSql));
+    Hook.CREATE_MATERIALIZATION.run(tableName);
     if (rowType == null) {
       // If we didn't validate the SQL by populating a table, validate it now.
       final OptiqPrepare.ParseResult parse =
           Schemas.parse(connection, schema, viewSchemaPath, viewSql);
       rowType = parse.rowType;
     }
+    final MaterializationKey key = new MaterializationKey();
     final MaterializationActor.Materialization materialization =
         new MaterializationActor.Materialization(key, schema.root(),
             tableEntry, viewSql, rowType);

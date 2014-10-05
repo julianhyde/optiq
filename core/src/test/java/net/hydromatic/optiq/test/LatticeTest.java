@@ -25,6 +25,7 @@ import org.eigenbase.util.Util;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -250,8 +251,7 @@ public class LatticeTest {
 
   /** Tests a model with pre-defined tiles. */
   @Test public void testLatticeWithPreDefinedTiles() {
-    foodmartModel(
-        " auto: false,\n"
+    foodmartModel(" auto: false,\n"
         + "  defaultMeasures: [ {\n"
         + "    agg: 'count'\n"
         + "  } ],\n"
@@ -259,8 +259,7 @@ public class LatticeTest {
         + "    dimensions: [ 'the_year', ['t', 'quarter'] ],\n"
         + "    measures: [ ]\n"
         + "  } ]\n")
-        .query(
-            "select distinct t.\"the_year\", t.\"quarter\"\n"
+        .query("select distinct t.\"the_year\", t.\"quarter\"\n"
             + "from \"foodmart\".\"sales_fact_1997\" as s\n"
             + "join \"foodmart\".\"time_by_day\" as t using (\"time_id\")\n")
       .enableMaterializations(true)
@@ -273,8 +272,7 @@ public class LatticeTest {
    *  granularity but fewer calls to aggregate functions. */
   @Test public void testLatticeWithPreDefinedTilesFewerMeasures() {
     foodmartModelWithOneTile()
-        .query(
-            "select t.\"the_year\", t.\"quarter\", count(*) as c\n"
+        .query("select t.\"the_year\", t.\"quarter\", count(*) as c\n"
             + "from \"foodmart\".\"sales_fact_1997\" as s\n"
             + "join \"foodmart\".\"time_by_day\" as t using (\"time_id\")\n"
             + "group by t.\"the_year\", t.\"quarter\"")
@@ -357,14 +355,42 @@ public class LatticeTest {
         .returnsUnordered("C=86837");
   }
 
-  /** Tests a query that uses no columns from the fact table. */
-  @Ignore // work in progress
+  /** Tests a query that uses no dimension columns and one measure column. */
   @Test public void testGroupByEmpty2() {
     foodmartModel()
-        .query("select sum(\"unit_sales\") as c\n"
+        .query("select sum(\"unit_sales\") as s\n"
             + "from \"foodmart\".\"sales_fact_1997\"")
         .enableMaterializations(true)
-        .returnsUnordered("C=86837");
+        .returnsUnordered("S=266773.0000");
+  }
+
+  /** Tests that two queries of the same dimensionality that use different
+   * measures can use the same materialization. */
+  @Test public void testGroupByEmpty3() {
+    final List<String> counter = Lists.newArrayList();
+    final Function<String, Void> handler =
+        new Function<String, Void>() {
+          public Void apply(String materializationName) {
+            counter.add(materializationName);
+            return null;
+          }
+        };
+    final OptiqAssert.AssertThat that = foodmartModel().pooled();
+    that.query("select sum(\"unit_sales\") as s, count(*) as c\n"
+            + "from \"foodmart\".\"sales_fact_1997\"")
+        .withHook(Hook.CREATE_MATERIALIZATION, handler)
+        .enableMaterializations(true)
+        .explainContains("EnumerableTableAccessRel(table=[[adhoc, m{}]])")
+        .returnsUnordered("S=266773.0000; C=86837");
+    assertThat(counter.toString(), counter.size(), equalTo(2));
+
+    // A similar query can use the same materialization.
+    that.query("select sum(\"unit_sales\") as s\n"
+        + "from \"foodmart\".\"sales_fact_1997\"")
+        .withHook(Hook.CREATE_MATERIALIZATION, handler)
+        .enableMaterializations(true)
+        .returnsUnordered("S=266773.0000");
+    assertThat(counter.toString(), counter.size(), equalTo(3));
   }
 
   /** Rolling up SUM. */

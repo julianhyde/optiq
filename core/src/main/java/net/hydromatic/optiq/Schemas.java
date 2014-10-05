@@ -32,6 +32,7 @@ import org.eigenbase.reltype.RelDataTypeFactory;
 import org.eigenbase.reltype.RelProtoDataType;
 import org.eigenbase.sql.type.SqlTypeUtil;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
@@ -372,6 +373,15 @@ public final class Schemas {
       schema = schema.getSubSchema(string, false);
     }
     return schema;
+  }
+
+  /** Generates a table name that is unique within the given schema. */
+  public static String uniqueTableName(OptiqSchema schema, String base) {
+    String t = Preconditions.checkNotNull(base);
+    for (int x = 0; schema.getTable(t, true) != null; x++) {
+      t = base + x;
+    }
+    return t;
   }
 
   /** Dummy data context that has no variables. */
