@@ -26,6 +26,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.*;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
 
 /**
@@ -176,7 +177,7 @@ public class ModelTest {
         + "SemiMutableSchema");
   }
 
-  /** Tests a model containing a lattice. */
+  /** Tests a model containing a lattice and some views. */
   @Test public void testReadLattice() throws IOException {
     final ObjectMapper mapper = mapper();
     JsonRoot root = mapper.readValue(
@@ -201,6 +202,16 @@ public class ModelTest {
         + "               name: 'time_id'\n"
         + "             }\n"
         + "           ]\n"
+        + "         },\n"
+        + "         {\n"
+        + "           name: 'V',\n"
+        + "           type: 'view',\n"
+        + "           sql: 'values (1)'\n"
+        + "         },\n"
+        + "         {\n"
+        + "           name: 'V2',\n"
+        + "           type: 'view',\n"
+        + "           sql: [ 'values (1)', '(2)' ]\n"
         + "         }\n"
         + "       ],\n"
         + "       lattices: [\n"
@@ -228,6 +239,48 @@ public class ModelTest {
     final JsonLattice lattice1 = schema.lattices.get(1);
     assertEquals("SalesStar2", lattice1.name);
     assertEquals("select *\nfrom sales_fact_1997\n", lattice1.getSql());
+    assertEquals(4, schema.tables.size());
+    final JsonTable table1 = schema.tables.get(1);
+    assertTrue(!(table1 instanceof JsonView));
+    final JsonTable table2 = schema.tables.get(2);
+    assertTrue(table2 instanceof JsonView);
+    assertThat(((JsonView) table2).getSql(), equalTo("values (1)"));
+    final JsonTable table3 = schema.tables.get(3);
+    assertTrue(table3 instanceof JsonView);
+    assertThat(((JsonView) table3).getSql(), equalTo("values (1)\n(2)\n"));
+  }
+
+  /** Tests a model with bad multi-line SQL. */
+  @Test public void testReadBadMultiLineSql() throws IOException {
+    final ObjectMapper mapper = mapper();
+    JsonRoot root = mapper.readValue(
+        "{\n"
+        + "  version: '1.0',\n"
+        + "   schemas: [\n"
+        + "     {\n"
+        + "       name: 'FoodMart',\n"
+        + "       tables: [\n"
+        + "         {\n"
+        + "           name: 'V',\n"
+        + "           type: 'view',\n"
+        + "           sql: [ 'values (1)', 2 ]\n"
+        + "         }\n"
+        + "       ]\n"
+        + "     }\n"
+        + "   ]\n"
+        + "}",
+        JsonRoot.class);
+    assertEquals(1, root.schemas.size());
+    final JsonMapSchema schema = (JsonMapSchema) root.schemas.get(0);
+    assertEquals(1, schema.tables.size());
+    final JsonView table1 = (JsonView) schema.tables.get(0);
+    try {
+      String s = table1.getSql();
+      fail("exprcted error, got " + s);
+    } catch (RuntimeException e) {
+      assertThat(e.getMessage(),
+          equalTo("each element of a string list must be a string; found: 2"));
+    }
   }
 }
 

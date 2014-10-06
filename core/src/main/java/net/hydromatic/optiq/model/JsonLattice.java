@@ -70,13 +70,15 @@ public class JsonLattice {
     return "JsonLattice(name=" + name + ", sql=" + getSql() + ")";
   }
 
+  /** Returns the SQL query as a string, concatenating a list of lines if
+   * necessary. */
   public String getSql() {
     return toString(sql);
   }
 
   /** Converts a string or a list of strings to a string. The list notation
    * is a convenient way of writing long multi-line strings in JSON. */
-  private static String toString(Object o) {
+  static String toString(Object o) {
     return o == null ? null
         : o instanceof String ? (String) o
         : concatenate((List) o);
@@ -86,6 +88,10 @@ public class JsonLattice {
   private static String concatenate(List list) {
     final StringBuilder buf = new StringBuilder();
     for (Object o : list) {
+      if (!(o instanceof String)) {
+        throw new RuntimeException(
+            "each element of a string list must be a string; found: " + o);
+      }
       buf.append((String) o);
       buf.append("\n");
     }

@@ -223,9 +223,8 @@ public class ModelHandler {
       }
       OptiqSchema optiqSchema = OptiqSchema.from(schema);
       schema.add(jsonMaterialization.view,
-          MaterializedViewTable.create(
-              optiqSchema, jsonMaterialization.sql, null,
-              jsonMaterialization.table));
+          MaterializedViewTable.create(optiqSchema,
+              jsonMaterialization.getSql(), null, jsonMaterialization.table));
     } catch (Exception e) {
       throw new RuntimeException("Error instantiating " + jsonMaterialization,
           e);
@@ -288,7 +287,7 @@ public class ModelHandler {
       final SchemaPlus schema = currentMutableSchema("view");
       final List<String> path = Util.first(jsonView.path, currentSchemaPath());
       schema.add(jsonView.name,
-          ViewTable.viewMacro(schema, jsonView.sql, path));
+          ViewTable.viewMacro(schema, jsonView.getSql(), path));
     } catch (Exception e) {
       throw new RuntimeException("Error instantiating " + jsonView, e);
     }
