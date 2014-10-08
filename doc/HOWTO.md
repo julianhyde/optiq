@@ -377,6 +377,9 @@ Verify the staged artifacts in the Nexus repository:
 * Enterprise &rarr; Staging
 * Staging tab &rarr; Name column &rarr; org.apache.calcite
 * Navigate through the artifact tree and make sure the .jar, .pom, .asc files are present
+* Press the 'Close' button to publish the repository at
+ https://repository.apache.org/content/repositories/orgapachecalcite-1000
+ (or a similar URL)
 
 Upload the artifacts to a staging area (in this case, your
 people.apache.org home directory):
@@ -459,7 +462,7 @@ Release vote on dev list
 
 ```
 To: dev@optiq.incubator.apache.org
-Subject: Release apache-Calcite-X.Y.Z-incubating (release candidate N)
+Subject: [VOTE] Release apache-calcite-X.Y.Z-incubating (release candidate N)
 
 Hi all,
 
@@ -474,7 +477,7 @@ The artifacts to be voted on are located here:
 http://people.apache.org/~jhyde/apache-calcite-X.Y.Z-incubating-rcN/
 
 A staged Maven repository is available for review at:
-https://repository.apache.org/content/repositories/orgapacheoptiq-NNNN
+https://repository.apache.org/content/repositories/orgapachecalcite-NNNN
 
 Release artifacts are signed with the following key:
 https://people.apache.org/keys/committer/jhyde.asc
@@ -499,7 +502,7 @@ Julian
 After vote finishes, send out the result:
 
 ```
-Subject: [RESULT] [VOTE] Release apache-Calcite-X.Y.Z-incubating (release candidate N)
+Subject: [RESULT] [VOTE] Release apache-calcite-X.Y.Z-incubating (release candidate N)
 To: dev@optiq.incubator.apache.org
 
 Thanks to everyone who has tested the release candidate and given
@@ -542,7 +545,7 @@ is open for 72 hours, or until the necessary number of votes (3 +1)
 is reached.
 
 [ ] +1 Release this package as Apache Calcite X.Y.Z incubating
-[ ] -1 Do not release this package because ...
+[ ] -1 Do not release this package because...
 
 Apache Calcite PPMC
 
@@ -557,7 +560,7 @@ No -1 votes
 http://mail-archives.apache.org/mod_mbox/incubator-optiq-dev/201408.mbox/MESSAGE-URI
 
 Artifacts:
-http://people.apache.org/~jhyde/calcite-X.Y.Z-incubating-rcN/
+http://people.apache.org/~jhyde/apache-calcite-X.Y.Z-incubating-rcN/
 
 ```
 
