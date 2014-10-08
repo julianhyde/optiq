@@ -47,6 +47,9 @@ public class JsonLattice {
    * <p>Default is false. */
   public boolean algorithm = false;
 
+  /** Maximum time to run the algorithm. Default is -1, meaning no timeout. */
+  public long algorithmMaxMillis = -1;
+
   /** Estimated number of rows.
    *
    * <p>If null, Calcite will a query to find the real value. */

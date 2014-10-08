@@ -16,6 +16,7 @@
  */
 package net.hydromatic.optiq.test;
 
+import net.hydromatic.optiq.materialize.MaterializationService;
 import net.hydromatic.optiq.runtime.Hook;
 
 import org.eigenbase.rel.RelNode;
@@ -302,7 +303,7 @@ public class LatticeTest {
       .enableMaterializations(true)
       .explainContains(
           "EnumerableCalcRel(expr#0..3=[{inputs}], expr#4=[10], expr#5=[*($t3, $t4)], proj#0..2=[{exprs}], US=[$t5])\n"
-          + "  EnumerableAggregateRel(group=[{0}], agg#0=[$SUM0($2)], Q=[MIN($1)], agg#2=[$SUM0($4)])\n"
+          + "  EnumerableAggregateRel(group=[{0}], C=[$SUM0($2)], Q=[MIN($1)], agg#2=[$SUM0($4)])\n"
           + "    EnumerableTableAccessRel(table=[[adhoc, m{27, 31}")
       .returnsUnordered("the_year=1997; C=86837; Q=Q1; US=2667730.0000")
       .sameResultWithMaterializationsDisabled();
@@ -316,9 +317,12 @@ public class LatticeTest {
    * "Use optimization algorithm to suggest which tiles of a lattice to
    * materialize"</a>. */
   @Test public void testTileAlgorithm() {
+    MaterializationService.setThreadLocal();
+    MaterializationService.instance().clear();
     foodmartModel(
         " auto: false,\n"
         + "  algorithm: true,\n"
+        + "  algorithmMaxMillis: -1,\n"
         + "  rowCountEstimate: 86000,\n"
         + "  defaultMeasures: [ {\n"
         + "      agg: 'sum',\n"
@@ -338,8 +342,8 @@ public class LatticeTest {
             + "from \"foodmart\".\"sales_fact_1997\" as s\n"
             + "join \"foodmart\".\"time_by_day\" as t using (\"time_id\")\n")
         .enableMaterializations(true)
-        .explainContains("EnumerableAggregateRel(group=[{3, 4}])\n"
-            + "  EnumerableTableAccessRel(table=[[adhoc, m{7, 16, 25, 27, 31, 37}]])")
+        .explainContains("EnumerableAggregateRel(group=[{2, 3}])\n"
+            + "  EnumerableTableAccessRel(table=[[adhoc, m{16, 17, 27, 31}]])")
         .returnsUnordered("the_year=1997; quarter=Q1",
             "the_year=1997; quarter=Q2",
             "the_year=1997; quarter=Q3",
@@ -355,6 +359,13 @@ public class LatticeTest {
         .returnsUnordered("C=86837");
   }
 
+  /** Calls {@link #testDistinctCount()} followed by
+   * {@link #testGroupByEmpty()}. */
+  @Test public void testGroupByEmptyWithPrelude() {
+    testDistinctCount();
+    testGroupByEmpty();
+  }
+
   /** Tests a query that uses no dimension columns and one measure column. */
   @Test public void testGroupByEmpty2() {
     foodmartModel()
@@ -367,11 +378,11 @@ public class LatticeTest {
   /** Tests that two queries of the same dimensionality that use different
    * measures can use the same materialization. */
   @Test public void testGroupByEmpty3() {
-    final List<String> counter = Lists.newArrayList();
+    final List<String> mats = Lists.newArrayList();
     final Function<String, Void> handler =
         new Function<String, Void>() {
           public Void apply(String materializationName) {
-            counter.add(materializationName);
+            mats.add(materializationName);
             return null;
           }
         };
@@ -382,7 +393,7 @@ public class LatticeTest {
         .enableMaterializations(true)
         .explainContains("EnumerableTableAccessRel(table=[[adhoc, m{}]])")
         .returnsUnordered("S=266773.0000; C=86837");
-    assertThat(counter.toString(), counter.size(), equalTo(2));
+    assertThat(mats.toString(), mats.size(), equalTo(2));
 
     // A similar query can use the same materialization.
     that.query("select sum(\"unit_sales\") as s\n"
@@ -390,7 +401,7 @@ public class LatticeTest {
         .withHook(Hook.CREATE_MATERIALIZATION, handler)
         .enableMaterializations(true)
         .returnsUnordered("S=266773.0000");
-    assertThat(counter.toString(), counter.size(), equalTo(3));
+    assertThat(mats.toString(), mats.size(), equalTo(2));
   }
 
   /** Rolling up SUM. */
