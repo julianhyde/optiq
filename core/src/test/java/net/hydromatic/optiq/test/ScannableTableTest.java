@@ -113,7 +113,7 @@ public class ScannableTableTest {
     ResultSet resultSet = statement.executeQuery(
         "select * from \"s\".\"beatles\" where \"i\" = 4");
     assertThat(OptiqAssert.toString(resultSet),
-        equalTo("i=4; j=John\ni=4; j=Paul\n"));
+        equalTo("i=4; j=John; k=1940\ni=4; j=Paul; k=1942\n"));
     resultSet.close();
     // Only 2 rows came out of the table. If the value is 4, it means that the
     // planner did not pass the filter down.
@@ -126,7 +126,7 @@ public class ScannableTableTest {
     resultSet = statement.executeQuery(
         "select * from \"s\".\"beatles2\" where \"i\" = 4");
     assertThat(OptiqAssert.toString(resultSet),
-        equalTo("i=4; j=John\ni=4; j=Paul\n"));
+        equalTo("i=4; j=John; k=1940\ni=4; j=Paul; k=1942\n"));
     resultSet.close();
     assertThat(buf.toString(), equalTo("returnCount=4"));
     buf.setLength(0);
@@ -147,11 +147,11 @@ public class ScannableTableTest {
     ResultSet resultSet = statement.executeQuery(
         "select * from \"s\".\"beatles\" where \"i\" = 4");
     assertThat(OptiqAssert.toString(resultSet),
-        equalTo("i=4; j=John\ni=4; j=Paul\n"));
+        equalTo("i=4; j=John; k=1940\ni=4; j=Paul; k=1942\n"));
     resultSet.close();
     // Only 2 rows came out of the table. If the value is 4, it means that the
     // planner did not pass the filter down.
-    assertThat(buf.toString(), equalTo("returnCount=2"));
+    assertThat(buf.toString(), equalTo("returnCount=2, projects=[0, 1, 2]"));
     buf.setLength(0);
 
     // Now with an "uncooperative" filterable table that refuses to accept
@@ -160,18 +160,43 @@ public class ScannableTableTest {
     resultSet = statement.executeQuery(
         "select * from \"s\".\"beatles2\" where \"i\" = 4");
     assertThat(OptiqAssert.toString(resultSet),
-        equalTo("i=4; j=John\ni=4; j=Paul\n"));
+        equalTo("i=4; j=John; k=1940\ni=4; j=Paul; k=1942\n"));
     resultSet.close();
     assertThat(buf.toString(), equalTo("returnCount=4"));
     buf.setLength(0);
+  }
+
+  /** A filter on a {@link net.hydromatic.optiq.ProjectableFilterableTable} with
+   * two columns, and a project in the query. */
+  @Test public void testProjectableFilterable2WithProject() throws Exception {
+    Connection connection =
+        DriverManager.getConnection("jdbc:calcite:");
+    OptiqConnection optiqConnection =
+        connection.unwrap(OptiqConnection.class);
+    SchemaPlus rootSchema = optiqConnection.getRootSchema();
+    SchemaPlus schema = rootSchema.add("s", new AbstractSchema());
+    final StringBuilder buf = new StringBuilder();
+    schema.add("beatles", new BeatlesProjectableFilterableTable(buf, true));
 
     // Now with a project.
-    resultSet = statement.executeQuery(
-        "select \"j\" from \"s\".\"beatles\" where \"i\" = 4");
+    final Statement statement = connection.createStatement();
+    ResultSet resultSet = statement.executeQuery(
+        "select \"k\",\"j\" from \"s\".\"beatles\" where \"i\" = 4");
     assertThat(OptiqAssert.toString(resultSet),
-        equalTo("j=John\nj=Paul\n"));
+        equalTo("k=1940; j=John\nk=1942; j=Paul\n"));
     resultSet.close();
-    assertThat(buf.toString(), equalTo("returnCount=2"));
+    assertThat(buf.toString(), equalTo("returnCount=2, projects=[2, 1]"));
+    buf.setLength(0);
+
+    // Now with an "uncooperative" filterable table that refuses to accept
+    // filters.
+    schema.add("beatles2", new BeatlesProjectableFilterableTable(buf, false));
+    resultSet = statement.executeQuery(
+        "select \"k\" from \"s\".\"beatles2\" where \"i\" = 4");
+    assertThat(OptiqAssert.toString(resultSet),
+        equalTo("k=1940\nk=1942\n"));
+    resultSet.close();
+    assertThat(buf.toString(), equalTo("returnCount=4, projects="));
     buf.setLength(0);
   }
 
@@ -259,6 +284,7 @@ public class ScannableTableTest {
       return typeFactory.builder()
           .add("i", SqlTypeName.INTEGER)
           .add("j", SqlTypeName.VARCHAR)
+          .add("k", SqlTypeName.INTEGER)
           .build();
     }
 
@@ -289,6 +315,7 @@ public class ScannableTableTest {
       return typeFactory.builder()
           .add("i", SqlTypeName.INTEGER)
           .add("j", SqlTypeName.VARCHAR)
+          .add("k", SqlTypeName.INTEGER)
           .build();
     }
 
@@ -331,7 +358,12 @@ public class ScannableTableTest {
     };
   }
 
-  private static final String[] BEATLES = {"John", "Paul", "George", "Ringo"};
+  private static final Object[][] BEATLES = {
+    {4, "John", 1940},
+    {4, "Paul", 1942},
+    {6, "George", 1943},
+    {5, "Ringo", 1940}
+  };
 
   private static Enumerator<Object[]> beatles(final StringBuilder buf,
       final Integer filter, final int[] projects) {
@@ -346,9 +378,8 @@ public class ScannableTableTest {
 
       public boolean moveNext() {
         while (++row < 4) {
-          String s = BEATLES[row % 4];
-          if (filter == null || filter.equals(s.length())) {
-            Object[] current = new Object[]{s.length(), s};
+          Object[] current = BEATLES[row % 4];
+          if (filter == null || filter.equals(current[0])) {
             if (projects == null) {
               this.current = current;
             } else {

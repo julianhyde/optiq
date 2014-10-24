@@ -78,7 +78,7 @@ public abstract class ProjectTableRule extends RelOptRule {
       new ProjectTableRule(
           operand(ProjectRelBase.class,
               operand(JavaRules.EnumerableInterpreterRel.class,
-                  operand(JavaRules.EnumerableInterpreterRel.class,
+                  operand(FilterRelBase.class,
                       operand(TableAccessRelBase.class, null, PREDICATE,
                           none())))),
           "ProjectTableRule:filter") {
@@ -101,15 +101,6 @@ public abstract class ProjectTableRule extends RelOptRule {
   }
 
   //~ Methods ----------------------------------------------------------------
-
-  // implement RelOptRule
-  public void onMatch(RelOptRuleCall call) {
-    final ProjectRelBase project = call.rel(0);
-    final JavaRules.EnumerableInterpreterRel interpreter = call.rel(1);
-    final TableAccessRelBase scan = call.rel(2);
-    assert scan.getTable().unwrap(ProjectableFilterableTable.class) != null;
-    apply(call, project, interpreter);
-  }
 
   protected void apply(RelOptRuleCall call, ProjectRelBase project,
       JavaRules.EnumerableInterpreterRel interpreter) {
@@ -157,7 +148,7 @@ public abstract class ProjectTableRule extends RelOptRule {
             interpreter.getChild(), projectOrdinals);
     final RelNode newInterpreter =
         new JavaRules.EnumerableInterpreterRel(interpreter.getCluster(),
-            interpreter.getTraitSet(), newProject, 0.25d);
+            interpreter.getTraitSet(), newProject, 0.15d);
     final RelNode residue;
     if (extraProjects != null) {
       residue = RelOptUtil.createProject(newInterpreter, extraProjects,

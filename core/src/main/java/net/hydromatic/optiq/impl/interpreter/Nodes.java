@@ -28,9 +28,12 @@ import org.eigenbase.relopt.RelTraitSet;
 import org.eigenbase.rex.RexNode;
 import org.eigenbase.util.ImmutableIntList;
 import org.eigenbase.util.Pair;
-import org.eigenbase.util.Util;
+import org.eigenbase.util.mapping.Mappings;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+
+import java.util.List;
 
 /**
  * Helper methods for {@link Node} and implementations for core relational
@@ -47,7 +50,28 @@ public class Nodes {
     }
 
     public void rewrite(ProjectRelBase project) {
-      Util.discard(0);
+      RelNode input = project.getChild();
+      final Mappings.TargetMapping mapping = project.getMapping();
+      if (mapping == null) {
+        return;
+      }
+      final List<RexNode> filters = Lists.newArrayList();
+      if (input instanceof FilterRelBase) {
+        final FilterRelBase filter = (FilterRelBase) input;
+        RelOptUtil.decomposeConjunction(filter.getCondition(), filters);
+        input = filter.getChild();
+      }
+      if (input instanceof TableAccessRelBase) {
+        final TableAccessRelBase scan = (TableAccessRelBase) input;
+        final RelOptTable table = scan.getTable();
+        final ProjectableFilterableTable projectableFilterableTable =
+            table.unwrap(ProjectableFilterableTable.class);
+        if (projectableFilterableTable != null) {
+          rel = new FilterScanRel(project.getCluster(), project.getTraitSet(),
+              table, ImmutableList.copyOf(filters),
+              ImmutableIntList.copyOf(Mappings.asList(mapping.inverse())));
+        }
+      }
     }
 
     public void rewrite(FilterRelBase filter) {
@@ -139,4 +163,4 @@ public class Nodes {
   }
 }
 
-// End Node.java
+// End Nodes.java

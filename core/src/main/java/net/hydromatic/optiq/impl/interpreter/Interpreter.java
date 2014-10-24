@@ -268,12 +268,16 @@ public class Interpreter extends AbstractEnumerable<Object[]> {
     }
 
     @Override public void visit(RelNode p, int ordinal, RelNode parent) {
-      rel = null;
-      boolean found = dispatcher.invokeVisitor(this, p, REWRITE_METHOD_NAME);
-      if (!found) {
-        throw new AssertionError("interpreter: no implementation for rewrite");
-      }
-      if (rel != null) {
+      for (;;) {
+        rel = null;
+        boolean found = dispatcher.invokeVisitor(this, p, REWRITE_METHOD_NAME);
+        if (!found) {
+          throw new AssertionError(
+              "interpreter: no implementation for rewrite");
+        }
+        if (rel == null) {
+          break;
+        }
         if (OptiqPrepareImpl.DEBUG) {
           System.out.println("Interpreter: rewrite " + p + " to " + rel);
         }
@@ -288,7 +292,6 @@ public class Interpreter extends AbstractEnumerable<Object[]> {
         } else {
           rootRel = p;
         }
-        rel = null;
       }
 
       // rewrite children first (from left to right)
@@ -303,7 +306,7 @@ public class Interpreter extends AbstractEnumerable<Object[]> {
       }
 
       node = null;
-      found = dispatcher.invokeVisitor(this, p, VISIT_METHOD_NAME);
+      boolean found = dispatcher.invokeVisitor(this, p, VISIT_METHOD_NAME);
       if (!found) {
         // Probably need to add a visit(XxxRel) method to CoreCompiler.
         throw new AssertionError("interpreter: no implementation for "
